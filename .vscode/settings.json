@@ -1,0 +1,41 @@
+{
+  // ------------------------------------------------------------------
+  // Code style: shift width 2 spaces, tab width 8, spaces not tabs.
+  // ------------------------------------------------------------------
+  "editor.detectIndentation": false,
+  "editor.tabSize": 8, // width a tab character is displayed at (tabulator)
+  "editor.indentSize": 2, // indentation per level (shift width)
+  "editor.insertSpaces": true, // always insert spaces, never tab characters
+  "editor.rulers": [100],
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // ------------------------------------------------------------------
+  // C++ tooling
+  // ------------------------------------------------------------------
+  "clangd.arguments": [
+    "--background-index",
+    "--clang-tidy",
+    "--header-insertion=iwyu",
+    "--compile-commands-dir=${workspaceFolder}/build"
+  ],
+  "cmake.configureOnOpen": true,
+  "cmake.buildDirectory": "${workspaceFolder}/build",
+  "cmake.generator": "Ninja",
+  "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
+
+  // ------------------------------------------------------------------
+  // Hygiene
+  // ------------------------------------------------------------------
+  "files.associations": {
+    "*.tcc": "cpp"
+  },
+  "files.exclude": {
+    "build": true,
+    "compile_commands.json": true
+  },
+  "search.exclude": {
+    "build": true,
+    "compile_commands.json": true
+  }
+}

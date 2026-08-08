@@ -1,0 +1,31 @@
+---
+# clang-tidy configuration.
+# Enforces modern, safe C++23 for the rpgos library.
+# Run via clangd (VS Code) or: clang-tidy <file> -p build/
+
+Checks: >-
+  bugprone-*,
+  clang-analyzer-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-type-vararg,
+  -modernize-use-trailing-return-type,
+  -readability-identifier-length,
+  -readability-magic-numbers
+
+WarningsAsErrors: ''
+HeaderFilterRegex: '^include/'
+FormatStyle: file
+
+CheckOptions:
+  readability-function-cognitive-complexity.Threshold: 20
+  readability-function-size.LineThreshold: 100
+  readability-function-size.StatementThreshold: 100
