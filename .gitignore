@@ -1,0 +1,26 @@
+# ---- Build artifacts ----
+/build/
+/build-*/
+/out/
+/cmake-build-*/
+
+# ---- Tooling ----
+compile_commands.json
+.cache/
+.clangd/
+
+# ---- IDE / editors ----
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- Local ressources ----
+.local_ressources

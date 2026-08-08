@@ -1,0 +1,35 @@
+---
+# clang-format configuration.
+# Style: LLVM base, but 2-space indent, spaces instead of tabs (tab width 8).
+
+BasedOnStyle: LLVM
+
+# Shift width: indent 2 spaces per level
+IndentWidth: 2
+ContinuationIndentWidth: 4
+
+# Tabulator: a tab character is 8 columns wide, but tabs are never emitted
+TabWidth: 8
+UseTab: Never
+
+# Language / formatting flavour
+# The project is C++23; "Latest" uses the newest standard the installed
+# clang-format knows (c++23 on v19+, c++20 on older versions) so the config
+# parses everywhere.
+Standard: Latest
+ColumnLimit: 100
+Language: Cpp
+
+# Functions / control flow
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# Includes
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+
+# Namespaces & pointers
+NamespaceIndentation: None
+DerivePointerAlignment: false
+PointerAlignment: Right

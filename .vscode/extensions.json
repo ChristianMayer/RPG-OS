@@ -1,0 +1,14 @@
+{
+  // Extensions that make this project work best.
+  // VS Code will offer to install them when the workspace is opened.
+  "recommendations": [
+    "llvm-vs-code-extensions.vscode-clangd", // language server (C++20/23, clang-tidy)
+    "ms-vscode.cmake-tools", // CMake integration + build tasks
+    "twxs.cmake", // CMake language highlighting
+    "cschlosser.doxdocgen", // Doxygen-style doc comments
+    "vadimcn.vscode-lldb" // native debugging (LLDB)
+  ],
+  "unwantedRecommendations": [
+    "ms-vscode.cpptools" // avoid conflicting with clangd
+  ]
+}
