@@ -45,7 +45,15 @@ function(set_project_warnings target)
       target_compile_options(${target} PRIVATE
         -Wduplicated-cond
         -Wduplicated-branches
-        -Wlogical-op)
+        -Wlogical-op
+        # GCC's -Wnull-dereference (implied by -Wall at -O>=1) is a known
+        # false-positive machine: at -O3 it inlines through libstdc++/nlohmann
+        # .value() -> .get<std::string>() -> is_string() and reports a bogus
+        # "potential null pointer dereference" inside the vendored JSON header,
+        # attributed to the generated-code call site (breaks CI under -Werror).
+        # clang's version is reliable, so it stays enabled via the shared list
+        # above; only GCC's is switched off.
+        -Wno-null-dereference)
     endif()
   endif()
 endfunction()

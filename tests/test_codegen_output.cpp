@@ -18,6 +18,7 @@
 #include <doctest/doctest.h>
 #include <fstream>
 #include <rpg_os/universal/engine.hpp>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <tde5e_core_static.hpp>
@@ -33,7 +34,9 @@ std::string readFile(const char *name) {
   const std::string path = std::string(RPG_OS_SOURCE_DIR) + "/rulesets/" + name;
   std::ifstream file(path);
   REQUIRE(file.good());
-  return std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+  std::ostringstream buffer;
+  buffer << file.rdbuf();
+  return buffer.str();
 }
 
 rpg_os::Json loadRuleset(const char *name) {

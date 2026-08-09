@@ -33,6 +33,7 @@
 #include <rpg_os/universal/check_resolver.hpp>
 #include <rpg_os/universal/dynamic_entity.hpp>
 #include <rpg_os/universal/ruleset_loader.hpp>
+#include <sstream>
 #include <string>
 #include <string_view>
 
@@ -72,9 +73,13 @@ public:
       m_loaded = false;
       return false;
     }
-    const std::string content((std::istreambuf_iterator<char>(file)),
-                              std::istreambuf_iterator<char>());
-    return loadRulesetFromJson(content);
+    // Read via rdbuf() rather than the istreambuf_iterator range idiom: the
+    // iterator path trips a -Wnull-dereference false positive in libstdc++ 13
+    // under -Werror, and streaming the streambuf is the idiomatic whole-file
+    // read anyway.
+    std::ostringstream buffer;
+    buffer << file.rdbuf();
+    return loadRulesetFromJson(buffer.str());
   }
 
   /// Re-runs validation on the loaded ruleset; false when no ruleset is

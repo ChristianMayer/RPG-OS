@@ -17,6 +17,7 @@
 #include <fstream>
 #include <rpg_os/core/variance.hpp>
 #include <rpg_os/universal/engine.hpp>
+#include <sstream>
 #include <string>
 
 using rpg_os::Variance;
@@ -70,8 +71,9 @@ TEST_CASE("Engine: createCreature with variance selects ranged hit points") {
   std::ifstream file(path);
   REQUIRE(file.good());
   rpg_os::RulesetEngine engine;
-  REQUIRE(engine.loadRulesetFromJson(
-      std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>())));
+  std::ostringstream buffer;
+  buffer << file.rdbuf();
+  REQUIRE(engine.loadRulesetFromJson(buffer.str()));
 
   auto weakest = engine.createCreature("goblin_warrior", Variance::Weakest);
   auto strongest = engine.createCreature("goblin_warrior", Variance::Strongest);

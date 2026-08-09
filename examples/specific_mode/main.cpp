@@ -25,6 +25,7 @@
 #include <iostream>
 #include <rpg_os/common/json.hpp>
 #include <rpg_os/core/dice_engine.hpp>
+#include <sstream>
 #include <string>
 #include <tde5e_core_static.hpp>
 
@@ -42,8 +43,9 @@ std::string rulesetPath(std::string_view root, std::string_view name) {
 /// this helper just fetches the bytes and hands them over.
 rpg_os::Json loadRuleset(const std::string &root, std::string_view name) {
   std::ifstream file(rulesetPath(root, name));
-  return rpg_os::Json::parse(
-      std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()));
+  std::ostringstream buffer;
+  buffer << file.rdbuf();
+  return rpg_os::Json::parse(buffer.str());
 }
 
 } // namespace
