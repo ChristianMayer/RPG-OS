@@ -57,7 +57,7 @@ TEST_CASE("generated tde5e: named members, derived getters, and resources") {
 
   // Named derived getters (compiled formulas).
   CHECK(geron.maxLifePoints() == 31);  // 5 + 2 * CON
-  CHECK(geron.dodge() == 6);           // AGI / 2
+  CHECK(geron.dodge() == 7);           // round(AGI / 2) = round(13 / 2)
   CHECK(geron.attackSwordsSr6() == 7); // 6 + COU_Bonus
   CHECK(geron.parrySwords() == 4);     // 3 + AGI_Bonus
 
@@ -97,8 +97,16 @@ TEST_CASE("generated tde5e: named skill checks match the universal engine (parit
 }
 
 TEST_CASE("generated dnd5e: named members, derived getters, cost table") {
-  const rpg_os::Json ruleset = loadRuleset("dnd5e_srd.json");
-  const DndCharacter fighter = DndCharacter::fromArchetype(ruleset, "fighter_lvl1");
+  // The SRD ruleset stores text descriptions (classes/species/backgrounds/feats)
+  // rather than archetype blocks, so construct a fighter directly via its
+  // named members. The data database is still loaded from the JSON at runtime.
+  DndCharacter fighter;
+  fighter.strength = 16;
+  fighter.dexterity = 14;
+  fighter.constitution = 14;
+  fighter.proficiencyBonus = 2;
+  fighter.maxHitPoints = 12;
+  fighter.hitPoints = 12;
 
   CHECK(fighter.strength == 16);
   CHECK(fighter.dexterity == 14);
@@ -115,8 +123,15 @@ TEST_CASE("generated dnd5e: named members, derived getters, cost table") {
 }
 
 TEST_CASE("generated dnd5e: attack check matches the universal engine (parity)") {
-  const rpg_os::Json ruleset = loadRuleset("dnd5e_srd.json");
-  const DndCharacter fighter = DndCharacter::fromArchetype(ruleset, "fighter_lvl1");
+  // Same fighter, built directly for the specific (generated) mode and via a
+  // JSON record for the universal mode.
+  DndCharacter fighter;
+  fighter.strength = 16;
+  fighter.dexterity = 14;
+  fighter.constitution = 14;
+  fighter.proficiencyBonus = 2;
+  fighter.maxHitPoints = 12;
+  fighter.hitPoints = 12;
 
   auto rng = script({10}); // 10 + STR_mod(3) + prof(2) = 15 >= AC 12
   const CheckResult specific = fighter.dnd5eAttackMelee(fighter, CheckParams{}, rng);
@@ -125,11 +140,13 @@ TEST_CASE("generated dnd5e: attack check matches the universal engine (parity)")
 
   rpg_os::RulesetEngine engine;
   REQUIRE(engine.loadRulesetFromJson(readFile("dnd5e_srd.json")));
-  auto universal = engine.createEntity("fighter_lvl1");
-  REQUIRE(universal != nullptr);
+  rpg_os::DynamicEntity universal(engine.ruleset(), "fighter");
+  rpg_os::Json record = rpg_os::Json::parse(
+      R"({"attributes":{"STR":16,"DEX":14,"CON":14,"proficiency_bonus":2,"HitPoints_Max":12}})");
+  universal.loadFromArchetype(record);
   auto rng2 = script({10});
   const CheckResult universalResult =
-      engine.executeCheck("dnd5e_attack_melee", *universal, universal.get(), CheckParams{}, rng2);
+      engine.executeCheck("dnd5e_attack_melee", universal, &universal, CheckParams{}, rng2);
   CHECK(universalResult.isSuccess == specific.isSuccess);
   CHECK(universalResult.marginOfSuccess == specific.marginOfSuccess);
   CHECK(universalResult.rawDiceRolls == specific.rawDiceRolls);
@@ -143,42 +160,32 @@ TEST_CASE("generated tde5e: loadArchetypes reads every archetype from JSON") {
   CHECK(heroes[1].courage == 12); // geron
 }
 
-TEST_CASE("generated code: variance-aware fromArchetype overloads") {
+TEST_CASE("generated code: variance-aware fromCreature (ranged hit points)") {
   const rpg_os::Json ruleset = loadRuleset("dnd5e_srd.json");
 
-  // Weakest/strongest map scalar attributes unchanged and ranged values to the
-  // dice bounds. The fighter archetype has no ranges, so both match the base.
-  auto rngWeak = script({0});
-  auto rngStrong = script({0});
-  const DndCharacter weakest =
-      DndCharacter::fromArchetype(ruleset, "fighter_lvl1", rpg_os::Variance::Weakest, rngWeak);
-  const DndCharacter strongest =
-      DndCharacter::fromArchetype(ruleset, "fighter_lvl1", rpg_os::Variance::Strongest, rngStrong);
-  CHECK(weakest.strength == 16);
-  CHECK(strongest.strength == 16);
-  CHECK(weakest.hitPoints == 12);
-  CHECK(strongest.hitPoints == 12);
-}
-
-TEST_CASE("generated code: variance-aware creatures (ranged hit points)") {
-  const rpg_os::Json ruleset = loadRuleset("dnd5e_srd.json");
-
-  // goblin_warrior has "HitPoints_Max": "3d6" -> HP in [3, 18].
+  // goblin_warrior carries "HitPoints_Max": "3d6" -> HP in [3, 18].
   auto rngWeak = script({0});
   auto rngStrong = script({0});
   const DndCharacter weakest =
       DndCharacter::fromCreature(ruleset, "goblin_warrior", rpg_os::Variance::Weakest, rngWeak);
   const DndCharacter strongest =
       DndCharacter::fromCreature(ruleset, "goblin_warrior", rpg_os::Variance::Strongest, rngStrong);
+  CHECK(weakest.strength == 8); // scalar attributes unchanged
+  CHECK(strongest.strength == 8);
   CHECK(weakest.maxHitPoints == 3);
   CHECK(strongest.maxHitPoints == 18);
   CHECK(weakest.hitPoints == 3);
   CHECK(strongest.hitPoints == 18);
+}
+
+TEST_CASE("generated code: loadCreatures reads the full bestiary") {
+  const rpg_os::Json ruleset = loadRuleset("dnd5e_srd.json");
 
   // loadCreatures picks every bestiary entry (full SRD bestiary).
   const std::vector<DndCharacter> monsters = DndCharacter::loadCreatures(ruleset);
-  REQUIRE(monsters.size() == 317);
-  // The SRD bestiary is alphabetical: the first creature is the aboleth.
-  CHECK(monsters[0].maxHitPoints >= 20);
+  REQUIRE(monsters.size() == 330);
+  // The SRD bestiary is alphabetical: the first creature is the aboleth
+  // (20d10 + 40, so HP falls in [60, 240]).
+  CHECK(monsters[0].maxHitPoints >= 60);
   CHECK(monsters[0].maxHitPoints <= 240);
 }

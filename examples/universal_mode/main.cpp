@@ -68,12 +68,14 @@ void runDndExample(const std::string &root) {
     std::cerr << "failed to load dnd5e_srd.json: " << engine.lastError() << '\n';
     return;
   }
-  auto fighter = engine.createEntity("fighter_lvl1");
+  // The SRD ruleset stores text descriptions (classes/species/backgrounds/feats)
+  // rather than PC archetype blocks, so load a bestiary entry instead.
+  auto fighter = engine.createCreature("goblin_warrior");
   if (!fighter) {
-    std::cerr << "archetype 'fighter_lvl1' not found\n";
+    std::cerr << "creature 'goblin_warrior' not found\n";
     return;
   }
-  std::cout << "Fighter: STR " << engine.calculateStat(*fighter, "STR") << " (mod "
+  std::cout << "Goblin: STR " << engine.calculateStat(*fighter, "STR") << " (mod "
             << engine.calculateStat(*fighter, "STR_mod") << "), AC "
             << engine.calculateStat(*fighter, "AC") << ", HP " << fighter->resource("HP") << '\n';
 

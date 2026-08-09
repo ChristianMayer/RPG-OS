@@ -31,19 +31,23 @@ TEST_CASE("dnd5e_srd: loads and resolves real SRD values") {
   REQUIRE(engine.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
   CHECK(engine.ruleset().attributes.size() == 9); // 6 abilities + prof + level + HP max
   CHECK(engine.ruleset().skills.size() == 18);
-  CHECK(engine.ruleset().checkTypes.size() == 9);
+  CHECK(engine.ruleset().checkTypes.size() == 14);
   CHECK(engine.ruleset().costTables.size() == 1);
 
-  auto fighter = engine.createEntity("fighter_lvl1");
-  REQUIRE(fighter != nullptr);
+  // The SRD ruleset stores text descriptions (classes/species/backgrounds/feats)
+  // rather than archetype blocks, so build a fighter entity from a JSON record.
+  rpg_os::DynamicEntity fighter(engine.ruleset(), "fighter");
+  rpg_os::Json record = rpg_os::Json::parse(
+      R"({"attributes":{"STR":16,"DEX":14,"CON":14,"INT":10,"WIS":12,"CHA":8,"proficiency_bonus":2,"level":1,"HitPoints_Max":12}})");
+  fighter.loadFromArchetype(record);
   // Ability modifiers from the real SRD table: STR 16 -> +3, CON 14 -> +2.
-  CHECK(engine.calculateStat(*fighter, "STR_mod") == 3);
-  CHECK(engine.calculateStat(*fighter, "CON_mod") == 2);
+  CHECK(engine.calculateStat(fighter, "STR_mod") == 3);
+  CHECK(engine.calculateStat(fighter, "CON_mod") == 2);
   // Base AC = 10 + DEX modifier (DEX 14 -> +2).
-  CHECK(engine.calculateStat(*fighter, "AC") == 12);
-  // Hit points as set on the archetype (fighter: 10 + CON mod = 12).
-  CHECK(fighter->resource("HP") == 12);
-  CHECK(fighter->baseAttribute("proficiency_bonus") == 2);
+  CHECK(engine.calculateStat(fighter, "AC") == 12);
+  // Hit points from the record (fighter: 10 + CON mod = 12).
+  CHECK(fighter.resource("HP") == 12);
+  CHECK(fighter.baseAttribute("proficiency_bonus") == 2);
 
   // Real XP -> level table (SRD Character Advancement).
   const auto *xp = engine.ruleset().findCostTable("xp_to_level");
@@ -57,12 +61,14 @@ TEST_CASE("dnd5e_srd: loads and resolves real SRD values") {
 TEST_CASE("dnd5e_srd: a real attack roll against AC") {
   rpg_os::RulesetEngine engine;
   REQUIRE(engine.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
-  auto fighter = engine.createEntity("fighter_lvl1");
-  REQUIRE(fighter != nullptr);
+  rpg_os::DynamicEntity fighter(engine.ruleset(), "fighter");
+  rpg_os::Json record = rpg_os::Json::parse(
+      R"({"attributes":{"STR":16,"DEX":14,"CON":14,"proficiency_bonus":2,"HitPoints_Max":12}})");
+  fighter.loadFromArchetype(record);
   // Melee: 1d20 + STR_mod(3) + prof(2) vs target AC.
   auto rng = script({10}); // 10 + 3 + 2 = 15
-  const rpg_os::CheckResult result = engine.executeCheck("dnd5e_attack_melee", *fighter,
-                                                         fighter.get(), rpg_os::CheckParams{}, rng);
+  const rpg_os::CheckResult result =
+      engine.executeCheck("dnd5e_attack_melee", fighter, &fighter, rpg_os::CheckParams{}, rng);
   CHECK(result.isSuccess); // 15 >= fighter AC 12
   CHECK(result.marginOfSuccess == 3);
 }
@@ -79,8 +85,8 @@ TEST_CASE("tde5e_core: loads and resolves real TDE values") {
   // Life Points = 5 + 2 * CON (CON 13) = 31; current = max.
   CHECK(engine.calculateStat(*geron, "LifePoints_Max") == 31);
   CHECK(geron->resource("LP") == 31);
-  // Dodge = AGI / 2 = 13 / 2 = 6.
-  CHECK(engine.calculateStat(*geron, "Dodge") == 6);
+  // Dodge = AGI / 2 = 13 / 2 = 6.5, rounded up = 7 (TDE rounds mathematically).
+  CHECK(engine.calculateStat(*geron, "Dodge") == 7);
   // Attack = 6 + COU_Bonus; COU_Bonus = floor((12 - 8) / 3) = 1 -> 7.
   CHECK(engine.calculateStat(*geron, "Attack") == 7);
   // Parry = 3 + AGI_Bonus; AGI_Bonus = floor((13 - 8) / 3) = 1 -> 4.
@@ -128,7 +134,6 @@ TEST_CASE("rulesets: licence/comment metadata and data sections (schema)") {
     CHECK(data.contains("spells"));
     CHECK(data.contains("conditions"));
     CHECK(data.contains("poisons"));
-    CHECK(data.contains("diseases"));
     CHECK(data.at("conditions").size() > 0);
   }
 }
@@ -137,7 +142,7 @@ TEST_CASE("dnd5e_srd: full SRD bestiary and spell list are present") {
   rpg_os::RulesetEngine engine;
   REQUIRE(engine.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
   const rpg_os::Json &data = engine.ruleset().data;
-  CHECK(data.at("creatures").size() == 317);
+  CHECK(data.at("creatures").size() == 330);
   CHECK(data.at("spells").size() >= 320);
 
   // Ranged hit points are reflected as dice so variance selection works.

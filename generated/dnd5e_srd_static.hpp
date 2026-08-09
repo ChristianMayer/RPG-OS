@@ -102,6 +102,10 @@ public:
   [[nodiscard]] int32_t armorClass() const noexcept {
     return static_cast<int32_t>((10.0 + static_cast<double>(dexterityModifier())));
   } // AC: 10 + DEX_mod
+  [[nodiscard]] int32_t proficiencyBonusByLevel() const noexcept {
+    return static_cast<int32_t>(
+        (rpg_os::math::floor(((static_cast<double>(level) - 1.0) / 4.0)) + 2.0));
+  } // proficiency_bonus_by_level: floor((level - 1) / 4) + 2
 
   // ---- StatProvider (string -> member switch, no allocations) ----
   [[nodiscard]] int32_t getStat(std::string_view id) const noexcept {
@@ -173,6 +177,8 @@ public:
       return charismaModifier();
     if (id == "AC")
       return armorClass();
+    if (id == "proficiency_bonus_by_level")
+      return proficiencyBonusByLevel();
     return 0;
   }
 
@@ -241,11 +247,51 @@ public:
     return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
   }
 
+  /// Additive d20 check 'dnd5e_save_str'.
+  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult
+  dnd5eSaveStr(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
+    const std::array<std::string_view, 1> bonus{"STR_mod"};
+    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  }
+
+  /// Additive d20 check 'dnd5e_save_dex'.
+  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult
+  dnd5eSaveDex(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
+    const std::array<std::string_view, 1> bonus{"DEX_mod"};
+    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  }
+
   /// Additive d20 check 'dnd5e_save_con'.
   template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult
   dnd5eSaveCon(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
     const std::array<std::string_view, 1> bonus{"CON_mod"};
+    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  }
+
+  /// Additive d20 check 'dnd5e_save_int'.
+  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult
+  dnd5eSaveInt(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
+    const std::array<std::string_view, 1> bonus{"INT_mod"};
+    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  }
+
+  /// Additive d20 check 'dnd5e_save_wis'.
+  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult
+  dnd5eSaveWis(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
+    const std::array<std::string_view, 1> bonus{"WIS_mod"};
+    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  }
+
+  /// Additive d20 check 'dnd5e_save_cha'.
+  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult
+  dnd5eSaveCha(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
+    const std::array<std::string_view, 1> bonus{"CHA_mod"};
     return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
   }
 
