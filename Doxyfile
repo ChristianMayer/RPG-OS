@@ -24,8 +24,12 @@ DOXYFILE_ENCODING = UTF-8
 
 # --- Project ---------------------------------------------------------------
 PROJECT_NAME           = "RPG-OS"
-# Bump with each release so the docs show the version they describe.
-PROJECT_NUMBER         = "0.1.0"
+# Version shown in the docs header. The single source of truth is the root
+# VERSION file; its content is injected here via the RPG_OS_VERSION environment
+# variable by the local build (cmake/Doxygen.cmake) and by the CI deploy
+# workflow. Do not hardcode a version here — running plain `doxygen Doxyfile`
+# without RPG_OS_VERSION yields an empty number by design.
+PROJECT_NUMBER         = "$(RPG_OS_VERSION)"
 PROJECT_BRIEF          = "A header-only C++23 universal rule engine for tabletop role-playing games"
 # Square logo shown in the docs header (top-left). Scaled to the ~56 px title
 # row by the theme (#projectlogo img max-height). Branding assets live in
