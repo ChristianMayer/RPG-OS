@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
+# SPDX-License-Identifier: Apache-2.0
+
 cmake_minimum_required(VERSION 3.24)
 
 project(rpg_os
@@ -22,50 +25,84 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # --------------------------------------------------------------------------
 # Options
 # --------------------------------------------------------------------------
-option(RPGOS_BUILD_TESTS        "Build the test suite"             ON)
-option(RPGOS_ENABLE_SANITIZERS  "Build with ASan + UBSan"          OFF)
-option(RPGOS_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+option(RPG_OS_BUILD_TESTS        "Build the test suite"             ON)
+option(RPG_OS_BUILD_EXAMPLES     "Build the example programs"        ON)
+option(RPG_OS_ENABLE_SANITIZERS  "Build with ASan + UBSan"          OFF)
+option(RPG_OS_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+option(RPG_OS_RUN_CODEGEN        "Regenerate generated/*.hpp on build" OFF)
+option(RPG_OS_BUILD_DOCS         "Generate the Doxygen HTML documentation" ON)
 
 include(cmake/CompilerWarnings.cmake)
 include(cmake/Sanitizers.cmake)
+include(cmake/Doxygen.cmake)
 
 # --------------------------------------------------------------------------
-# Library target.
-# The public API lives in include/rpgos/, implementation in src/.
+# Library target — header-only.
 #
-# Placeholder: an INTERFACE target keeps the build valid while the library is
-# empty (no code yet). As soon as the first source file exists, replace it with
-#   add_library(rpgos STATIC src/....cpp)
-#   add_library(rpgos::rpgos ALIAS rpgos)
-# and the warning/sanitizer setup below is applied automatically.
+# rpg_os is an INTERFACE (header-only) target: all code lives under
+# include/rpg_os/. Do NOT convert it to STATIC — only tests and examples
+# compile executables.
+#
+# Vendored single-header dependencies (nlohmann/json, doctest) live in
+# include/rpg_os/third_party/ and are exposed as a SYSTEM include directory so
+# the library, generated code, and tests can include them without triggering
+# compiler warnings.
 # --------------------------------------------------------------------------
-add_library(rpgos INTERFACE)
-add_library(rpgos::rpgos ALIAS rpgos)
+add_library(rpg_os INTERFACE)
+add_library(rpg_os::rpg_os ALIAS rpg_os)
 
-target_compile_features(rpgos INTERFACE cxx_std_23)
-target_include_directories(rpgos INTERFACE
+target_compile_features(rpg_os INTERFACE cxx_std_23)
+target_include_directories(rpg_os INTERFACE
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/generated>
   $<INSTALL_INTERFACE:include>)
-
-get_target_property(_rpgos_type rpgos TYPE)
-if(NOT _rpgos_type STREQUAL "INTERFACE_LIBRARY")
-  set_project_warnings(rpgos)
-  enable_sanitizers(rpgos)
-endif()
-unset(_rpgos_type)
+target_include_directories(rpg_os SYSTEM INTERFACE
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/rpg_os/third_party>
+  $<INSTALL_INTERFACE:include/rpg_os/third_party>)
 
 # Packaging / install rules go here once the API is stable, e.g.:
 #   include(GNUInstallDirs)
-#   install(TARGETS rpgos EXPORT rpgosTargets
+#   install(TARGETS rpg_os EXPORT rpg_osTargets
 #     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 #     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 #     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 #   install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # --------------------------------------------------------------------------
+# Codegen
+#
+# Regenerates generated/*.hpp from the rulesets with codegen/rpg_os_codegen.py.
+# Run manually with `cmake --build build --target rpg_os_codegen`, or pass
+# -DRPG_OS_RUN_CODEGEN=ON to make it part of the default build. Generated
+# headers are committed; keep them in sync with the rulesets (CI verifies).
+# --------------------------------------------------------------------------
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_Interpreter_FOUND)
+  add_custom_target(rpg_os_codegen
+    COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/codegen/rpg_os_codegen.py
+            --ruleset ${PROJECT_SOURCE_DIR}/rulesets/dnd5e_srd.json
+            --out ${PROJECT_SOURCE_DIR}/generated
+    COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/codegen/rpg_os_codegen.py
+            --ruleset ${PROJECT_SOURCE_DIR}/rulesets/tde5e_core.json
+            --out ${PROJECT_SOURCE_DIR}/generated
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    COMMENT "Regenerating codegen outputs from the rulesets")
+  if(RPG_OS_RUN_CODEGEN)
+    add_custom_target(rpg_os_codegen_all ALL DEPENDS rpg_os_codegen)
+  endif()
+endif()
+
+# --------------------------------------------------------------------------
 # Tests
 # --------------------------------------------------------------------------
-if(RPGOS_BUILD_TESTS)
+if(RPG_OS_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
+endif()
+
+# --------------------------------------------------------------------------
+# Examples
+# --------------------------------------------------------------------------
+if(RPG_OS_BUILD_EXAMPLES)
+  add_subdirectory(examples)
 endif()

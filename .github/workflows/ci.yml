@@ -30,10 +30,47 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_C_COMPILER=${{ matrix.config.cc }}
           -DCMAKE_CXX_COMPILER=${{ matrix.config.cxx }}
-          -DRPGOS_WARNINGS_AS_ERRORS=ON
+          -DRPG_OS_WARNINGS_AS_ERRORS=ON
 
       - name: Build
         run: cmake --build build --parallel
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+  codegen-sync:
+    name: Codegen outputs in sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+
+      - name: Regenerate into a temp dir
+        run: >
+          python3 codegen/rpg_os_codegen.py --ruleset rulesets/dnd5e_srd.json --out /tmp/codegen
+          && python3 codegen/rpg_os_codegen.py --ruleset rulesets/tde5e_core.json --out /tmp/codegen
+
+      - name: Format regenerated output like the committed files
+        run: |
+          cp .clang-format /tmp/codegen/
+          clang-format -i /tmp/codegen/*.hpp
+
+      - name: Diff against committed generated/
+        run: |
+          cp /tmp/codegen/*.hpp generated/
+          git diff --exit-code generated/
+
+  ruleset-validation:
+    name: Rulesets conform to the JSON Schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install jsonschema
+        run: pip install jsonschema
+
+      - name: Validate rulesets against ruleset.schema.json
+        run: python3 codegen/validate_ruleset.py rulesets/dnd5e_srd.json rulesets/tde5e_core.json
+

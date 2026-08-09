@@ -1,0 +1,182 @@
+# ============================================================================
+# Doxyfile for RPG-OS
+#
+# Single source of truth for the API documentation. It is used by:
+#   - the local build via the CMake target `rpg_os_docs`
+#     (`cmake --build build --target rpg_os_docs`), which the
+#     "Build Documentation" VS Code task (.vscode/tasks.json) invokes, and
+#   - the CI deployment (.github/workflows/docs.yml), which calls the central
+#     reusable `doxygen-deploy` workflow with `doxyfile-path: Doxyfile`.
+#
+# IMPORTANT: Doxygen resolves relative paths relative to the CURRENT WORKING
+# DIRECTORY, not the Doxyfile location. All three consumers above run doxygen
+# from the REPOSITORY ROOT, so paths here are relative to the repository root.
+#
+# Output lands in ./html (OUTPUT_DIRECTORY = . + HTML_OUTPUT = html), a
+# gitignored directory in the source tree. CI copies it to the gh-pages branch
+# under versioned subfolders (/main/, /develop/, /v1.x.y/).
+#
+# Theme: Doxygen Awesome (docs/doxygen-awesome/), vendored with its MIT
+# licence — see docs/doxygen-awesome/README.md.
+# ============================================================================
+
+DOXYFILE_ENCODING = UTF-8
+
+# --- Project ---------------------------------------------------------------
+PROJECT_NAME           = "RPG-OS"
+# Bump with each release so the docs show the version they describe.
+PROJECT_NUMBER         = "0.1.0"
+PROJECT_BRIEF          = "A header-only C++23 universal rule engine for tabletop role-playing games"
+PROJECT_LOGO           =
+
+OUTPUT_DIRECTORY       = .
+CREATE_SUBDIRS         = NO
+ALLOW_UNICODE_NAMES    = YES
+OUTPUT_LANGUAGE        = English
+
+# --- Input ------------------------------------------------------------------
+# The engine headers, the examples, the test suite, the committed codegen
+# outputs, and the README (which becomes the front page). Vendored third-party
+# headers are excluded: they are documented by their own projects and would
+# only bloat the output.
+INPUT                  = include \
+                         examples \
+                         tests \
+                         generated \
+                         README.md \
+                         AGENTS.md
+INPUT_ENCODING         = UTF-8
+FILE_PATTERNS          = *.cpp *.cc *.hpp *.h *.md
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */third_party/*
+# An explicit path disambiguates the root README.md from the nested
+# examples/README.md (doxygen would otherwise treat both as main-page
+# candidates and warn).
+USE_MDFILE_AS_MAINPAGE = ./README.md
+EXAMPLE_PATH           = examples
+EXAMPLE_RECURSIVE      = YES
+
+# --- Extraction --------------------------------------------------------------
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_ANON_NSPACES   = NO
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+INTERNAL_DOCS          = NO
+SHOW_INCLUDE_FILES     = YES
+SHOW_GROUPED_MEMB_INC  = NO
+INLINE_INHERITED_MEMB  = NO
+FULL_PATH_NAMES        = NO
+STRIP_FROM_PATH        = .
+STRIP_FROM_INC_PATH    = include
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = NO
+SORT_BY_SCOPE_NAME     = NO
+GENERATE_TODOLIST      = NO
+GENERATE_TESTLIST      = NO
+GENERATE_BUGLIST       = NO
+GENERATE_DEPRECATEDLIST= YES
+SHOW_USED_FILES        = YES
+SHOW_FILES             = YES
+SHOW_NAMESPACES        = YES
+
+# --- Warnings ----------------------------------------------------------------
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO
+WARN_AS_ERROR          = NO
+WARN_FORMAT            = "$file:$line: $text"
+WARN_LOGFILE           =
+
+# --- Source browsing ----------------------------------------------------------
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = YES
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+REFERENCES_LINK_SOURCE = YES
+SOURCE_TOOLTIPS        = YES
+ALPHABETICAL_INDEX     = YES
+
+# --- HTML / Doxygen Awesome --------------------------------------------------
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+HTML_HEADER            = docs/doxygen-awesome/header.html
+HTML_FOOTER            =
+HTML_EXTRA_STYLESHEET  = docs/doxygen-awesome/doxygen-awesome.css \
+                         docs/doxygen-awesome/custom.css
+HTML_EXTRA_FILES       = docs/doxygen-awesome/doxygen-awesome-darkmode-toggle.js \
+                         docs/doxygen-awesome/doxygen-awesome-fragment-copy-button.js \
+                         docs/doxygen-awesome/doxygen-awesome-paragraph-link.js \
+                         docs/doxygen-awesome/doxygen-awesome-interactive-toc.js \
+                         docs/doxygen-awesome/doxygen-awesome-tabs.js
+# Light base colours so the dark-mode toggle (doxygen-awesome-darkmode-toggle.js)
+# has a well-defined light theme to flip from.
+HTML_COLORSTYLE        = LIGHT
+HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_GAMMA  = 80
+HTML_DYNAMIC_SECTIONS  = NO
+
+# Tree view on the left, index enabled — the layout Doxygen Awesome expects.
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+TREEVIEW_WIDTH         = 250
+ENUM_VALUES_PER_LINE   = 4
+
+# --- Diagrams (Graphviz) ------------------------------------------------------
+HAVE_DOT               = YES
+DOT_NUM_THREADS        = 0
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+GROUP_GRAPHS           = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+GRAPHICAL_HIERARCHY    = YES
+DIRECTORY_GRAPH        = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+DOT_GRAPH_MAX_NODES    = 50
+MAX_DOT_GRAPH_DEPTH    = 0
+GENERATE_LEGEND        = YES
+
+# --- Other output formats -----------------------------------------------------
+GENERATE_LATEX         = NO
+GENERATE_MAN           = NO
+GENERATE_RTF           = NO
+GENERATE_XML           = NO
+GENERATE_DOCBOOK       = NO
+
+# --- Search --------------------------------------------------------------------
+SEARCHENGINE           = YES
+SERVER_BASED_SEARCH    = NO
+
+# --- Macro handling -------------------------------------------------------------
+# The doctest test framework is written as macros; expanding them to nothing
+# keeps the test files parseable and lets Doxygen document the surrounding
+# structure without tripping over CHECK/REQUIRE statements.
+PREDEFINED             = "TEST_CASE(x)=" \
+                         "TEST_CASE_FIXTURE(c,x)=" \
+                         "SUBCASE(x)=" \
+                         "SECTION(x)=" \
+                         "CHECK(x)=" \
+                         "CHECK_FALSE(x)=" \
+                         "REQUIRE(x)=" \
+                         "REQUIRE_FALSE(x)=" \
+                         "CHECK_THROWS(x)=" \
+                         "CHECK_THROWS_AS(x,t)=" \
+                         "CHECK_NOTHROW(x)=" \
+                         "CHECK_EQ(a,b)=" \
+                         "CHECK_NE(a,b)=" \
+                         "CHECK_UNARY(x)=" \
+                         "CHECK_UNARY_FALSE(x)=" \
+                         "MESSAGE(x)=" \
+                         "INFO(x)=" \
+                         "CAPTURE(x)="
+SKIP_FUNCTION_MACROS   = YES

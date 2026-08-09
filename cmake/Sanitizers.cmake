@@ -1,13 +1,16 @@
+# Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
+# SPDX-License-Identifier: Apache-2.0
+
 # AddressSanitizer + UndefinedBehaviourSanitizer.
 #
 # Usage (in CMakeLists.txt):
 #   enable_sanitizers(<target>)
 #
-# No-op unless the project option RPGOS_ENABLE_SANITIZERS is ON:
-#   cmake -B build -DRPGOS_ENABLE_SANITIZERS=ON
+# No-op unless the project option RPG_OS_ENABLE_SANITIZERS is ON:
+#   cmake -B build -DRPG_OS_ENABLE_SANITIZERS=ON
 
 function(enable_sanitizers target)
-  if(NOT RPGOS_ENABLE_SANITIZERS)
+  if(NOT RPG_OS_ENABLE_SANITIZERS)
     return()
   endif()
   if(NOT TARGET ${target})
