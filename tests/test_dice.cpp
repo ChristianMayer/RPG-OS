@@ -109,3 +109,27 @@ TEST_CASE("DefaultRandom: deterministic for a fixed seed") {
     CHECK(a(1, 6) == b(1, 6));
   }
 }
+
+TEST_CASE("DefaultRandom: unseeded instances draw from real entropy") {
+  // Two independent default-seeded engines must not share a stream: with a
+  // genuinely random seed a 32-bit collision is essentially impossible, so a
+  // difference within a few draws is the expected (and stable) outcome.
+  rpg_os::DefaultRandom a;
+  rpg_os::DefaultRandom b;
+  bool anyDifference = false;
+  for (int i = 0; i < 16; ++i) {
+    if (a(1, 1000) != b(1, 1000)) {
+      anyDifference = true;
+      break;
+    }
+  }
+  CHECK(anyDifference);
+}
+
+TEST_CASE("randomSeed: yields varied values") {
+  const uint32_t first = rpg_os::randomSeed();
+  const uint32_t second = rpg_os::randomSeed();
+  const uint32_t third = rpg_os::randomSeed();
+  const bool varied = (first != second) || (first != third) || (second != third);
+  CHECK(varied);
+}

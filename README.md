@@ -150,11 +150,45 @@ backs both the universal engine and the generated code.
 │   └── third_party/           # vendored headers (nlohmann/json, doctest)
 ├── src/                       # reserved (library is header-only)
 ├── codegen/                   # rpg_os_codegen.py + validate_ruleset.py
+├── scripts/                   # elo_ranking.py (Monte Carlo ELO tournament)
 ├── rulesets/                  # dnd5e_srd.json, tde5e_core.json, ruleset.schema.json
 ├── generated/                 # committed codegen outputs
 ├── tests/                     # doctest suite
 └── examples/                  # demo programs
 ```
+
+## Combat simulation & Monte Carlo ELO ranking
+
+`include/rpg_os/universal/combat.hpp` runs a fight between two archetypes or
+bestiary entries "to the end" (attack-vs-defence check, event-driven damage
+pipeline with armour absorption), creating fresh entities per fight so ranged
+values are re-rolled every time. It is demonstrated by the `fight` example:
+
+```sh
+cmake --build build --target rpg_os_example_fight
+./build/bin/rpg_os_example_fight .              # default pair (Geron vs Gotongi)
+./build/bin/rpg_os_example_fight . irrhalk dog  # pick two combatants by id
+./build/bin/rpg_os_example_fight . --list       # all combatants in the ruleset
+```
+
+`scripts/elo_ranking.py` ranks every combatant with a Monte Carlo ELO
+tournament. It runs a **Swiss** pairing (each combatant plays one similar-rated
+opponent per round) instead of a full round-robin, so it needs only
+`O(rounds · n)` fights rather than `O(n²)` — and the individual fights execute
+in `--jobs` parallel processes:
+
+```sh
+python3 scripts/elo_ranking.py --jobs 8 --rounds 40 --games 10
+```
+
+Every random consumer follows the same rule: **explicitly seeded = exactly
+reproducible, unseeded = genuinely random.** `rpg_os::randomSeed()` gathers OS
+entropy (the random device mixed with clock, process id and ASLR stack
+address), and a default-constructed `rpg_os::DefaultRandom` seeds its
+`std::mt19937` from that entropy with a full `std::seed_seq` — so `--seed N`
+replays a fight or ranking exactly, while omitting `--seed` gives a different
+result on every run (the ELO script prints the seed it used so a run can be
+reproduced by re-passing it).
 
 ## Code style & workflow
 

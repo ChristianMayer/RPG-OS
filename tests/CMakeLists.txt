@@ -25,6 +25,7 @@ add_executable(rpg_os_tests
   test_engine.cpp
   test_rulesets.cpp
   test_variance.cpp
+  test_combat.cpp
   test_codegen_output.cpp
 )
 

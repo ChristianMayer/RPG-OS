@@ -9,6 +9,8 @@
 // by the universal engine and the generated specific-mode code.
 #pragma once
 
+#include <array>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <random>
@@ -17,13 +19,84 @@
 #include <string_view>
 #include <vector>
 
+#if defined(_WIN32)
+#include <process.h>
+#elif defined(__unix__) || defined(__APPLE__)
+#include <unistd.h>
+#endif
+
 namespace rpg_os {
 
-/// Default RNG: a seeded std::mt19937 wrapped in a uniform [min, max]
-/// distribution. Satisfies the RandomNumberGenerator concept.
+namespace detail {
+
+/// The process id, used as one entropy source (0 when unavailable).
+[[nodiscard]] inline uint32_t processId() noexcept {
+#if defined(_WIN32)
+  return static_cast<uint32_t>(_getpid());
+#elif defined(__unix__) || defined(__APPLE__)
+  return static_cast<uint32_t>(getpid());
+#else
+  return 0u;
+#endif
+}
+
+/// Collects 8 entropy words from the OS random device (when available), mixed
+/// with the high-resolution clock, the process id and an ASLR-random stack
+/// address. Stays genuinely random even where `std::random_device` is weak or
+/// deterministic (e.g. some MinGW builds).
+[[nodiscard]] inline std::array<uint32_t, 8> entropyWords() noexcept {
+  std::array<uint32_t, 8> words{};
+  try {
+    std::random_device rd;
+    for (std::size_t i = 0; i < words.size(); ++i) {
+      words[i] = rd();
+    }
+  } catch (...) {
+    // No OS entropy source available: the other sources mixed in below still
+    // provide enough variety between processes / runs.
+  }
+  const std::uint64_t now = static_cast<std::uint64_t>(
+      std::chrono::high_resolution_clock::now().time_since_epoch().count());
+  const std::uintptr_t stack = reinterpret_cast<std::uintptr_t>(&now);
+  words[0] ^= static_cast<uint32_t>(now);
+  words[1] ^= static_cast<uint32_t>(now >> 32);
+  words[2] ^= static_cast<uint32_t>(stack);
+  words[3] ^= processId();
+  return words;
+}
+
+} // namespace detail
+
+/// Returns a 32-bit seed gathered from genuine entropy: the OS random device
+/// (when available) mixed with the high-resolution clock, the process id and
+/// an ASLR-random stack address. Use it whenever a "really random" seed is
+/// needed; explicit seeds passed to `DefaultRandom` keep runs reproducible.
+[[nodiscard]] inline uint32_t randomSeed() noexcept {
+  const std::array<uint32_t, 8> words = detail::entropyWords();
+  uint32_t result = 0;
+  for (const uint32_t word : words) {
+    result ^= word;
+  }
+  return result;
+}
+
+/// Default RNG: a std::mt19937 wrapped in a uniform [min, max] distribution.
+/// Satisfies the RandomNumberGenerator concept.
+///
+/// Default-constructed instances are seeded from genuine OS entropy, so
+/// unseeded runs differ every time. Constructing with an explicit seed is
+/// deterministic and reproducible (tests, Monte Carlo simulations).
 class DefaultRandom {
 public:
-  explicit DefaultRandom(uint32_t seed = std::random_device{}()) : m_engine(seed) {}
+  /// Truly random: seeds the engine from OS entropy (see `randomSeed`).
+  DefaultRandom() {
+    const std::array<uint32_t, 8> words = detail::entropyWords();
+    std::seed_seq seq(words.begin(), words.end());
+    m_engine.seed(seq);
+  }
+
+  /// Deterministic and reproducible for a fixed `seed`.
+  explicit DefaultRandom(uint32_t seed) : m_engine(seed) {}
 
   /// Returns a uniform integer in [min, max] (inclusive).
   int operator()(int min, int max) {

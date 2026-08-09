@@ -15,3 +15,8 @@ add_executable(rpg_os_example_specific specific_mode/main.cpp)
 target_link_libraries(rpg_os_example_specific PRIVATE rpg_os::rpg_os)
 set_project_warnings(rpg_os_example_specific)
 enable_sanitizers(rpg_os_example_specific)
+
+add_executable(rpg_os_example_fight fight/main.cpp)
+target_link_libraries(rpg_os_example_fight PRIVATE rpg_os::rpg_os)
+set_project_warnings(rpg_os_example_fight)
+enable_sanitizers(rpg_os_example_fight)
