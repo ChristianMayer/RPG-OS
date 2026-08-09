@@ -161,8 +161,12 @@ TEST_CASE("Engine: executeSkillCheck uses the skill's own linked attributes") {
       engine.executeSkillCheck("climbing", *geron, CheckParams{}, rng);
   CHECK(result.isSuccess);
   CHECK(result.remainingPool == 5);
-  CHECK_THROWS_AS(engine.executeSkillCheck("no_such_skill", *geron, CheckParams{}, rng),
-                  std::invalid_argument);
+  // executeSkillCheck is [[nodiscard]]; the explicit void cast is required so
+  // doctest's CHECK_THROWS_AS (which discards the expression) does not trip
+  // -Wunused-result under clang -Werror.
+  CHECK_THROWS_AS(
+      static_cast<void>(engine.executeSkillCheck("no_such_skill", *geron, CheckParams{}, rng)),
+      std::invalid_argument);
 }
 
 TEST_CASE("Engine: executeCheck on unknown type throws") {
@@ -170,8 +174,9 @@ TEST_CASE("Engine: executeCheck on unknown type throws") {
   auto geron = engine.createEntity("geron");
   REQUIRE(geron != nullptr);
   auto rng = script({5});
-  CHECK_THROWS_AS(engine.executeCheck("no_such_check", *geron, nullptr, CheckParams{}, rng),
-                  std::invalid_argument);
+  CHECK_THROWS_AS(
+      static_cast<void>(engine.executeCheck("no_such_check", *geron, nullptr, CheckParams{}, rng)),
+      std::invalid_argument);
 }
 
 TEST_CASE("Engine: applyDamage runs armor absorption and wound triggers") {
