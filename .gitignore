@@ -3,6 +3,7 @@
 /build-*/
 /out/
 /cmake-build-*/
+codegen/__pycache__
 
 # ---- Tooling ----
 compile_commands.json

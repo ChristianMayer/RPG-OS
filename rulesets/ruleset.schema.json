@@ -1,0 +1,300 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://rpg-os.invalid/schemas/ruleset.schema.json",
+  "title": "RPG-OS Ruleset",
+  "description": "Schema for a RPG-OS ruleset file. The ruleset defines the schema (rules) of one game system; the engine resolves them in universal (dynamic) mode or via generated (specific) code. Every ruleset must state its licence and may carry an optional comment. Numeric data values may be expressed as a plain integer, a dice expression string (e.g. \"2d6+1\"), or a range object {\"min\": ..., \"max\": ...}; the engine picks such values per a requested variance (weakest / weak / average / strong / strongest / random).",
+  "type": "object",
+  "required": ["schema_version", "ruleset_id", "licence", "attributes"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Version of this schema. Currently always 1."
+    },
+    "ruleset_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9_]+$",
+      "description": "Machine identifier of the ruleset (e.g. 'dnd5e_srd')."
+    },
+    "ruleset_name": { "type": "string", "description": "Human-readable ruleset name." },
+    "source": { "type": "string", "description": "Source document the rules were transcribed from." },
+    "licence": {
+      "type": "string",
+      "minLength": 1,
+      "description": "REQUIRED. Licence governing the ruleset content (e.g. 'CC-BY-4.0'), or a statement for proprietary sources."
+    },
+    "comment": { "type": "string", "description": "Optional free-form note by the ruleset author." },
+    "namespace": {
+      "type": "string",
+      "default": "rpg_os::generated::<ruleset_id>",
+      "description": "C++ namespace the code generator emits into."
+    },
+
+    "attributes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "description": "Short uppercase code, e.g. 'STR', 'COU'." },
+          "name": { "type": "string", "description": "Human name used to derive C++ identifiers." },
+          "min": { "type": "integer" },
+          "max": { "type": "integer" },
+          "default": { "type": "integer" }
+        }
+      }
+    },
+
+    "derived_stats": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "formula"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string" },
+          "formula": {
+            "type": "string",
+            "description": "Restricted grammar: arithmetic (+ - * / % ^), comparisons, && || !, min/max/floor/ceil/round/clamp, and identifiers (attribute ids, actor.*, target.*, env.*, parameters). Must be translatable to C++ by the code generator."
+          }
+        }
+      }
+    },
+
+    "resource_pools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "max_stat", "min"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string" },
+          "max_stat": { "type": "string", "description": "Stat id whose value forms the pool's maximum." },
+          "min": { "type": "integer" }
+        }
+      }
+    },
+
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "attributes"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string" },
+          "attributes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+          "default": { "type": "integer" }
+        }
+      }
+    },
+
+    "check_types": {
+      "type": "object",
+      "description": "Named check configs keyed by check type id.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["additive_d20", "roll_under_d20", "triple_roll_under_pool", "attack_vs_defense"]
+          },
+          "dice_expression": { "type": "string", "description": "e.g. '1d20'." },
+          "bonus_stats": { "type": "array", "items": { "type": "string" } },
+          "target_stat": { "type": "string" },
+          "attributes": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "pool_stat": { "type": "string" },
+          "use_confirmation_roll": { "type": "boolean" },
+          "attack_stat": { "type": "string" },
+          "parry_stat": { "type": "string" }
+        }
+      }
+    },
+
+    "cost_tables": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": { "type": "string", "enum": ["threshold", "multiplier"] },
+          "base_factor": { "type": "number" },
+          "thresholds": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["key", "value"],
+              "properties": { "key": { "type": "number" }, "value": { "type": "number" } }
+            }
+          }
+        }
+      }
+    },
+
+    "equipment_slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": { "id": { "type": "string" }, "name": { "type": "string" } }
+      }
+    },
+
+    "event_triggers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "trigger", "actions"],
+        "properties": {
+          "id": { "type": "string" },
+          "trigger": {
+            "type": "string",
+            "enum": ["on_before_check_roll", "on_after_check_roll", "on_damage_calculated", "on_damage_taken", "on_turn_start", "on_turn_end"]
+          },
+          "condition": { "type": "string", "description": "Optional formula; empty = always." },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["type"],
+              "properties": {
+                "type": { "type": "string", "enum": ["modify_event_damage", "consume_resource", "apply_condition"] },
+                "amount": { "$ref": "#/definitions/variantValue" },
+                "resource": { "type": "string" },
+                "condition": { "type": "string" },
+                "stacks": { "oneOf": [{ "type": "integer" }, { "type": "string" }], "description": "Stack count, or a formula string evaluated at runtime." },
+                "formula": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "data": {
+      "type": "object",
+      "description": "The data database: archetypes, items, creatures, spells, conditions, poisons, diseases. All numeric values may be ranges.",
+      "properties": {
+        "archetypes": { "type": "array", "items": { "$ref": "#/definitions/creatureRecord" } },
+        "items": { "type": "array", "items": { "$ref": "#/definitions/creatureRecord" } },
+        "creatures": { "type": "array", "items": { "$ref": "#/definitions/creatureRecord" } },
+        "spells": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "level": { "$ref": "#/definitions/variantValue" },
+              "school": { "type": "string" },
+              "casting_time": { "type": "string" },
+              "range": { "type": "string" },
+              "duration": { "type": "string" },
+              "components": { "type": "string" },
+              "damage": { "$ref": "#/definitions/variantValue" },
+              "damage_type": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "poisons": { "type": "array", "items": { "$ref": "#/definitions/afflictionRecord" } },
+        "diseases": { "type": "array", "items": { "$ref": "#/definitions/afflictionRecord" } }
+      }
+    }
+  },
+
+  "definitions": {
+    "variantValue": {
+      "description": "A numeric value that may be a plain integer, a dice expression string, or an explicit range object.",
+      "oneOf": [
+        { "type": "integer" },
+        { "type": "string", "pattern": "^[+-]?([0-9]+d[0-9]+|[0-9]+)([+-][0-9]+d[0-9]+|[+-][0-9]+)*$" },
+        {
+          "type": "object",
+          "required": ["min", "max"],
+          "additionalProperties": false,
+          "properties": { "min": { "type": "integer" }, "max": { "type": "integer" } }
+        }
+      ]
+    },
+    "creatureRecord": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "size": { "type": "string" },
+        "type": { "type": "string" },
+        "ac": { "$ref": "#/definitions/variantValue" },
+        "speed": { "type": "string" },
+        "attributes": { "type": "object", "additionalProperties": { "$ref": "#/definitions/variantValue" } },
+        "skills": { "type": "object", "additionalProperties": { "$ref": "#/definitions/variantValue" } },
+        "resources": { "type": "object", "additionalProperties": { "$ref": "#/definitions/variantValue" } },
+        "conditions": { "type": "object", "additionalProperties": { "type": "integer" } },
+        "attacks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "to_hit": { "$ref": "#/definitions/variantValue" },
+              "damage": { "$ref": "#/definitions/variantValue" },
+              "damage_type": { "type": "string" }
+            }
+          }
+        },
+        "traits": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "afflictionRecord": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "price": { "oneOf": [{ "type": "string" }, { "type": "number" }], "description": "Cost of a single dose, e.g. '150 GP'." },
+        "onset": { "type": "string" },
+        "save": { "type": "string" },
+        "duration": { "type": "string" },
+        "effects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "stat": { "type": "string" },
+              "amount": { "$ref": "#/definitions/variantValue" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "description": { "type": "string" }
+      }
+    }
+  }
+}

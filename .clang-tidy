@@ -1,6 +1,6 @@
 ---
 # clang-tidy configuration.
-# Enforces modern, safe C++23 for the rpgos library.
+# Enforces modern, safe C++23 for the rpg_os library.
 # Run via clangd (VS Code) or: clang-tidy <file> -p build/
 
 Checks: >-

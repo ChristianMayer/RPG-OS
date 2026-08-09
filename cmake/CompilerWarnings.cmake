@@ -1,16 +1,19 @@
+# Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
+# SPDX-License-Identifier: Apache-2.0
+
 # Compiler warning setup.
 #
 # Usage (in CMakeLists.txt):
 #   set_project_warnings(<target>)
 #
-# Honors the project option RPGOS_WARNINGS_AS_ERRORS.
+# Honors the project option RPG_OS_WARNINGS_AS_ERRORS.
 
 function(set_project_warnings target)
   if(NOT TARGET ${target})
     message(FATAL_ERROR "set_project_warnings: unknown target '${target}'")
   endif()
 
-  if(RPGOS_WARNINGS_AS_ERRORS)
+  if(RPG_OS_WARNINGS_AS_ERRORS)
     if(MSVC)
       target_compile_options(${target} PRIVATE /WX)
     else()
