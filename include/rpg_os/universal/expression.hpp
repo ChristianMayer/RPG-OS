@@ -21,7 +21,7 @@
  * that translation possible and safe. It also keeps rulesets predictable:
  * no loops, no side effects, no arbitrary function calls in a stat formula.
  *
- * Grammar (see AGENTS.md "Ruleset JSON conventions"):
+ * Grammar (see @c rulesets/ruleset.schema.json for the ruleset format):
  *   numbers, identifiers (dotted allowed), + - * / % ^, comparisons, && || !,
  *   functions min max floor ceil round clamp, parentheses, commas.
  */

@@ -15,6 +15,8 @@ the engine resolves them in two modes that share one template-based core.
   The generated code still loads the JSON at runtime for the data database
   (creatures, items, archetypes).
 
+![RPG-OS — a header-only C++23 universal rule engine for tabletop RPGs](docs/assets/mundus-mirabilis-RPG_OS.png)
+
 Full example rulesets are provided for **D&D 5th Edition (SRD 5.2.1)** and
 **The Dark Eye 5th Edition** in `rulesets/`. Their `data` sections are
 complete transcriptions of the source documents: the D&D SRD ships the full
@@ -47,12 +49,19 @@ Requires CMake ≥ 3.24 and a C++23-capable compiler (GCC ≥ 13 or Clang ≥ 17
 
 ## Documentation
 
-The **API reference is published at <https://Mundus-Mirabilis.github.io/RPG-OS/>**
-— rendered with [Doxygen](https://www.doxygen.nl/) and the
-[Doxygen Awesome](https://github.com/jothepro/doxygen-awesome-css) theme
-(vendored under `docs/doxygen-awesome/`). Versioned builds are deployed to
-GitHub Pages under `/main/`, `/develop/`, and `/vX.Y.Z/` (release tags) by the
-`docs` CI workflow.
+The **API reference** is rendered with [Doxygen](https://www.doxygen.nl/) and
+the [Doxygen Awesome](https://github.com/jothepro/doxygen-awesome-css) theme
+(vendored under `docs/doxygen-awesome/`). It is published on GitHub Pages for
+both lines of development:
+
+| URL | Content |
+| --- | --- |
+| <https://mundus-mirabilis.github.io/RPG-OS/develop/> | **Current development** — the docs for the `develop` branch |
+| <https://mundus-mirabilis.github.io/RPG-OS/main/> | **Latest release** — the docs for the `main` branch |
+
+Release tags are additionally deployed under `/vX.Y.Z/`. Every build is
+rendered from the same `Doxyfile` in this repository, so the local and the
+published documentation are identical.
 
 Documentation generation is part of the build (`RPG_OS_BUILD_DOCS=ON` by
 default) and can also be triggered from VS Code via the
@@ -65,11 +74,7 @@ cmake --build build --target rpg_os_docs   # HTML -> ./html (gitignored)
 The generated pages live in `html/` at the repository root — a gitignored
 directory in the source tree, never committed. The Doxygen configuration is
 the single `Doxyfile` at the repository root, used identically by the local
-build and CI.
-
-Every public header, example, and test file carries Doxygen comments that
-explain not just *what* a class or function does but *why* it is designed that
-way. See `docs/README.md` for the full setup.
+build and CI. See `docs/README.md` for the full setup.
 
 Regenerating the codegen outputs:
 
@@ -218,20 +223,3 @@ address), and a default-constructed `rpg_os::DefaultRandom` seeds its
 replays a fight or ranking exactly, while omitting `--seed` gives a different
 result on every run (the ELO script prints the seed it used so a run can be
 reproduced by re-passing it).
-
-## Code style & workflow
-
-Modern C++ (C++23), formatted with the project's `.clang-format`:
-
-- indentation (shift width): **2 spaces**
-- tab width: **8** columns
-- **spaces only** — tab characters are never used
-- 100 column limit
-- clang-tidy checks (`.clang-tidy`) enforce modern, safe C++
-
-Development is **test-driven**: write a failing test first, implement, refactor.
-Run the formatter with `clang-format -i <file>` (or via clangd in VS Code).
-
-LLM agents and contributors must follow [`AGENTS.md`](AGENTS.md) — it holds the
-full style, workflow, and coding rules for this repository.
-
