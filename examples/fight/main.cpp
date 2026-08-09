@@ -1,17 +1,27 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Fight-to-the-end demo (universal mode).
-//
-// Picks two combatants from the ruleset — archetypes or bestiary entries — and
-// simulates a fight until one of them drops to 0 hit points, then announces
-// the winner. Combatants can be named on the command line, or omitted to fall
-// back to a default pair (Geron the Mercenary vs. a Gotongi).
-//
-// The --csv mode prints one tab-separated line per fight, which is what the
-// Monte Carlo ELO ranking (scripts/elo_ranking.py) consumes.
-//
-// Usage: rpg_os_example_fight [options] [combatant_a] [combatant_b]
+/**
+ * @file main.cpp
+ * @brief Fight-to-the-end demo (universal mode).
+ *
+ * Picks two combatants from the ruleset — archetypes or bestiary entries — and
+ * simulates a fight until one of them drops to 0 hit points, then announces
+ * the winner. Combatants can be named on the command line, or omitted to fall
+ * back to a default pair (Geron the Mercenary vs. a Gotongi).
+ *
+ * The @c --csv mode prints one tab-separated line per fight, which is what the
+ * Monte Carlo ELO ranking (@c scripts/elo_ranking.py) consumes — this demo
+ * is the executable engine behind that script.
+ *
+ * @par Why a seedable demo?
+ * The library's randomness contract — "explicitly seeded = exactly
+ * reproducible, unseeded = genuinely random" — is demonstrated here: @c --seed
+ * replays a fight bit-for-bit, while omitting it draws fresh OS entropy each
+ * run (see @c rpg_os::DefaultRandom).
+ *
+ * Usage: @c rpg_os_example_fight [options] [combatant_a] [combatant_b]
+ */
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
@@ -26,6 +36,9 @@
 
 namespace {
 
+/// All command-line configuration for one run. Kept in one struct so the
+/// parser, the help text, and @c main all agree on the option set without
+/// passing a dozen parameters around.
 struct Options {
   std::string root{"."};
   std::string ruleset; // empty -> derived from root
@@ -39,6 +52,8 @@ struct Options {
   std::string weapon{"1d6+4"};
 };
 
+/// Prints usage text. Kept as a separate function (rather than inline in
+/// main) because both the @c --help flag and the error paths use it.
 void printHelp(std::ostream &os) {
   os << "Usage: rpg_os_example_fight [options] [combatant_a] [combatant_b]\n"
      << "\n"
@@ -58,6 +73,9 @@ void printHelp(std::ostream &os) {
      << "  --csv           one tab-separated line per fight (for scripts)\n";
 }
 
+/// Parses the command line into `opts`. Returns false (with a message in
+/// `error`) on an unknown option or a missing value, so @c main can print the
+/// error and the help text uniformly.
 bool parseArgs(int argc, char **argv, Options &opts, std::string &error) {
   for (int i = 1; i < argc; ++i) {
     const std::string arg(argv[i]);
@@ -122,6 +140,9 @@ bool parseArgs(int argc, char **argv, Options &opts, std::string &error) {
   return true;
 }
 
+/// Prints every combatant id + name the ruleset knows (both archetypes and
+/// bestiary entries), for the @c --list mode — the inventory a user consults
+/// before picking two ids to fight.
 void printCombatantList(const rpg_os::RulesetEngine &engine) {
   const rpg_os::Json &data = engine.ruleset().data;
   if (data.contains("archetypes")) {
@@ -136,6 +157,8 @@ void printCombatantList(const rpg_os::RulesetEngine &engine) {
   }
 }
 
+/// Prints a human-readable stat block for both combatants before a fight, so
+/// the reader sees exactly which values the simulation is about to use.
 void printCombatants(std::ostream &os, const rpg_os::CombatantSpec &a,
                      const rpg_os::CombatantSpec &b) {
   os << "A: " << a.name << " (Attack " << a.attackValue << ", Defence " << a.defenseValue
@@ -144,6 +167,11 @@ void printCombatants(std::ostream &os, const rpg_os::CombatantSpec &a,
      << ", Armour " << b.armorRating << ", \"" << b.damageExpression << "\")\n\n";
 }
 
+/// Prints one machine-readable line per fight in @c --csv mode: winner, loser,
+/// and the winner's/loser's remaining hit points (normalised so the winner
+/// always comes first) plus the round count. This exact shape is what
+/// @ref scripts/elo_ranking.py parses, so it is the stable data contract
+/// between the demo and the ranking script.
 void printCsvLine(std::ostream &os, const rpg_os::CombatantSpec &a, const rpg_os::CombatantSpec &b,
                   const rpg_os::FightOutcome &outcome) {
   if (outcome.winnerIndex == 0) {
@@ -158,6 +186,8 @@ void printCsvLine(std::ostream &os, const rpg_os::CombatantSpec &a, const rpg_os
   }
 }
 
+/// Prints a prose one-line summary of a fight for interactive use (the default
+/// non-CSV mode). Pluralisation of "round(s)" keeps the output grammatical.
 void printHumanLine(std::ostream &os, const rpg_os::CombatantSpec &a,
                     const rpg_os::CombatantSpec &b, const rpg_os::FightOutcome &outcome) {
   const char *plural = outcome.rounds == 1 ? "" : "s";

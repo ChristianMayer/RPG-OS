@@ -1,0 +1,37 @@
+name: Build Documentation
+
+# Builds the Doxygen docs (Doxygen Awesome theme) and publishes them to the
+# `gh-pages` branch under versioned subfolders via the central reusable
+# workflow: /main/, /develop/, and /vX.Y.Z/ for release tags. This keeps all
+# published versions side-by-side on GitHub Pages.
+#
+# One-time repository settings (see docs/README.md):
+#   - Settings -> Actions -> General -> Workflow permissions: Read and write
+#   - Settings -> Pages -> Source: "Deploy from a branch" -> gh-pages / (root)
+#
+# Fork PRs build the docs (as a smoke check) but deployment is skipped by the
+# central workflow.
+#
+# `enable-awesome-css` is false because this repository vendors the Doxygen
+# Awesome theme (docs/doxygen-awesome/) and the committed Doxyfile references
+# it — so CI output is byte-identical to the local build and nothing is
+# re-downloaded.
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write # needed to push the gh-pages branch
+
+jobs:
+  deploy-docs:
+    # NOTE: requires the central workflow to live at
+    # `.github/workflows/doxygen-deploy.yml` inside the
+    # Mundus-Mirabilis/.github repository.
+    uses: Mundus-Mirabilis/.github/.github/workflows/doxygen-deploy.yml@main
+    with:
+      doxyfile-path: 'Doxyfile'
+      output-dir: 'html'
+      enable-awesome-css: false

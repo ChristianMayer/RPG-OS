@@ -30,9 +30,11 @@ option(RPG_OS_BUILD_EXAMPLES     "Build the example programs"        ON)
 option(RPG_OS_ENABLE_SANITIZERS  "Build with ASan + UBSan"          OFF)
 option(RPG_OS_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 option(RPG_OS_RUN_CODEGEN        "Regenerate generated/*.hpp on build" OFF)
+option(RPG_OS_BUILD_DOCS         "Generate the Doxygen HTML documentation" ON)
 
 include(cmake/CompilerWarnings.cmake)
 include(cmake/Sanitizers.cmake)
+include(cmake/Doxygen.cmake)
 
 # --------------------------------------------------------------------------
 # Library target — header-only.

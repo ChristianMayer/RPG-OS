@@ -1,7 +1,15 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Tests for the universal AST formula evaluator (rpg_os::Expression).
+/**
+ * @file test_expression.cpp
+ * @brief Tests for the universal AST formula evaluator (@c rpg_os::Expression).
+ *
+ * Covers parsing (precedence, associativity, parens), evaluation against a
+ * scripted context, the full function set, and the error paths (unresolved
+ * identifiers, division by zero, malformed input). These tests pin the
+ * restricted grammar that the code generator must also translate to C++.
+ */
 #include <doctest/doctest.h>
 #include <rpg_os/universal/expression.hpp>
 #include <stdexcept>

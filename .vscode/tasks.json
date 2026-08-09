@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Documentation",
+      "type": "shell",
+      "command": "cmake -S . -B build && cmake --build build --target rpg_os_docs",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": "build",
+      "detail": "Render the Doxygen + Doxygen Awesome HTML docs into ./html (gitignored). Runs the rpg_os_docs CMake target so any IDE or terminal can use the same command."
+    }
+  ]
+}

@@ -1,8 +1,16 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Tests that load the real shipped rulesets (rulesets/*.json) and validate
-// them against the source documents they encode.
+/**
+ * @file test_rulesets.cpp
+ * @brief Tests that load the real shipped rulesets (the @c rulesets/ JSON files).
+ *
+ * Validates the committed data against the source documents they encode and
+ * asserts exact counts (creatures, spells, conditions, poisons, diseases) so
+ * a botched extraction that silently drops entries is caught. Because these
+ * tests read the actual rulesets, they also serve as the living acceptance
+ * check that the schema and the data stay in sync.
+ */
 #include "test_util.hpp"
 
 #include <algorithm>

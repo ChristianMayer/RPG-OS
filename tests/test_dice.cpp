@@ -1,7 +1,17 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Tests for the shared dice engine (rpg_os::DiceExpression, rpg_os::DefaultRandom).
+/**
+ * @file test_dice.cpp
+ * @brief Tests for the shared dice engine (@c rpg_os::DiceExpression,
+ * @c rpg_os::DefaultRandom).
+ *
+ * Pins expression parsing (groups, constants, signs, bare d20), rolling via
+ * scripted RNGs, the malformed-input error contract, and the RNG seeding
+ * contract: a fixed seed is deterministic, while unseeded instances draw from
+ * genuine entropy. These tests are the reason scripted-RNG usage stays exact
+ * in the rest of the suite.
+ */
 #include "test_util.hpp"
 
 #include <cstddef>

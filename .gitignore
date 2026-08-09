@@ -6,6 +6,12 @@
 codegen/__pycache__
 scripts/__pycache__
 
+# ---- Documentation output ----
+# Doxygen renders into html/ in the source tree via the `rpg_os_docs` CMake
+# target (or the "Build Documentation" VS Code task). It is generated, so it
+# must never be committed.
+/html/
+
 # ---- Tooling ----
 compile_commands.json
 .cache/
@@ -15,6 +21,7 @@ compile_commands.json
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+!.vscode/tasks.json
 .idea/
 *.swp
 *.swo

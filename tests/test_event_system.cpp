@@ -1,7 +1,16 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Tests for the shared event system (rpg_os::EventBus, rpg_os::EventData).
+/**
+ * @file test_event_system.cpp
+ * @brief Tests for the shared event system (@c rpg_os::EventBus,
+ * @c rpg_os::EventData).
+ *
+ * Verifies listener registration/removal by handle, dispatch order, the typed
+ * payload getters and their fallback behaviour. Because the event system is
+ * the seam between the JSON-driven rules and user code, these tests pin the
+ * ordering contract that damage/turn pipelines rely on.
+ */
 #include <doctest/doctest.h>
 #include <rpg_os/common/event_system.hpp>
 #include <string>

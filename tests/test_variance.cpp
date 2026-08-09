@@ -1,7 +1,16 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Tests for variance / range selection (rpg_os::Variance, rpg_os::readVariantValue).
+/**
+ * @file test_variance.cpp
+ * @brief Tests for variance / range selection (@c rpg_os::Variance,
+ * @c rpg_os::readVariantValue).
+ *
+ * Verifies all three input forms (integer, dice string, range object) across
+ * every variance band, and that dice expressions are actually rolled under
+ * @c Variance::Random. This file guards the policy that both the universal
+ * engine and the generated character loaders share.
+ */
 #include "test_util.hpp"
 
 #include <doctest/doctest.h>

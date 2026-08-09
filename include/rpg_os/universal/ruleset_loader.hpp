@@ -1,16 +1,33 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Ruleset loading and validation (universal / dynamic mode).
-//
-// Parses a ruleset JSON document into a `Ruleset` model: the schema (attributes,
-// derived stats, resources, skills, check types, cost tables, equipment slots,
-// event triggers) plus the raw `data` section (archetypes, items, creatures)
-// which stays as JSON and is read at runtime.
-//
-// Validation is thorough: duplicate ids, parseable formulas, resolvable stat
-// references, derived-stat formula grammar, and acyclic derived-stat graphs are
-// all checked and reported as std::invalid_argument.
+/**
+ * @file ruleset_loader.hpp
+ * @brief Ruleset loading and validation (universal / dynamic mode).
+ *
+ * Parses a ruleset JSON document into a @c Ruleset model: the schema
+ * (attributes, derived stats, resources, skills, check types, cost tables,
+ * equipment slots, event triggers) plus the raw @c data section (archetypes,
+ * items, creatures) which stays as JSON and is read at runtime.
+ *
+ * @par Why keep the data section as raw JSON?
+ * The schema describes *how to compute*; the data section is a database that
+ * the engine reads per-entity (a monster's hit-point dice, an item's price).
+ * Keeping it as JSON means the engine never materialises the whole bestiary
+ * as C++ objects at load time, and new data needs no code change — and the
+ * generated specific-mode code can parse the same section through its own
+ * strongly typed loaders, which is exactly what the cross-mode parity tests
+ * rely on.
+ *
+ * @par Why validate so aggressively at load time?
+ * A ruleset is a data contract: a typo in an attribute id, a formula that
+ * references a missing stat, or a cyclic derived-stat chain would otherwise
+ * surface mid-session as a confusing runtime error. Validating everything up
+ * front (duplicate ids, parseable formulas, resolvable stat references,
+ * acyclic derived-stat graphs) turns a bad ruleset into a clear, immediate
+ * @c std::invalid_argument at load — and lets the code generator assume the
+ * schema is sound.
+ */
 #pragma once
 
 #include <cstdint>
@@ -29,7 +46,15 @@
 
 namespace rpg_os {
 
-/// A core attribute definition from a ruleset.
+/**
+ * A core attribute definition from a ruleset.
+ *
+ * @par Why keep min/max/default on the definition?
+ * Attributes are the raw inputs to everything else, and their legal band is a
+ * ruleset-level decision (The Dark Eye allows 1–30, D&D 5e scores vary).
+ * Storing the band lets validation and any UI/clamp logic agree with the
+ * source book without hard-coding a game system into the engine.
+ */
 struct AttributeDef {
   std::string id;
   std::string name;
@@ -39,6 +64,11 @@ struct AttributeDef {
 };
 
 /// A derived stat: an attribute (or other stat) computed from a formula.
+///
+/// @par Why store both the raw text and the parsed form?
+/// The text is kept for diagnostics and for the code generator (which compiles
+/// the formula to C++); the parsed @c Expression is what the universal engine
+/// evaluates at runtime. Keeping both avoids re-parsing on every evaluation.
 struct DerivedStatDef {
   std::string id;
   std::string name;
@@ -47,6 +77,12 @@ struct DerivedStatDef {
 };
 
 /// A resource pool definition (e.g. Hit Points, Astral Energy).
+///
+/// @par Why is the maximum a *stat id* rather than a number?
+/// In the source games a pool's size is itself derived (TDE: LP = 5 + 2*CON;
+/// D&D: HP depends on level and CON). Referencing a stat id defers the actual
+/// computation to the entity, so the pool maximum always reflects the current
+/// stats — including after a CON-draining effect.
 struct ResourcePoolDef {
   std::string id;
   std::string name;
@@ -55,6 +91,13 @@ struct ResourcePoolDef {
 };
 
 /// A skill / talent definition (e.g. a DSA talent with linked attributes).
+///
+/// @par Why do skills carry their own attribute list?
+/// A DSA talent is checked against *its own* three attributes (Climbing rolls
+/// COU/AGI/STR, Dancing DEX/AGI/COU). Keeping the list on the skill lets the
+/// engine resolve a skill check generically from the definition — and lets
+/// the code generator emit a named check method per skill with the right
+/// attributes baked in.
 struct SkillDef {
   std::string id;
   std::string name;
@@ -63,6 +106,12 @@ struct SkillDef {
 };
 
 /// A named check type: an id plus the configuration for the shared resolver.
+///
+/// @par Why name-check-types at all?
+/// Rulesets reference checks by name (e.g. "dnd5e_attack_melee",
+/// "tde_attack"). Mapping a name to a @ref CheckConfig lets the universal
+/// engine resolve checks without hard-coding any game — and gives the code
+/// generator the exact config it needs to emit named, compiled check methods.
 struct CheckTypeDef {
   std::string id;
   CheckConfig config;
@@ -75,6 +124,13 @@ struct CostTableDef {
 };
 
 /// One action inside an event trigger.
+///
+/// @par Why one struct with all fields instead of per-type structs?
+/// The action types are few ("modify_event_damage", "consume_resource",
+/// "apply_condition") and each uses only a couple of fields. One struct with
+/// the union of fields keeps the loader, the engine's executor, and the code
+/// generator reading from the same shape — at the cost of a few unused
+/// fields per action, which is negligible for ruleset-sized data.
 struct EventActionDef {
   std::string type;        ///< "modify_event_damage" | "consume_resource" | "apply_condition"
   std::string resource;    ///< consume_resource: which resource
@@ -87,6 +143,12 @@ struct EventActionDef {
 };
 
 /// A rules-level reactive effect, e.g. the DSA wound check.
+///
+/// @par Why are triggers data, not C++?
+/// Reactive rules vary per system (a wound check is TDE; D&D has no such
+/// thing). Describing them as JSON-driven triggers means adding a new system
+/// with new reactions requires only JSON — the engine's executor stays
+/// system-agnostic.
 struct EventTriggerDef {
   std::string id;
   EventType trigger{EventType::OnDamageTaken};
@@ -95,7 +157,20 @@ struct EventTriggerDef {
   std::vector<EventActionDef> actions;
 };
 
-/// The fully loaded model of one ruleset.
+/**
+ * The fully loaded model of one ruleset.
+ *
+ * @par Why a plain data class instead of hidden state?
+ * A @ref Ruleset is a pure value: everything the engine or the code generator
+ * needs is publicly readable. Making it a plain aggregate avoids an accessor
+ * layer that would add nothing, and lets the universal engine, the loader, and
+ * the code generator share it without ceremony.
+ *
+ * @par Lookup methods return raw pointers instead of optional/iterators
+ * The lookup set is small and linear scans are fine at load/validation time;
+ * returning `nullptr` for "absent" keeps call sites terse and lets the engine
+ * distinguish "known, value 0" from "unknown".
+ */
 class Ruleset {
 public:
   std::string id;
@@ -134,6 +209,8 @@ public:
   [[nodiscard]] const CostTableDef *findCostTable(std::string_view statId) const;
 
   /// Whether `statId` names a known stat (attribute, derived stat, or skill).
+  /// Skills are counted here because the pool of a talent check is a stat the
+  /// resolver must be able to read.
   [[nodiscard]] bool hasStat(std::string_view statId) const;
 };
 
@@ -197,19 +274,40 @@ inline bool Ruleset::hasStat(std::string_view statId) const {
   return false;
 }
 
-/// Loads and validates a ruleset JSON document.
+/**
+ * Loads and validates a ruleset JSON document.
+ *
+ * @par Why a static-only class (namespace-like)?
+ * Loading is a pure function of the JSON input: it has no state worth keeping
+ * in an object. A static-only interface communicates that and keeps the API
+ * trivially testable — every parse stage is independently checkable via the
+ * validation errors it raises.
+ */
 class RulesetLoader {
 public:
   /// Parses and validates `root`. Throws std::invalid_argument on any error.
+  ///
+  /// @par Why throw instead of returning a result?
+  /// A ruleset that cannot be loaded is unrecoverable for the engine that
+  /// hosts it; failing loudly with a descriptive message is clearer than
+  /// threading an error code through every consumer.
   static Ruleset load(const Json &root);
 
-  /// Parses and validates a JSON string.
+  /// Parses and validates a JSON string (convenience wrapper over @ref load).
   static Ruleset loadFromString(std::string_view jsonContent);
 
   /// Re-validates a loaded ruleset; throws std::invalid_argument on error.
+  ///
+  /// @par Why is validation re-runnable?
+  /// Loading already validates, but a ruleset may be *edited* after load (e.g.
+  /// by tooling or a live-edit app). Re-running validation lets such a caller
+  /// check the mutated model without re-parsing from JSON.
   static void validate(const Ruleset &ruleset);
 
 private:
+  // One parser per schema section keeps each function short and its failure
+  // messages local to the section being read — a new section only adds a
+  // parser, it never touches the existing ones.
   static void parseAttributes(const Json &obj, Ruleset &out);
   static void parseDerivedStats(const Json &obj, Ruleset &out);
   static void parseResources(const Json &obj, Ruleset &out);

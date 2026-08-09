@@ -1,7 +1,17 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Tests for the shared math helpers (rpg_os::math).
+/**
+ * @file test_math.cpp
+ * @brief Tests for the shared math helpers (@c rpg_os::math).
+ *
+ * These tests pin the exact numeric semantics of the formula function set
+ * (floor/ceil/round/min/max/clamp and the integer conversions). Because both
+ * the AST evaluator and the generated code call into @c rpg_os::math, this
+ * file is the first line of defence for the cross-mode parity guarantee: if a
+ * rounding convention ever changed, the universal and specific modes would
+ * diverge here first.
+ */
 #include <doctest/doctest.h>
 #include <rpg_os/core/math.hpp>
 

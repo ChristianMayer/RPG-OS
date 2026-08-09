@@ -1,8 +1,15 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Smoke test: verifies that the doctest harness is wired up correctly so that
-// the test executable builds, links, and runs.
+/**
+ * @file test_smoke.cpp
+ * @brief Smoke test for the doctest harness.
+ *
+ * Verifies that the test executable builds, links, and runs at all. This is
+ * deliberately trivial: if the vendored doctest, the CMake wiring, or the
+ * test runner regress, this single case fails first — isolating infrastructure
+ * breakage from actual rule-logic failures.
+ */
 #include <doctest/doctest.h>
 
 TEST_CASE("smoke: test harness runs") {

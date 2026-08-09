@@ -1,7 +1,17 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Tests for the ruleset loader and model (rpg_os::RulesetLoader, rpg_os::Ruleset).
+/**
+ * @file test_ruleset_loader.cpp
+ * @brief Tests for the ruleset loader and model (@c rpg_os::RulesetLoader,
+ * @c rpg_os::Ruleset).
+ *
+ * Verifies parsing of every schema section, the strict validation rules
+ * (duplicate ids, unknown stat references, derived-stat cycles, missing
+ * required fields such as @c licence), and the error reporting contract — a
+ * malformed ruleset must fail load with a descriptive
+ * @c std::invalid_argument rather than load a half-broken model.
+ */
 #include <doctest/doctest.h>
 #include <rpg_os/universal/ruleset_loader.hpp>
 #include <stdexcept>

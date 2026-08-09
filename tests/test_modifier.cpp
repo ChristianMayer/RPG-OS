@@ -1,7 +1,15 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Tests for the shared modifier pipeline (rpg_os::applyModifierPipeline).
+/**
+ * @file test_modifier.cpp
+ * @brief Tests for the shared modifier pipeline (@c rpg_os::applyModifierPipeline).
+ *
+ * Verifies the phase ordering (override → add → multiply → clamp) and, most
+ * importantly, that the result is independent of the order in which modifiers
+ * are listed — the property the universal loader and the generated code both
+ * depend on for identical derived stats.
+ */
 #include <doctest/doctest.h>
 #include <rpg_os/core/modifier.hpp>
 #include <vector>

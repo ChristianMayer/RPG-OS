@@ -41,8 +41,35 @@ Useful options:
 | `RPG_OS_WARNINGS_AS_ERRORS` | `OFF` | Treat compiler warnings as errors |
 | `RPG_OS_ENABLE_SANITIZERS` | `OFF` | Build with AddressSanitizer + UBSan |
 | `RPG_OS_RUN_CODEGEN` | `OFF` | Regenerate `generated/*.hpp` during the build |
+| `RPG_OS_BUILD_DOCS` | `ON` | Render the Doxygen documentation into `html/` (gitignored) |
 
 Requires CMake ≥ 3.24 and a C++23-capable compiler (GCC ≥ 13 or Clang ≥ 17).
+
+## Documentation
+
+The **API reference is published at <https://Mundus-Mirabilis.github.io/RPG-OS/>**
+— rendered with [Doxygen](https://www.doxygen.nl/) and the
+[Doxygen Awesome](https://github.com/jothepro/doxygen-awesome-css) theme
+(vendored under `docs/doxygen-awesome/`). Versioned builds are deployed to
+GitHub Pages under `/main/`, `/develop/`, and `/vX.Y.Z/` (release tags) by the
+`docs` CI workflow.
+
+Documentation generation is part of the build (`RPG_OS_BUILD_DOCS=ON` by
+default) and can also be triggered from VS Code via the
+**"Build Documentation"** task:
+
+```sh
+cmake --build build --target rpg_os_docs   # HTML -> ./html (gitignored)
+```
+
+The generated pages live in `html/` at the repository root — a gitignored
+directory in the source tree, never committed. The Doxygen configuration is
+the single `Doxyfile` at the repository root, used identically by the local
+build and CI.
+
+Every public header, example, and test file carries Doxygen comments that
+explain not just *what* a class or function does but *why* it is designed that
+way. See `docs/README.md` for the full setup.
 
 Regenerating the codegen outputs:
 
@@ -139,8 +166,10 @@ backs both the universal engine and the generated code.
 
 ```
 .
-├── .github/workflows/ci.yml   # CI: GCC + Clang on Ubuntu/macOS + codegen sync check
-├── cmake/                     # CMake helper modules (warnings, sanitizers)
+├── .github/workflows/ci.yml    # CI: GCC + Clang on Ubuntu/macOS + codegen sync check
+├── .github/workflows/docs.yml  # Builds the docs and deploys them to GitHub Pages
+├── cmake/                      # CMake helper modules (warnings, sanitizers, docs)
+├── docs/                       # Doxygen config + vendored Doxygen Awesome theme
 ├── include/rpg_os/
 │   ├── common/                # shared value types, JSON alias, event system
 │   ├── core/                  # shared header-only template core (dice, math,

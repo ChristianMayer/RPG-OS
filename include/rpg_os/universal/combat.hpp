@@ -1,19 +1,30 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Combat simulation helpers (universal mode).
-//
-// Runs a fight between two entities "to the end" using the ruleset's
-// attack-vs-defence check and the event-driven damage pipeline (armour
-// absorption, wound checks). Both archetypes and bestiary entries can fight:
-// bestiary fields (`attacks[].to_hit`, `attacks[].damage`, `dodge`,
-// `armor_rating`) are promoted into stats so the shared check algorithms and
-// the damage pipeline see them, while archetypes rely on their derived
-// `Attack` / `Parry` values plus a weapon damage expression.
-//
-// Every call to `runFight` creates fresh entities, so ranged values (e.g. hit
-// points rolled from dice) are re-rolled per fight — the building block for
-// Monte Carlo simulations such as the ELO ranking in scripts/elo_ranking.py.
+/**
+ * @file combat.hpp
+ * @brief Combat simulation helpers (universal mode).
+ *
+ * Runs a fight between two entities "to the end" using the ruleset's
+ * attack-vs-defence check and the event-driven damage pipeline (armour
+ * absorption, wound checks). Both archetypes and bestiary entries can fight:
+ * bestiary fields (@c attacks[].to_hit, @c attacks[].damage, @c dodge,
+ * @c armor_rating) are promoted into stats so the shared check algorithms and
+ * the damage pipeline see them, while archetypes rely on their derived
+ * @c Attack / @c Parry values plus a weapon damage expression.
+ *
+ * @par Why a combat simulator in the engine at all?
+ * Combat is where the engine's pieces meet: checks, damage, resources, and
+ * events. A self-contained fight loop both demonstrates the API and provides
+ * the building block for Monte-Carlo tooling (the ELO ranking in
+ * @c scripts/elo_ranking.py runs thousands of these fights).
+ *
+ * @par Why fresh entities per fight?
+ * Every call to @c runFight creates new entities, so ranged values (e.g.
+ * hit points rolled from dice) are re-rolled per fight. That is exactly what a
+ * Monte-Carlo trial needs — each fight is an independent sample from the same
+ * distribution, not a replay of a single rolled-out creature.
+ */
 #pragma once
 
 #include <cstdint>
@@ -26,8 +37,12 @@
 
 namespace rpg_os {
 
-/// Static, per-entry description of a combatant. Built once from the ruleset
-/// and reused to spawn fresh entities for every fight.
+/**
+ * Static, per-entry description of a combatant. Built once from the ruleset
+ * and reused to spawn fresh entities for every fight — this is what lets a
+ * Monte-Carlo loop avoid re-deriving the stat block on each of thousands of
+ * fights.
+ */
 struct CombatantSpec {
   std::string id;
   std::string name;
@@ -49,6 +64,13 @@ struct FightOutcome {
 /// Finds the id of the ruleset's attack-vs-defence check type ("tde_attack"
 /// when present, otherwise the first `attack_vs_defense` check). Returns an
 /// empty string when the ruleset has none.
+///
+/// @par Why a preferred id plus a fallback?
+/// The Dark Eye's shipped check is canonically named "tde_attack", but the
+/// simulator should also work on any other ruleset that declares an
+/// attack-vs-defense check. Preferring the known name, then falling back to
+/// "any check of the right kind", keeps both the shipped rulesets and generic
+/// ones working.
 [[nodiscard]] inline std::string resolveAttackCheckType(const Ruleset &ruleset) {
   for (const CheckTypeDef &def : ruleset.checkTypes) {
     if (def.id == "tde_attack") {
@@ -65,6 +87,12 @@ struct FightOutcome {
 
 /// Finds the id of the ruleset's primary hit-point pool (the first resource
 /// pool with a minimum of 0), e.g. "LP" for The Dark Eye and "HP" for D&D 5e.
+///
+/// @par Why "minimum of 0" as the heuristic?
+/// The primary hit-point pool is the one a creature is reduced to 0 in to die;
+/// in both shipped rulesets it is the pool whose minimum is 0 (LP, HP), while
+/// secondary pools (Astral Energy, Karma) start above 0. The heuristic avoids
+/// hard-coding pool names into the engine.
 [[nodiscard]] inline std::string resolveHitPointPool(const Ruleset &ruleset) {
   for (const ResourcePoolDef &pool : ruleset.resourcePools) {
     if (pool.minValue == 0) {
@@ -78,6 +106,12 @@ struct FightOutcome {
 /// `weaponDamage` is used for archetypes (default: a longsword) and for
 /// bestiary entries that have no natural attack defined. Returns false when
 /// `id` does not exist in the ruleset's data section.
+///
+/// @par Why probe with average variance?
+/// The spec needs *representative* combat values, not a random roll (a single
+/// unlucky roll would mis-rank a combatant in a tournament). Picking the
+/// middle third of each range yields a stable stat block for the whole run
+/// while still reflecting the entry's real numbers.
 [[nodiscard]] inline bool makeCombatantSpec(RulesetEngine &engine, std::string_view id,
                                             CombatantSpec &out,
                                             std::string_view weaponDamage = "1d6+4") {
@@ -150,6 +184,13 @@ struct FightOutcome {
 /// the "average" variance so Monte Carlo trials are comparable. Bestiary
 /// fields are promoted into the `Attack` / `Parry` / `Armor_Rating` stats the
 /// shared check algorithms and the damage pipeline read.
+///
+/// @par Why promote bestiary fields into derived-stat names?
+/// The shared check and damage code reads `Attack`, `Parry`, and
+/// `Armor_Rating` — names that archetypes get from their derived stats. A
+/// bestiary entry has no such derivation, so its raw fields (`to_hit`,
+/// `dodge`, `armor_rating`) are written into those same stats. This is the
+/// seam that lets one combat loop serve both data shapes.
 template <RandomNumberGenerator Rng>
 [[nodiscard]] std::shared_ptr<DynamicEntity> createFighter(RulesetEngine &engine,
                                                            const CombatantSpec &spec, Rng &rng) {
@@ -169,6 +210,12 @@ namespace detail {
 /// One combatant's action: resolves the attack check against the defender and,
 /// on a hit, rolls and applies the damage through the event pipeline. Returns
 /// true when the defender is reduced to 0 (or below) hit points.
+///
+/// @par Why keep this in a detail namespace?
+/// It is a single round of a fight — meaningful only inside the loop below.
+/// Hiding it in @c detail keeps the public surface of the header to the
+/// reusable entry points (@ref makeCombatantSpec, @ref runFight) while still
+/// making the loop readable.
 template <RandomNumberGenerator Rng>
 bool attackOnce(RulesetEngine &engine, DynamicEntity &attacker, const DiceExpression &damage,
                 DynamicEntity &defender, std::string_view checkTypeId,
@@ -188,6 +235,13 @@ bool attackOnce(RulesetEngine &engine, DynamicEntity &attacker, const DiceExpres
 /// reaches 0 hit points, or `maxRounds` elapse (a draw). Each round the
 /// initiative order is re-rolled as the derived `Initiative` stat plus 1d6; the
 /// higher value acts first (ties are decided by a coin flip).
+///
+/// @par Why re-roll initiative every round?
+/// In the source rules initiative can change from round to round (a character
+/// may act more slowly when wounded). Re-rolling per round makes the
+/// simulation reflect that dynamism rather than freezing turn order from round
+/// one — a choice that materially changes who gets to strike first in a long
+/// fight, and therefore the outcome distribution.
 template <RandomNumberGenerator Rng>
 [[nodiscard]] FightOutcome runFight(RulesetEngine &engine, const CombatantSpec &a,
                                     const CombatantSpec &b, std::string_view checkTypeId,

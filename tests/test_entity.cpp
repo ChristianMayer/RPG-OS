@@ -1,7 +1,15 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Tests for the shared entity helpers (rpg_os::ResourcePool).
+/**
+ * @file test_entity.cpp
+ * @brief Tests for the shared entity helpers (@c rpg_os::ResourcePool).
+ *
+ * Pins the clamp-on-modify contract and the "amount actually applied"
+ * return value — overkill and overheal detection. Both the universal engine
+ * and the generated characters store their pools as @c rpg_os::ResourcePool,
+ * so this file guards behaviour both modes share.
+ */
 #include <doctest/doctest.h>
 #include <rpg_os/core/entity.hpp>
 

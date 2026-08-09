@@ -1,10 +1,17 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Tests for the combat simulation helpers (include/rpg_os/universal/combat.hpp)
-// against the real The Dark Eye 5e ruleset: combatant specs built from the
-// bestiary and from archetypes, armour absorption, and fights that run to the
-// end (or to the round guard).
+/**
+ * @file test_combat.cpp
+ * @brief Tests for the combat simulation helpers
+ * (@c include/rpg_os/universal/combat.hpp).
+ *
+ * Runs against the real The Dark Eye 5e ruleset: combatant specs built from
+ * the bestiary and from archetypes, armour absorption through the event
+ * pipeline, and fights that run to the end (or to the round guard). Scripted
+ * RNGs keep the fights deterministic, so the combat loop's RNG consumption
+ * order is pinned by these tests.
+ */
 #include "test_util.hpp"
 
 #include <doctest/doctest.h>

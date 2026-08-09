@@ -1,11 +1,19 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Tests for the shared check resolution algorithms (rpg_os::checks).
-//
-// Includes the acceptance case studies from the design spec (content.md §9):
-//   - D&D attack roll vs. AC (additive d20)
-//   - DSA 3d20 talent check with Talent Prowess pool
+/**
+ * @file test_checks.cpp
+ * @brief Tests for the shared check resolution algorithms (@c rpg_os::checks).
+ *
+ * Includes the acceptance case studies from the design spec (content.md §9):
+ *   - D&D attack roll vs. AC (additive d20)
+ *   - DSA 3d20 talent check with Talent Prowess pool
+ *
+ * Every mechanism is tested with scripted dice so the exact outcome (hit,
+ * margin, critical, remaining pool, quality level) is pinned. These are the
+ * shared algorithms both engine modes call, making this file the core of the
+ * parity guarantee.
+ */
 #include "test_util.hpp"
 
 #include <doctest/doctest.h>

@@ -1,12 +1,21 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Check resolver (universal mode).
-//
-// A thin runtime layer over the shared algorithms in core/checks.hpp: it looks
-// up a named `check_types` config in the ruleset and dispatches through
-// `resolveCheck`. Specific-mode generated code calls the algorithm templates
-// directly instead, so no work is duplicated.
+/**
+ * @file check_resolver.hpp
+ * @brief Check resolver (universal mode).
+ *
+ * A thin runtime layer over the shared algorithms in @c core/checks.hpp: it
+ * looks up a named `check_types` config in the ruleset and dispatches through
+ * @c resolveCheck. Specific-mode generated code calls the algorithm
+ * templates directly instead, so no work is duplicated.
+ *
+ * @par Why a separate, near-empty class?
+ * Keeping the name -> @c CheckConfig lookup separate from the engine facade
+ * gives the universal mode a tiny, independently testable seam: it answers
+ * exactly "given a ruleset and a check name, resolve this check" and nothing
+ * more. The engine composes it with entity creation, damage, and events.
+ */
 #pragma once
 
 #include <rpg_os/core/checks.hpp>
@@ -24,6 +33,12 @@ class CheckResolver {
 public:
   /// Resolves `checkTypeId` from `ruleset` for `actor` (and optional `target`).
   /// Throws std::invalid_argument for an unknown check type.
+  ///
+  /// @par Why throw on an unknown name?
+  /// An unknown check type is a ruleset/authoring bug (a typo in a ruleset or
+  /// a caller asking for a check the loaded system does not define). Failing
+  /// fast with the offending name beats silently returning a "default" check
+  /// that would resolve against the wrong mechanism.
   template <StatProvider Target, RandomNumberGenerator Rng>
   static CheckResult resolve(const Ruleset &ruleset, const DynamicEntity &actor,
                              const Target &target, std::string_view checkTypeId,

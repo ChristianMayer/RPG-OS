@@ -1,7 +1,16 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Integration tests for the universal engine facade (rpg_os::RulesetEngine).
+/**
+ * @file test_engine.cpp
+ * @brief Integration tests for the universal engine facade (@c rpg_os::RulesetEngine).
+ *
+ * Exercises the full public API end to end: loading, entity/creature
+ * creation with variance, stat calculation, named and skill checks, the
+ * JSON-driven damage/event pipeline, and listener registration. Scripted RNGs
+ * keep deterministic outcomes, so a regression in the event pipeline or the
+ * facade wiring shows up as a hard failure.
+ */
 #include "test_util.hpp"
 
 #include <cstdio>

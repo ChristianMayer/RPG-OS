@@ -1,12 +1,17 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Tests for the generated "specific mode" headers (generated/*_static.hpp).
-//
-// These headers are produced by codegen/rpg_os_codegen.py from the rulesets.
-// They must compile, expose named members/methods, still load the JSON at
-// runtime (data database), and produce results IDENTICAL to the universal
-// engine for the same scenario (parity).
+/**
+ * @file test_codegen_output.cpp
+ * @brief Tests for the generated "specific mode" headers in @c generated/.
+ *
+ * These headers are produced by codegen/rpg_os_codegen.py from the rulesets.
+ * They must compile, expose named members/methods, still load the JSON at
+ * runtime (data database), and produce results IDENTICAL to the universal
+ * engine for the same scenario — the parity guarantee that motivates the
+ * whole dual-mode architecture. Any drift between the code generator and the
+ * universal engine fails here.
+ */
 #include "test_util.hpp"
 
 #include <dnd5e_srd_static.hpp>

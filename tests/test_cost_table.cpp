@@ -1,7 +1,15 @@
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-// Tests for the shared cost / progression tables (rpg_os::CostTable).
+/**
+ * @file test_cost_table.cpp
+ * @brief Tests for the shared cost / progression tables (@c rpg_os::CostTable).
+ *
+ * Exercises both table flavours (threshold and multiplier) including the
+ * boundary semantics: queries below/above the table, empty tables, and
+ * duplicate keys. The D&D XP→level table is the canonical real-world example
+ * of a threshold table and appears here as an acceptance case.
+ */
 #include <doctest/doctest.h>
 #include <rpg_os/core/cost_table.hpp>
 
