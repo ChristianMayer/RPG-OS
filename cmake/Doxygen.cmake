@@ -36,6 +36,12 @@ if(RPG_OS_BUILD_DOCS)
   set(_rpg_os_docs_all ALL)
 endif()
 
+# The root VERSION file is the single source for the version shown in the docs
+# (Doxyfile PROJECT_NUMBER = "$(RPG_OS_VERSION)"). Read it here and inject its
+# content as the RPG_OS_VERSION environment variable when invoking Doxygen.
+file(READ "${PROJECT_SOURCE_DIR}/VERSION" _rpg_os_docs_version_raw)
+string(STRIP "${_rpg_os_docs_version_raw}" _rpg_os_docs_version)
+
 # Doxygen resolves relative paths from its working directory, so run it from
 # the source root; the committed Doxyfile then emits ./html there. The output
 # directory is wiped first so a rebuild never carries over stale pages from an
@@ -43,7 +49,7 @@ endif()
 # checkout so it is inherently clean, this makes local builds match).
 add_custom_target(rpg_os_docs ${_rpg_os_docs_all}
   COMMAND ${CMAKE_COMMAND} -E rm -rf ${PROJECT_SOURCE_DIR}/html
-  COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_SOURCE_DIR}/Doxyfile
+  COMMAND ${CMAKE_COMMAND} -E env "RPG_OS_VERSION=${_rpg_os_docs_version}" ${DOXYGEN_EXECUTABLE} ${PROJECT_SOURCE_DIR}/Doxyfile
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   COMMENT "Generating HTML documentation (Doxygen + Doxygen Awesome) -> ${PROJECT_SOURCE_DIR}/html"
   VERBATIM)

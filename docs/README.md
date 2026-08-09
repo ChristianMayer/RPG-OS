@@ -39,6 +39,24 @@ committed.
   under a subfolder named after the ref (`main`, `develop`, or the release
   tag).
 
+## Version shown in the docs
+
+The version displayed in the docs header (`PROJECT_NUMBER`) has a **single
+source of truth: the `VERSION` file at the repository root**. It holds e.g.
+`develop` on the develop branch or a release number like `0.1.0` on `main` /
+release tags. The `Doxyfile` references it as `PROJECT_NUMBER =
+"$(RPG_OS_VERSION)"` (an environment variable that Doxygen expands), and the
+value is injected by:
+
+- **Locally:** `cmake/Doxygen.cmake` reads `VERSION` and passes it as the
+  `RPG_OS_VERSION` environment variable to the `rpg_os_docs` target.
+- **CI:** the central `doxygen-deploy` workflow reads `VERSION` into
+  `RPG_OS_VERSION` before running Doxygen.
+
+Do **not** hardcode a version in `CMakeLists.txt` or the `Doxyfile` — update
+`VERSION` instead. (For this reason `project()` in `CMakeLists.txt` omits
+`VERSION`: the file may hold non-semver values such as `develop`.)
+
 ## One-time GitHub repository settings
 
 The deployment workflow needs:

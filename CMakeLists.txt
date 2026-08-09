@@ -3,8 +3,18 @@
 
 cmake_minimum_required(VERSION 3.24)
 
+# --- Version ---------------------------------------------------------------
+# Single source of truth: the root VERSION file (e.g. "develop" on the develop
+# branch, a release number like "0.1.0" on main / release tags). The Doxyfile's
+# PROJECT_NUMBER reads the same file via $RPG_OS_VERSION.
+#
+# project() deliberately omits VERSION: the file may hold non-semver values
+# such as "develop", which CMake's project(VERSION) would reject. Wire it into
+# project()/packaging later, once the API is stable and versions are numeric.
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" _rpg_os_version_raw)
+string(STRIP "${_rpg_os_version_raw}" RPG_OS_VERSION)
+
 project(rpg_os
-  VERSION 0.1.0
   DESCRIPTION "Universal Rule Engine for Role-Playing Games"
   HOMEPAGE_URL "https://github.com/Mundus-Mirabilis/RPG-OS"
   LANGUAGES CXX)
