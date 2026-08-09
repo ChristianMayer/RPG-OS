@@ -37,8 +37,12 @@ if(RPG_OS_BUILD_DOCS)
 endif()
 
 # Doxygen resolves relative paths from its working directory, so run it from
-# the source root; the committed Doxyfile then emits ./html there.
+# the source root; the committed Doxyfile then emits ./html there. The output
+# directory is wiped first so a rebuild never carries over stale pages from an
+# older Doxyfile (Doxygen does not clean its own output; CI starts from a fresh
+# checkout so it is inherently clean, this makes local builds match).
 add_custom_target(rpg_os_docs ${_rpg_os_docs_all}
+  COMMAND ${CMAKE_COMMAND} -E rm -rf ${PROJECT_SOURCE_DIR}/html
   COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_SOURCE_DIR}/Doxyfile
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   COMMENT "Generating HTML documentation (Doxygen + Doxygen Awesome) -> ${PROJECT_SOURCE_DIR}/html"

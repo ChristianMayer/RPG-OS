@@ -27,7 +27,10 @@ PROJECT_NAME           = "RPG-OS"
 # Bump with each release so the docs show the version they describe.
 PROJECT_NUMBER         = "0.1.0"
 PROJECT_BRIEF          = "A header-only C++23 universal rule engine for tabletop role-playing games"
-PROJECT_LOGO           =
+# Square logo shown in the docs header (top-left). Scaled to the ~56 px title
+# row by the theme (#projectlogo img max-height). Branding assets live in
+# docs/assets/ (see docs/assets/README.md for the conventions).
+PROJECT_LOGO           = docs/assets/mundus-mirabilis_512.png
 
 OUTPUT_DIRECTORY       = .
 CREATE_SUBDIRS         = NO
@@ -35,20 +38,22 @@ ALLOW_UNICODE_NAMES    = YES
 OUTPUT_LANGUAGE        = English
 
 # --- Input ------------------------------------------------------------------
-# The engine headers, the examples, the test suite, the committed codegen
-# outputs, and the README (which becomes the front page). Vendored third-party
-# headers are excluded: they are documented by their own projects and would
-# only bloat the output.
+# The engine headers, the examples, the test suite, and the committed codegen
+# outputs, plus the README (which becomes the front page). Internal documents
+# (AGENTS.md, CONTRIBUTING.md, ...) are intentionally NOT part of the public
+# documentation. Vendored third-party headers are excluded: they are
+# documented by their own projects and would only bloat the output.
 INPUT                  = include \
                          examples \
                          tests \
                          generated \
-                         README.md \
-                         AGENTS.md
+                         README.md
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.cpp *.cc *.hpp *.h *.md
 RECURSIVE              = YES
 EXCLUDE_PATTERNS       = */third_party/*
+# Branding assets (logo, banner, favicon) referenced from the markdown pages.
+IMAGE_PATH             = docs/assets
 # An explicit path disambiguates the root README.md from the nested
 # examples/README.md (doxygen would otherwise treat both as main-page
 # candidates and warn).
@@ -114,7 +119,8 @@ HTML_EXTRA_FILES       = docs/doxygen-awesome/doxygen-awesome-darkmode-toggle.js
                          docs/doxygen-awesome/doxygen-awesome-fragment-copy-button.js \
                          docs/doxygen-awesome/doxygen-awesome-paragraph-link.js \
                          docs/doxygen-awesome/doxygen-awesome-interactive-toc.js \
-                         docs/doxygen-awesome/doxygen-awesome-tabs.js
+                         docs/doxygen-awesome/doxygen-awesome-tabs.js \
+                         docs/assets/favicon.png
 # Light base colours so the dark-mode toggle (doxygen-awesome-darkmode-toggle.js)
 # has a well-defined light theme to flip from.
 HTML_COLORSTYLE        = LIGHT

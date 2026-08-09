@@ -71,8 +71,14 @@ automatically (forks have no write access to the upstream `gh-pages` branch).
   included so the documentation covers the whole codebase, not just the API.
 - The committed, generated specific-mode headers under `generated/` are
   included too — they document the strongly typed `Character` classes.
+- **Internal documents are excluded**: `AGENTS.md`, `CONTRIBUTING.md` and
+  similar contributor-facing files are deliberately *not* part of the Doxygen
+  input, so the published pages only contain what a library user needs.
 - Vendored third-party headers (`include/rpg_os/third_party/`) are excluded:
   they are documented by their own projects.
+- Branding assets (logo, banner, favicon) live in `docs/assets/` and are
+  referenced from the `Doxyfile`, `header.html`, and `README.md` — see
+  `docs/assets/README.md` for the format conventions and how to replace them.
 - The theme (stylesheets, JS, `header.html`, `custom.css`) is vendored under
   `docs/doxygen-awesome/`; see its `README.md` for provenance and the upgrade
   procedure.
