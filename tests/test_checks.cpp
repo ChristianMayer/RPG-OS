@@ -61,6 +61,30 @@ CheckConfig combatConfig() {
   return cfg;
 }
 
+CheckConfig d100Config() {
+  CheckConfig cfg;
+  cfg.kind = CheckKind::RollUnderD100;
+  cfg.attributes[0] = "spot_hidden";
+  cfg.numAttributes = 1;
+  return cfg;
+}
+
+CheckConfig opposedD100Config() {
+  CheckConfig cfg;
+  cfg.kind = CheckKind::OpposedRollUnderD100;
+  cfg.attackStat = "fighting";
+  cfg.parryStat = "dodge";
+  return cfg;
+}
+
+CheckConfig resistanceConfig() {
+  CheckConfig cfg;
+  cfg.kind = CheckKind::ResistanceRoll;
+  cfg.attackStat = "POW";
+  cfg.parryStat = "POW";
+  return cfg;
+}
+
 } // namespace
 
 // ---------------------------------------------------------------------------
@@ -341,6 +365,221 @@ TEST_CASE("AttackVsDefense: natural 1 is a critical hit, natural 20 a fumble") {
   const CheckResult fumble = rpg_os::resolveCheck(attacker, defender, cfg, params, r2);
   CHECK_FALSE(fumble.isSuccess);
   CHECK(fumble.isCriticalFailure);
+}
+
+// ---------------------------------------------------------------------------
+// RollUnderD100 (BRP percentile check)
+// ---------------------------------------------------------------------------
+
+TEST_CASE("RollUnderD100: grades Success, Special and Critical (BRP)") {
+  // Skill 50: Critical <= 3 (50/20), Special <= 10 (50/5), Success <= 50.
+  MockStats investigator;
+  investigator.values = {{"spot_hidden", 50}};
+  const CheckConfig cfg = d100Config();
+  const CheckParams params;
+
+  auto r1 = script({50}); // Success
+  const CheckResult success =
+      rpg_os::resolveCheck(investigator, rpg_os::NullStatProvider{}, cfg, params, r1);
+  CHECK(success.isSuccess);
+  CHECK(success.successLevel == rpg_os::SuccessLevel::Success);
+
+  auto r2 = script({10}); // Special
+  const CheckResult special =
+      rpg_os::resolveCheck(investigator, rpg_os::NullStatProvider{}, cfg, params, r2);
+  CHECK(special.isSuccess);
+  CHECK(special.successLevel == rpg_os::SuccessLevel::Special);
+
+  auto r3 = script({3}); // Critical
+  const CheckResult critical =
+      rpg_os::resolveCheck(investigator, rpg_os::NullStatProvider{}, cfg, params, r3);
+  CHECK(critical.isSuccess);
+  CHECK(critical.successLevel == rpg_os::SuccessLevel::Critical);
+
+  auto r4 = script({51}); // Failure
+  const CheckResult failure =
+      rpg_os::resolveCheck(investigator, rpg_os::NullStatProvider{}, cfg, params, r4);
+  CHECK_FALSE(failure.isSuccess);
+  CHECK(failure.successLevel == rpg_os::SuccessLevel::Failure);
+
+  auto r5 = script({98}); // Fumble (95 + ceil(50/20) = 98)
+  const CheckResult fumble =
+      rpg_os::resolveCheck(investigator, rpg_os::NullStatProvider{}, cfg, params, r5);
+  CHECK_FALSE(fumble.isSuccess);
+  CHECK(fumble.successLevel == rpg_os::SuccessLevel::Fumble);
+  CHECK(fumble.isCriticalFailure);
+}
+
+TEST_CASE("RollUnderD100: fumble band depends on the skill rating (BRP table)") {
+  // Skill 20: fumble band is 96-00 (95 + ceil(20/20) = 96).
+  MockStats low;
+  low.values = {{"spot_hidden", 20}};
+  const CheckConfig cfg = d100Config();
+  const CheckParams params;
+  auto r1 = script({96});
+  const CheckResult lowFumble =
+      rpg_os::resolveCheck(low, rpg_os::NullStatProvider{}, cfg, params, r1);
+  CHECK_FALSE(lowFumble.isSuccess);
+  CHECK(lowFumble.successLevel == rpg_os::SuccessLevel::Fumble);
+
+  // Skill 90: fumble is only 00 (95 + ceil(90/20) = 100), so a 96 fails
+  // without fumbling.
+  MockStats high;
+  high.values = {{"spot_hidden", 90}};
+  auto r2 = script({96});
+  const CheckResult highFailure =
+      rpg_os::resolveCheck(high, rpg_os::NullStatProvider{}, cfg, params, r2);
+  CHECK_FALSE(highFailure.isSuccess);
+  CHECK(highFailure.successLevel == rpg_os::SuccessLevel::Failure);
+  CHECK_FALSE(highFailure.isCriticalFailure);
+}
+
+TEST_CASE("RollUnderD100: margin is stat - roll and difficulty shifts the stat") {
+  MockStats investigator;
+  investigator.values = {{"spot_hidden", 50}};
+  const CheckConfig cfg = d100Config();
+
+  auto r1 = script({45});
+  const CheckResult ok =
+      rpg_os::resolveCheck(investigator, rpg_os::NullStatProvider{}, cfg, CheckParams{}, r1);
+  CHECK(ok.isSuccess);
+  CHECK(ok.marginOfSuccess == 5);
+
+  CheckParams penalty;
+  penalty.difficulty = -20; // effective stat 30
+  auto r2 = script({40});
+  const CheckResult fail =
+      rpg_os::resolveCheck(investigator, rpg_os::NullStatProvider{}, cfg, penalty, r2);
+  CHECK_FALSE(fail.isSuccess);
+  CHECK(fail.marginOfSuccess == -10);
+}
+
+TEST_CASE("RollUnderD100: Easy doubles and Difficult halves the stat (BRP)") {
+  MockStats investigator;
+  investigator.values = {{"spot_hidden", 40}};
+  const CheckConfig cfg = d100Config();
+
+  // Easy: the skill rating is doubled (40 -> 80).
+  CheckParams easy;
+  easy.difficultyMode = rpg_os::DifficultyMode::Easy;
+  auto r1 = script({60});
+  const CheckResult ok =
+      rpg_os::resolveCheck(investigator, rpg_os::NullStatProvider{}, cfg, easy, r1);
+  CHECK(ok.isSuccess);
+  CHECK(ok.marginOfSuccess == 20);
+
+  // Difficult: the skill rating is halved (40 -> 20).
+  CheckParams difficult;
+  difficult.difficultyMode = rpg_os::DifficultyMode::Difficult;
+  auto r2 = script({25});
+  const CheckResult fail =
+      rpg_os::resolveCheck(investigator, rpg_os::NullStatProvider{}, cfg, difficult, r2);
+  CHECK_FALSE(fail.isSuccess);
+  CHECK(fail.marginOfSuccess == -5);
+  auto r3 = script({15});
+  const CheckResult pass =
+      rpg_os::resolveCheck(investigator, rpg_os::NullStatProvider{}, cfg, difficult, r3);
+  CHECK(pass.isSuccess);
+}
+
+// ---------------------------------------------------------------------------
+// OpposedRollUnderD100 (BRP combat, Attack and Defense Matrix)
+// ---------------------------------------------------------------------------
+
+TEST_CASE("OpposedRollUnderD100: strictly higher success level hits (matrix)") {
+  MockStats attacker;
+  attacker.values = {{"fighting", 60}};
+  MockStats defender;
+  defender.values = {{"dodge", 50}};
+  const CheckConfig cfg = opposedD100Config();
+  const CheckParams params;
+
+  // Attack 5 is Special (5 <= 12); defence 45 is Success -> the Special hits.
+  auto r1 = script({5, 45});
+  CHECK(rpg_os::resolveCheck(attacker, defender, cfg, params, r1).isSuccess);
+
+  // Attack 45 is Success; defence 5 is Special (5 <= 10) -> the defender
+  // parries the lesser result.
+  auto r2 = script({45, 5});
+  CHECK_FALSE(rpg_os::resolveCheck(attacker, defender, cfg, params, r2).isSuccess);
+}
+
+TEST_CASE("OpposedRollUnderD100: equal levels are parried, fumbles never hit") {
+  MockStats attacker;
+  attacker.values = {{"fighting", 60}};
+  MockStats defender;
+  defender.values = {{"dodge", 50}};
+  const CheckConfig cfg = opposedD100Config();
+  const CheckParams params;
+
+  // Both roll Success (45 and 45): equal levels -> the defender parries.
+  auto r1 = script({45, 45});
+  CHECK_FALSE(rpg_os::resolveCheck(attacker, defender, cfg, params, r1).isSuccess);
+
+  // Attack 100 is a fumble; the attacker can never connect, even against a
+  // fumble.
+  auto r2 = script({100, 1});
+  const CheckResult fumble = rpg_os::resolveCheck(attacker, defender, cfg, params, r2);
+  CHECK_FALSE(fumble.isSuccess);
+  CHECK(fumble.isCriticalFailure);
+}
+
+TEST_CASE("OpposedRollUnderD100: critical beats special, fumble never wins") {
+  MockStats attacker;
+  attacker.values = {{"fighting", 60}};
+  MockStats defender;
+  defender.values = {{"dodge", 50}};
+  const CheckConfig cfg = opposedD100Config();
+  const CheckParams params;
+
+  // Attack 01 is a Critical; defence 08 is Special (8 <= 10) -> critical hits.
+  auto r1 = script({1, 8});
+  const CheckResult crit = rpg_os::resolveCheck(attacker, defender, cfg, params, r1);
+  CHECK(crit.isSuccess);
+  CHECK(crit.isCriticalSuccess);
+  CHECK(crit.successLevel == rpg_os::SuccessLevel::Critical);
+}
+
+// ---------------------------------------------------------------------------
+// ResistanceRoll (BRP resistance table)
+// ---------------------------------------------------------------------------
+
+TEST_CASE("ResistanceRoll: chance is 50 + 5 x the characteristic difference") {
+  MockStats active;
+  active.values = {{"POW", 15}};
+  MockStats passive;
+  passive.values = {{"POW", 12}};
+  const CheckConfig cfg = resistanceConfig();
+
+  // chance = 50 + 5 * (15 - 12) = 65; roll 50 succeeds, roll 70 fails.
+  auto r1 = script({50});
+  const CheckResult ok = rpg_os::resolveCheck(active, passive, cfg, CheckParams{}, r1);
+  CHECK(ok.isSuccess);
+  CHECK(ok.marginOfSuccess == 15);
+  auto r2 = script({70});
+  const CheckResult fail = rpg_os::resolveCheck(active, passive, cfg, CheckParams{}, r2);
+  CHECK_FALSE(fail.isSuccess);
+  CHECK(fail.marginOfSuccess == -5);
+}
+
+TEST_CASE("ResistanceRoll: automatic success/failure beyond the rollable band") {
+  MockStats strong;
+  strong.values = {{"POW", 18}};
+  MockStats weak;
+  weak.values = {{"POW", 3}};
+  const CheckConfig cfg = resistanceConfig();
+
+  // chance = 50 + 5 * 15 = 125 -> automatic success, no die rolled.
+  auto r1 = script({});
+  const CheckResult autoOk = rpg_os::resolveCheck(strong, weak, cfg, CheckParams{}, r1);
+  CHECK(autoOk.isSuccess);
+  CHECK(autoOk.rawDiceRolls.empty());
+
+  // chance = 50 + 5 * (3 - 18) = -25 -> automatic failure, no die rolled.
+  auto r2 = script({});
+  const CheckResult autoFail = rpg_os::resolveCheck(weak, strong, cfg, CheckParams{}, r2);
+  CHECK_FALSE(autoFail.isSuccess);
+  CHECK(autoFail.rawDiceRolls.empty());
 }
 
 // ---------------------------------------------------------------------------

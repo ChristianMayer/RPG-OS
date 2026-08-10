@@ -477,6 +477,27 @@ class Generator:
                              "const rpg_os::CheckParams& params, Rng& rng) const {")
                 lines.append(f'    return rpg_os::resolveAttackVsDefense(*this, target, "{cfg["attack_stat"]}", "{cfg["parry_stat"]}", params, rng);')
                 lines.append("  }")
+            elif kind == "roll_under_d100":
+                attr = cfg["attributes"][0]
+                lines.append(f"  /// Percentile roll-under check '{cid}' (BRP).")
+                lines.append("  template <rpg_os::RandomNumberGenerator Rng>")
+                lines.append(f"  [[nodiscard]] rpg_os::CheckResult {method}(const rpg_os::CheckParams& params, Rng& rng) const {{")
+                lines.append(f'    return rpg_os::resolveRollUnderD100(*this, "{attr}", params, rng);')
+                lines.append("  }")
+            elif kind == "opposed_roll_under_d100":
+                lines.append(f"  /// Opposed percentile contest check '{cid}' (BRP).")
+                lines.append("  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>")
+                lines.append(f"  [[nodiscard]] rpg_os::CheckResult {method}(const Target& target, "
+                             "const rpg_os::CheckParams& params, Rng& rng) const {")
+                lines.append(f'    return rpg_os::resolveOpposedRollUnderD100(*this, target, "{cfg["attack_stat"]}", "{cfg["parry_stat"]}", params, rng);')
+                lines.append("  }")
+            elif kind == "resistance_roll":
+                lines.append(f"  /// BRP resistance roll '{cid}'.")
+                lines.append("  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>")
+                lines.append(f"  [[nodiscard]] rpg_os::CheckResult {method}(const Target& target, "
+                             "const rpg_os::CheckParams& params, Rng& rng) const {")
+                lines.append(f'    return rpg_os::resolveResistanceRoll(*this, target, "{cfg["attack_stat"]}", "{cfg["parry_stat"]}", params, rng);')
+                lines.append("  }")
             else:
                 raise ValueError(f"unknown check kind '{kind}' in check type '{cid}'")
             lines.append("")

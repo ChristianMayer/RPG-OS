@@ -121,7 +121,7 @@ TEST_CASE("tde5e_core: armor absorption and wound triggers (real TDE)") {
 }
 
 TEST_CASE("rulesets: licence/comment metadata and data sections (schema)") {
-  for (const char *name : {"dnd5e_srd.json", "tde5e_core.json"}) {
+  for (const char *name : {"dnd5e_srd.json", "tde5e_core.json", "brp_ugc.json"}) {
     rpg_os::RulesetEngine engine;
     REQUIRE(engine.loadRulesetFromFile(rulesetPath(name)));
     const rpg_os::Ruleset &rs = engine.ruleset();
@@ -178,4 +178,181 @@ TEST_CASE("tde5e_core: full core-rule bestiary and spell list are present") {
   REQUIRE(ignifaxius != spells.end());
   CHECK(ignifaxius->value("check", "") == "COU/SGC/CHA");
   CHECK(ignifaxius->value("ae_cost", -1) == 8);
+}
+
+TEST_CASE("brp_ugc: loads and resolves real BRP values") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("brp_ugc.json")));
+  CHECK(engine.ruleset().attributes.size() == 10); // 8 characteristics + Luck/Sanity
+  CHECK(engine.ruleset().derivedStats.size() == 13);
+  CHECK(engine.ruleset().skills.size() == 57);
+  CHECK(engine.ruleset().checkTypes.size() == 76);
+  CHECK(engine.ruleset().costTables.size() == 0);
+
+  auto human = engine.createEntity("average_human"); // STR 11, CON 11, SIZ 13, POW 11, DEX 11
+  REQUIRE(human != nullptr);
+  // Hit Points = ceil((CON + SIZ) / 2) = ceil(24 / 2) = 12; Power Points = POW = 11.
+  CHECK(human->resource("HP") == 12);
+  CHECK(human->resource("PP") == 11);
+  // Characteristic x5 rolls: STR_5 = 55, DEX_5 = 55.
+  CHECK(engine.calculateStat(*human, "STR_5") == 55);
+  CHECK(engine.calculateStat(*human, "DEX_5") == 55);
+  // Combat abstractions: Attack = Brawl 25, Parry = Dodge 25, Initiative = DEX 11.
+  CHECK(engine.calculateStat(*human, "Attack") == 25);
+  CHECK(engine.calculateStat(*human, "Parry") == 25);
+  CHECK(engine.calculateStat(*human, "Initiative") == 11);
+}
+
+TEST_CASE("brp_ugc: percentile checks grade BRP success levels") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("brp_ugc.json")));
+  auto human = engine.createEntity("average_human"); // Brawl 25
+  REQUIRE(human != nullptr);
+
+  // Brawl 25: Critical <= ceil(25/20) = 2, Special <= ceil(25/5) = 5, fumble >= 97.
+  auto rSpecial = script({5});
+  const rpg_os::CheckResult special =
+      engine.executeCheck("brp_skill_brawl", *human, nullptr, rpg_os::CheckParams{}, rSpecial);
+  CHECK(special.isSuccess);
+  CHECK(special.successLevel == rpg_os::SuccessLevel::Special);
+
+  auto rFail = script({26});
+  const rpg_os::CheckResult fail =
+      engine.executeCheck("brp_skill_brawl", *human, nullptr, rpg_os::CheckParams{}, rFail);
+  CHECK_FALSE(fail.isSuccess);
+  CHECK(fail.successLevel == rpg_os::SuccessLevel::Failure);
+
+  auto rFumble = script({97});
+  const rpg_os::CheckResult fumble =
+      engine.executeCheck("brp_skill_brawl", *human, nullptr, rpg_os::CheckParams{}, rFumble);
+  CHECK_FALSE(fumble.isSuccess);
+  CHECK(fumble.successLevel == rpg_os::SuccessLevel::Fumble);
+}
+
+TEST_CASE("brp_ugc: Easy and Difficult shift the skill rating (BRP)") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("brp_ugc.json")));
+  auto human = engine.createEntity("average_human"); // Brawl 25
+  REQUIRE(human != nullptr);
+
+  // Easy: Brawl 25 is doubled to 50, so a roll of 40 succeeds.
+  rpg_os::CheckParams easy;
+  easy.difficultyMode = rpg_os::DifficultyMode::Easy;
+  auto rEasy = script({40});
+  const rpg_os::CheckResult ok =
+      engine.executeCheck("brp_skill_brawl", *human, nullptr, easy, rEasy);
+  CHECK(ok.isSuccess);
+
+  // Difficult: Brawl 25 is halved to 12, so a roll of 15 fails.
+  rpg_os::CheckParams difficult;
+  difficult.difficultyMode = rpg_os::DifficultyMode::Difficult;
+  auto rDifficult = script({15});
+  const rpg_os::CheckResult fail =
+      engine.executeCheck("brp_skill_brawl", *human, nullptr, difficult, rDifficult);
+  CHECK_FALSE(fail.isSuccess);
+}
+
+TEST_CASE("brp_ugc: resistance rolls follow the Resistance Table") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("brp_ugc.json")));
+  auto human = engine.createEntity("average_human"); // POW 11
+  REQUIRE(human != nullptr);
+
+  // Equal POW (11 vs 11): chance 50. Roll 50 succeeds, roll 51 fails.
+  auto rOk = script({50});
+  const rpg_os::CheckResult ok =
+      engine.executeCheck("brp_resistance_pow", *human, human.get(), rpg_os::CheckParams{}, rOk);
+  CHECK(ok.isSuccess);
+  auto rFail = script({51});
+  const rpg_os::CheckResult fail =
+      engine.executeCheck("brp_resistance_pow", *human, human.get(), rpg_os::CheckParams{}, rFail);
+  CHECK_FALSE(fail.isSuccess);
+}
+
+TEST_CASE("brp_ugc: opposed combat compares success levels (matrix)") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("brp_ugc.json")));
+  auto human = engine.createEntity("average_human"); // Attack 25 (Brawl), Parry 25 (Dodge)
+  REQUIRE(human != nullptr);
+
+  // Attacker roll 2 is Critical (2 <= ceil(25/20)); defender roll 10 is
+  // Success (10 > ceil(25/5) = 5) -> the Critical strikes.
+  auto rHit = script({2, 10});
+  const rpg_os::CheckResult hit =
+      engine.executeCheck("brp_combat", *human, human.get(), rpg_os::CheckParams{}, rHit);
+  CHECK(hit.isSuccess);
+  CHECK(hit.successLevel == rpg_os::SuccessLevel::Critical);
+
+  // Both roll Success (10 and 20): equal levels -> the defender parries.
+  auto rParried = script({10, 20});
+  const rpg_os::CheckResult parried =
+      engine.executeCheck("brp_combat", *human, human.get(), rpg_os::CheckParams{}, rParried);
+  CHECK_FALSE(parried.isSuccess);
+}
+
+TEST_CASE("brp_ugc: major wound and instant death triggers") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("brp_ugc.json")));
+  auto human = engine.createEntity("average_human"); // HP max 12
+  REQUIRE(human != nullptr);
+
+  // 6 damage = half of max 12 in one blow -> major wound.
+  auto target = engine.createEntity("average_human");
+  REQUIRE(target != nullptr);
+  CHECK(engine.applyDamage(*human, *target, "HP", 6) == -6);
+  CHECK(target->resource("HP") == 6);
+  CHECK(target->hasCondition("Major_Wound"));
+
+  // 12 damage >= max 12 in one blow -> instant death (Dying).
+  auto target2 = engine.createEntity("average_human");
+  REQUIRE(target2 != nullptr);
+  engine.applyDamage(*human, *target2, "HP", 12);
+  CHECK(target2->hasCondition("Dying"));
+}
+
+TEST_CASE("brp_ugc: handout data is complete") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("brp_ugc.json")));
+  const rpg_os::Json &data = engine.ruleset().data;
+  CHECK(data.at("archetypes").size() == 1);
+  CHECK(data.at("creatures").size() == 0);
+  CHECK(data.at("items").size() == 25);
+  CHECK(data.at("spells").size() == 30);
+  CHECK(data.at("conditions").size() == 6);
+  CHECK(data.at("poisons").size() == 10);
+  CHECK(data.at("diseases").size() == 0);
+
+  // Reference tables transcribed from the handout.
+  CHECK(data.at("damage_modifier").size() == 8);
+  CHECK(data.at("sorcery_spells").size() == 45);
+  CHECK(data.at("psychic_abilities").size() == 21);
+  CHECK(data.at("superpowers").size() == 33);
+  CHECK(data.at("mutations").size() == 30);
+  CHECK(data.at("chaotic_features").size() == 50);
+  const rpg_os::Json &fumbles = data.at("fumble_tables");
+  CHECK(fumbles.at("natural_weapon_attack_parry").size() == 11);
+  CHECK(fumbles.at("melee_weapon_attack").size() == 12);
+  CHECK(fumbles.at("melee_weapon_parry").size() == 10);
+  CHECK(fumbles.at("missile_weapon_attack").size() == 12);
+  CHECK(data.at("major_wounds").size() == 15);
+  CHECK(data.at("personality_traits").size() == 21);
+  CHECK(data.at("reputation").at("gains").size() == 45);
+  CHECK(data.at("reputation").at("modifiers").size() == 6);
+  CHECK(data.at("sanity").at("temporary_insanity").size() == 6);
+  CHECK(data.at("sanity").at("temporary_insanity_duration").size() == 8);
+
+  // Spot-check a few transcribed entries.
+  const rpg_os::Json &sorcery = data.at("sorcery_spells");
+  const auto cloak = std::find_if(sorcery.begin(), sorcery.end(), [](const rpg_os::Json &s) {
+    return s.at("id") == "cloak_of_night";
+  });
+  REQUIRE(cloak != sorcery.end());
+  CHECK((*cloak).at("category") == "Augmentation");
+  CHECK((*cloak).at("levels") == "1-4");
+
+  // The average human has HP 12 and PP 11.
+  auto human = engine.createEntity("average_human");
+  REQUIRE(human != nullptr);
+  CHECK(human->resource("HP") == 12);
+  CHECK(human->resource("PP") == 11);
 }

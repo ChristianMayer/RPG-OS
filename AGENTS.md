@@ -108,10 +108,14 @@ mode:
   hash map; generated characters satisfy it via a `constexpr` string→member
   switch (no allocations). Named getters are convenience API on top.
 - `core/checks.hpp` implements the check algorithms (`AdditiveD20`,
-  `RollUnderD20`, `TripleRollUnderPool`, `AttackVsDefense`) as templates over
-  an actor/target `StatProvider` and a constexpr-friendly config. Universal
-  mode dispatches at runtime via a `switch`; specific mode instantiates with
-  compile-time constants.
+  `RollUnderD20`, `TripleRollUnderPool`, `AttackVsDefense`, `RollUnderD100`,
+  `OpposedRollUnderD100`, `ResistanceRoll`) as templates over an
+  actor/target `StatProvider` and a constexpr-friendly config. The three d100
+  kinds are Basic Roleplaying's percentile roll-under (graded
+  Critical/Special/Success/Fumble via `CheckResult::successLevel`), its
+  opposed combat contest (Attack and Defense Matrix), and its single-sided
+  Resistance Table roll. Universal mode dispatches at runtime via a `switch`;
+  specific mode instantiates with compile-time constants.
 - Shared helpers: `core/dice_engine.hpp` (injectable RNG), `core/math.hpp`
   (floor/ceil/round/clamp used by the AST evaluator *and* generated code),
   `core/modifier.hpp` (base→override→add→multiply→clamp pipeline),

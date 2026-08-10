@@ -6,8 +6,9 @@
  * @brief Shared check resolution algorithms.
  *
  * The check algorithms — additive d20, roll-under d20, the DSA (The Dark Eye)
- * 3d20 pool check, and attack-vs-defense — live here as templates over a
- * @c StatProvider and an @c RandomNumberGenerator. Both modes call the
+ * 3d20 pool check, attack-vs-defense, and the Basic Roleplaying percentile
+ * (d100 roll-under, opposed combat, and resistance) — live here as templates
+ * over a @c StatProvider and an @c RandomNumberGenerator. Both modes call the
  * very same functions:
  *   - generated specific-mode code calls them directly with string literals
  *     for every parameter, so the whole computation is inlined and dead
@@ -48,20 +49,26 @@ namespace rpg_os {
 
 /// The supported check mechanisms.
 ///
-/// @par Why exactly these four?
+/// @par Why exactly these seven?
 /// These are the dice mechanisms the shipped rulesets actually use: D&D 5e
 /// resolves attacks and ability checks as "1d20 + bonuses vs. a difficulty",
-/// while The Dark Eye uses roll-under attributes, 3d20 talent checks, and an
-/// attack-vs-defense contest. Keeping the set closed means the universal
-/// dispatcher (a @c switch) and the code generator (which emits named methods)
-/// both map onto a fixed vocabulary — a new game system with a fundamentally
-/// new roll mechanism would extend this enum, but that is a rare, deliberate
-/// change rather than a per-ruleset concern.
+/// The Dark Eye uses roll-under attributes, 3d20 talent checks, and an
+/// attack-vs-defense contest, and Basic Roleplaying resolves percentile rolls
+/// with a d100 roll-under (graded Critical / Special / Success / Fumble), an
+/// opposed d100 combat contest, and a single-sided resistance roll against the
+/// Resistance Table. Keeping the set closed means the universal dispatcher (a
+/// @c switch) and the code generator (which emits named methods) both map onto
+/// a fixed vocabulary — a new game system with a fundamentally new roll
+/// mechanism would extend this enum, but that is a rare, deliberate change
+/// rather than a per-ruleset concern.
 enum class CheckKind {
-  AdditiveD20,         ///< 1d20 + bonuses >= threshold (D&D attack / ability check)
-  RollUnderD20,        ///< 1d20 <= effective attribute (DSA attribute check)
-  TripleRollUnderPool, ///< 3d20 vs three attributes, pool compensates (DSA talent)
-  AttackVsDefense,     ///< attacker vs. defender roll-under contest (DSA combat)
+  AdditiveD20,          ///< 1d20 + bonuses >= threshold (D&D attack / ability check)
+  RollUnderD20,         ///< 1d20 <= effective attribute (DSA attribute check)
+  TripleRollUnderPool,  ///< 3d20 vs three attributes, pool compensates (DSA talent)
+  AttackVsDefense,      ///< attacker vs. defender roll-under contest (DSA combat)
+  RollUnderD100,        ///< 1d100 <= stat with Critical/Special/Success levels (BRP)
+  OpposedRollUnderD100, ///< opposed 1d100 combat contest (BRP Attack/Defense Matrix)
+  ResistanceRoll        ///< single D100 vs the BRP Resistance Table chance
 };
 
 /**
@@ -103,14 +110,27 @@ struct CheckConfig {
   std::string parryStat{};
 };
 
+/// BRP difficulty level applied to a percentile roll-under check.
+///
+/// @par Why a mode rather than a flat modifier?
+/// BRP grades difficulty by multiplying the skill rating — Easy doubles it,
+/// Difficult halves it — rather than adding a constant. A mode lets the
+/// resolver apply that multiplication faithfully, while @c CheckParams::
+/// difficulty still carries the flat ±20% situational modifiers.
+enum class DifficultyMode : int8_t {
+  Average = 0,   ///< no change to the stat
+  Easy = 1,      ///< double the effective stat
+  Difficult = -1 ///< halve the effective stat
+};
+
 /// Per-call inputs shared by both modes.
 ///
 /// @par Why separate per-call inputs from the config?
 /// The config says @em how a check is resolved (which mechanism, which stats);
 /// this struct carries the values that change @em per invocation — the
-/// difficulty imposed by the situation, and situational modifiers such as
-/// cover or a bonus die. Keeping them apart means the config can be built once
-/// and reused across many checks with different difficulties.
+/// difficulty imposed by the situation, and situational modifiers. Keeping
+/// them apart means the config can be built once and reused across many checks
+/// with different difficulties.
 struct CheckParams {
   /// AdditiveD20: the DC when config.targetStat is empty; RollUnderD20: the
   /// attribute modifier; TripleRollUnderPool / AttackVsDefense: the modifier
@@ -118,6 +138,9 @@ struct CheckParams {
   int32_t difficulty{0};
   /// Extra flat modifier added to the d20 total (AdditiveD20) or the pool.
   int32_t situationalModifier{0};
+  /// BRP difficulty level (Easy doubles the stat, Difficult halves it). Only
+  /// the d100 roll-under kind uses it; see @ref DifficultyMode.
+  DifficultyMode difficultyMode{DifficultyMode::Average};
 };
 
 /// The Dark Eye quality level derived from leftover skill points:
@@ -132,6 +155,34 @@ struct CheckParams {
     return 1;
   }
   return (remaining - 1) / 3 + 1;
+}
+
+/// Maps a percentile roll to a Basic Roleplaying success level against `stat`.
+///
+/// @par Why a single helper shared by solo and opposed rolls?
+/// Both BRP mechanisms (a lone roll-under check and an opposed combat
+/// contest) grade the same way — Critical at stat/20, Special at stat/5,
+/// Success at stat, and a skill-dependent fumble band — and the opposed
+/// resolver must compare the two sides' levels. One helper guarantees the two
+/// mechanisms can never disagree about what a roll means.
+///
+/// The thresholds follow the BRP Skill Results Table: the critical range is
+/// ceil(stat/20), the special range ceil(stat/5), and the fumble band starts
+/// at 95 + ceil(stat/20) (i.e. 96-00 for a skill up to 20, 97-00 up to 40,
+/// ..., 00 for 81+), capped at 100 so a roll of 00 always fumbles.
+[[nodiscard]] inline SuccessLevel successLevelFor(int32_t stat, int roll) noexcept {
+  const int rawFumbleMin = 95 + (stat + 19) / 20; // 95 + ceil(stat/20)
+  const int fumbleMin = rawFumbleMin < 100 ? rawFumbleMin : 100;
+  if (roll >= fumbleMin) {
+    return SuccessLevel::Fumble;
+  }
+  if (roll <= (stat + 19) / 20) { // ceil(stat/20)
+    return SuccessLevel::Critical;
+  }
+  if (roll <= (stat + 4) / 5) { // ceil(stat/5)
+    return SuccessLevel::Special;
+  }
+  return roll <= stat ? SuccessLevel::Success : SuccessLevel::Failure;
 }
 
 namespace detail {
@@ -329,6 +380,115 @@ resolveAttackVsDefense(const Actor &actor, const Target &target, std::string_vie
   return result;
 }
 
+/// BRP percentile roll-under: 1d100 <= stat with graded levels of success.
+/// Critical (<= stat/20), Special (<= stat/5), Success (<= stat), Failure
+/// (above stat) and a skill-dependent fumble band (see @ref successLevelFor).
+/// The difficulty parameter shifts the stat (a flat ±20% situational
+/// modifier) and @ref DifficultyMode applies BRP's Easy (double) / Difficult
+/// (halve) levels; the margin is stat - roll (higher is better, negative on
+/// failure).
+///
+/// @par Why a d100 variant at all?
+/// BRP (and the other percentile games built on it) resolve almost every
+/// check by rolling a percentage against a percentile skill or characteristic,
+/// grading the result into Critical / Special / Success / Fumble bands. The
+/// d20 roll-under mechanism cannot express those bands (the die never exceeds
+/// 20), so the d100 mechanism carries the full percentile semantics the game
+/// actually uses.
+template <StatProvider Actor, RandomNumberGenerator Rng>
+[[nodiscard]] CheckResult resolveRollUnderD100(const Actor &actor, std::string_view attribute,
+                                               const CheckParams &params, Rng &rng) {
+  CheckResult result;
+  int32_t stat = actor.getStat(attribute) + params.difficulty;
+  if (params.difficultyMode == DifficultyMode::Easy) {
+    stat *= 2;
+  } else if (params.difficultyMode == DifficultyMode::Difficult) {
+    stat /= 2;
+  }
+  const int roll = detail::rollDie(100, rng);
+  result.rawDiceRolls.push_back(roll);
+  result.marginOfSuccess = static_cast<int32_t>(stat - roll);
+  result.successLevel = successLevelFor(stat, roll);
+  result.isCriticalSuccess = result.successLevel == SuccessLevel::Critical;
+  result.isCriticalFailure = result.successLevel == SuccessLevel::Fumble;
+  result.isSuccess = result.successLevel >= SuccessLevel::Success;
+  return result;
+}
+
+/// BRP opposed combat: both sides roll 1d100 against their own stat (the
+/// attacker against `attackStat`, the defender against `parryStat`) and grade
+/// them Critical / Special / Success / Failure / Fumble. Per the Attack and
+/// Defense Matrix the attack strikes only when the attacker's success level
+/// is strictly higher than the defender's; equal levels mean the defender
+/// parries or dodges, and a fumbled or failed attack never connects. The
+/// result's @c isSuccess is true when the attacker hit.
+///
+/// @par Why roll both dice unconditionally (unlike the DSA parry)?
+/// The DSA attack-vs-defense parry is staged because the parry only matters
+/// after a successful attack. BRP needs both rolls up front: the two success
+/// levels are compared directly, so the defender's roll must exist even when
+/// the attack is a critical. Rolling both keeps the RNG stream aligned with
+/// the rules and the parity test exact.
+template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
+[[nodiscard]] CheckResult
+resolveOpposedRollUnderD100(const Actor &actor, const Target &target, std::string_view attackStat,
+                            std::string_view parryStat, const CheckParams &params, Rng &rng) {
+  const int32_t attackValue = actor.getStat(attackStat) + params.difficulty;
+  const int32_t parryValue = target.getStat(parryStat);
+
+  CheckResult result;
+  const int attackRoll = detail::rollDie(100, rng);
+  const int parryRoll = detail::rollDie(100, rng);
+  result.rawDiceRolls = {attackRoll, parryRoll};
+  result.marginOfSuccess = static_cast<int32_t>(attackValue - attackRoll);
+  const SuccessLevel attackLevel = successLevelFor(attackValue, attackRoll);
+  const SuccessLevel parryLevel = successLevelFor(parryValue, parryRoll);
+  result.successLevel = attackLevel;
+  result.isCriticalSuccess = attackLevel == SuccessLevel::Critical;
+  result.isCriticalFailure = attackLevel == SuccessLevel::Fumble;
+  // Attack and Defense Matrix: a hit needs a strictly higher success level
+  // (and at least a plain success); equal levels mean the defender parries.
+  result.isSuccess = attackLevel >= SuccessLevel::Success && attackLevel > parryLevel;
+  return result;
+}
+
+/// BRP resistance roll: a single D100 against the chance from the Resistance
+/// Table. Equal active and passive characteristics give a 50% chance; each
+/// point of difference shifts it by 5% (chance = 50 + 5 * (active - passive)),
+/// with automatic success/failure beyond the 5%-95% rollable band. The
+/// difficulty parameter shifts the active characteristic (a situational
+/// modifier).
+///
+/// @par Why a single roll against a computed chance (not an opposed contest)?
+/// BRP resistance is not a both-sides-compare: the Resistance Table yields one
+/// percentage and the active side rolls it. Only the acting character consumes
+/// RNG, matching the table exactly.
+template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
+[[nodiscard]] CheckResult
+resolveResistanceRoll(const Actor &actor, const Target &target, std::string_view activeStat,
+                      std::string_view passiveStat, const CheckParams &params, Rng &rng) {
+  CheckResult result;
+  const int32_t active = actor.getStat(activeStat) + params.difficulty;
+  const int32_t passive = target.getStat(passiveStat);
+  const int32_t chance = 50 + 5 * (active - passive);
+  if (chance >= 100) {
+    result.isSuccess = true; // automatic success (off the top of the table)
+    result.successLevel = SuccessLevel::Success;
+    return result;
+  }
+  if (chance <= 0) {
+    result.isSuccess = false; // automatic failure (off the bottom of the table)
+    result.successLevel = SuccessLevel::Failure;
+    return result;
+  }
+  const int roll = detail::rollDie(100, rng);
+  result.rawDiceRolls.push_back(roll);
+  result.marginOfSuccess = static_cast<int32_t>(chance - roll);
+  result.isSuccess = roll <= chance;
+  result.successLevel = result.isSuccess ? SuccessLevel::Success : SuccessLevel::Failure;
+  return result;
+}
+
 /// Runtime dispatcher over @ref CheckKind. This is the *universal-mode* entry
 /// point: it turns a ruleset-supplied @ref CheckConfig into a call to one of
 /// the algorithm templates. Specific mode calls the algorithm functions
@@ -362,6 +522,13 @@ template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
                                       config.attributes[2], config.poolStat, params, rng);
   case CheckKind::AttackVsDefense:
     return resolveAttackVsDefense(actor, target, config.attackStat, config.parryStat, params, rng);
+  case CheckKind::RollUnderD100:
+    return resolveRollUnderD100(actor, config.attributes[0], params, rng);
+  case CheckKind::OpposedRollUnderD100:
+    return resolveOpposedRollUnderD100(actor, target, config.attackStat, config.parryStat, params,
+                                       rng);
+  case CheckKind::ResistanceRoll:
+    return resolveResistanceRoll(actor, target, config.attackStat, config.parryStat, params, rng);
   }
   return {};
 }

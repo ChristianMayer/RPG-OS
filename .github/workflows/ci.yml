@@ -51,6 +51,7 @@ jobs:
         run: >
           python3 codegen/rpg_os_codegen.py --ruleset rulesets/dnd5e_srd.json --out /tmp/codegen
           && python3 codegen/rpg_os_codegen.py --ruleset rulesets/tde5e_core.json --out /tmp/codegen
+          && python3 codegen/rpg_os_codegen.py --ruleset rulesets/brp_ugc.json --out /tmp/codegen
 
       - name: Format regenerated output like the committed files
         run: |
@@ -72,5 +73,5 @@ jobs:
         run: pip install jsonschema
 
       - name: Validate rulesets against ruleset.schema.json
-        run: python3 codegen/validate_ruleset.py rulesets/dnd5e_srd.json rulesets/tde5e_core.json
+        run: python3 codegen/validate_ruleset.py rulesets/dnd5e_srd.json rulesets/tde5e_core.json rulesets/brp_ugc.json
 

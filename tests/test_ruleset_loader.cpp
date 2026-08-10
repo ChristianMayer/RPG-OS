@@ -155,6 +155,40 @@ TEST_CASE("RulesetLoader: check type config is populated") {
   CHECK(ruleset.findCheckType("missing") == nullptr);
 }
 
+TEST_CASE("RulesetLoader: percentile d100 check kinds are parsed") {
+  const Ruleset ruleset = RulesetLoader::loadFromString(R"json(
+    {
+      "schema_version": 1,
+      "ruleset_id": "brp_demo",
+      "licence": "demo",
+      "attributes": [ { "id": "POW", "name": "Power" } ],
+      "skills": [ { "id": "spot", "name": "Spot", "attributes": ["POW"], "default": 25 } ],
+      "check_types": {
+        "brp_check_pow": { "kind": "roll_under_d100", "attributes": ["POW"] },
+        "brp_combat": { "kind": "opposed_roll_under_d100", "attack_stat": "spot", "parry_stat": "POW" },
+        "brp_resistance": { "kind": "resistance_roll", "attack_stat": "POW", "parry_stat": "POW" }
+      }
+    }
+  )json");
+  const rpg_os::CheckTypeDef *pow = ruleset.findCheckType("brp_check_pow");
+  REQUIRE(pow != nullptr);
+  CHECK(pow->config.kind == rpg_os::CheckKind::RollUnderD100);
+  CHECK(pow->config.numAttributes == 1);
+  CHECK(pow->config.attributes[0] == "POW");
+
+  const rpg_os::CheckTypeDef *combat = ruleset.findCheckType("brp_combat");
+  REQUIRE(combat != nullptr);
+  CHECK(combat->config.kind == rpg_os::CheckKind::OpposedRollUnderD100);
+  CHECK(combat->config.attackStat == "spot");
+  CHECK(combat->config.parryStat == "POW");
+
+  const rpg_os::CheckTypeDef *resistance = ruleset.findCheckType("brp_resistance");
+  REQUIRE(resistance != nullptr);
+  CHECK(resistance->config.kind == rpg_os::CheckKind::ResistanceRoll);
+  CHECK(resistance->config.attackStat == "POW");
+  CHECK(resistance->config.parryStat == "POW");
+}
+
 TEST_CASE("RulesetLoader: cost tables are loaded") {
   const Ruleset ruleset = loadValid();
   const rpg_os::CostTableDef *columnA = ruleset.findCostTable("DSA_Column_A");

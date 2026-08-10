@@ -95,6 +95,9 @@ if(Python3_Interpreter_FOUND)
     COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/codegen/rpg_os_codegen.py
             --ruleset ${PROJECT_SOURCE_DIR}/rulesets/tde5e_core.json
             --out ${PROJECT_SOURCE_DIR}/generated
+    COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/codegen/rpg_os_codegen.py
+            --ruleset ${PROJECT_SOURCE_DIR}/rulesets/brp_ugc.json
+            --out ${PROJECT_SOURCE_DIR}/generated
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     COMMENT "Regenerating codegen outputs from the rulesets")
   if(RPG_OS_RUN_CODEGEN)
