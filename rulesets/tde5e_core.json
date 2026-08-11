@@ -1434,6 +1434,33 @@
             "damage": "1d3-1"
           }
         ]
+      },
+      {
+        "id": "staff_serpent",
+        "name": "Staff Serpent",
+        "dodge": 6,
+        "speed": "2",
+        "armor_rating": 1,
+        "ini": "14+1D6",
+        "attributes": {
+          "COU": 16,
+          "SGC": 11,
+          "INT": 11,
+          "CHA": 10,
+          "DEX": 6,
+          "AGI": 11,
+          "CON": 4,
+          "STR": 4,
+          "LifePoints_Max": 12
+        },
+        "attacks": [
+          {
+            "name": "Bite",
+            "to_hit": 15,
+            "damage": "1d6",
+            "reach": "short"
+          }
+        ]
       }
     ],
     "spells": [
@@ -2288,6 +2315,23 @@
           }
         ],
         "description": "A plant poison that causes 1D6 DP (ignoring PRO) per hour and mental delusions (2 levels of Confusion); degraded: 1D3 DP and 1 level of Confusion."
+      },
+      {
+        "id": "staff_serpent_venom",
+        "name": "Staff Serpent Venom",
+        "type": "Weapon poison, venom",
+        "level": 5,
+        "save": "Toughness",
+        "onset": "2 combat rounds",
+        "duration": "30 minutes / 15 minutes",
+        "effects": [
+          {
+            "stat": "condition",
+            "amount": 2,
+            "description": "One-time 1D6 DP (ignoring PRO) and 2 levels of Pain (degraded: 1 level of Pain)"
+          }
+        ],
+        "description": "Venom from the bite of a staff serpent, the Blessed One's transformed staff. On a failed Toughness resistance: one-time 1D6 DP (ignoring PRO) and 2 levels of Pain; degraded: 1 level of Pain."
       }
     ],
     "diseases": [

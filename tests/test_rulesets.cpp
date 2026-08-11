@@ -162,9 +162,9 @@ TEST_CASE("tde5e_core: full core-rule bestiary and spell list are present") {
   rpg_os::RulesetEngine engine;
   REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
   const rpg_os::Json &data = engine.ruleset().data;
-  CHECK(data.at("creatures").size() == 10);
+  CHECK(data.at("creatures").size() == 11); // 10 bestiary + staff_serpent
   CHECK(data.at("spells").size() >= 50);
-  CHECK(data.at("poisons").size() == 5); // toad_poison + Arax/Kelmon/Tulmadron/Wurara
+  CHECK(data.at("poisons").size() == 6); // toad_poison + Arax/Kelmon/Tulmadron/Wurara + staff_serpent_venom
 
   // A fixed-LP creature (Kosh Toad) is unaffected by variance.
   auto toad = engine.createCreature("toad", rpg_os::Variance::Weakest);
@@ -173,6 +173,12 @@ TEST_CASE("tde5e_core: full core-rule bestiary and spell list are present") {
   auto strong = engine.createCreature("toad", rpg_os::Variance::Strongest);
   REQUIRE(strong != nullptr);
   CHECK(strong->resource("LP") == 2);
+
+  // Staff Serpent (Blessed One transformation form, Core Rules p. 330).
+  auto serpent = engine.createCreature("staff_serpent", rpg_os::Variance::Average);
+  REQUIRE(serpent != nullptr);
+  CHECK(serpent->baseAttribute("COU") == 16);
+  CHECK(serpent->resource("LP") == 12);
 
   // Real TDE spells carry their check triplets.
   const rpg_os::Json &spells = data.at("spells");
