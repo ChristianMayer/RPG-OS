@@ -62,6 +62,8 @@ TEST_CASE("generated tde5e: named members, derived getters, and resources") {
   CHECK(geron.dodge() == 7);           // round(AGI / 2) = round(13 / 2)
   CHECK(geron.attackSwordsSr6() == 7); // 6 + COU_Bonus
   CHECK(geron.parrySwords() == 4);     // 3 + AGI_Bonus
+  CHECK(geron.spirit() == 6);          // round((12 + 11 + 10) / 6)
+  CHECK(geron.toughness() == 7);       // round((13 + 13 + 13) / 6)
 
   // Resources initialized to max.
   CHECK(geron.lifePoints == 31);

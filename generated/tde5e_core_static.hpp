@@ -164,6 +164,18 @@ public:
   [[nodiscard]] int32_t rangedCombatBows() const noexcept {
     return static_cast<int32_t>((6.0 + static_cast<double>(dexterityBonus())));
   } // RangedCombat: 6 + DEX_Bonus
+  [[nodiscard]] int32_t spirit() const noexcept {
+    return static_cast<int32_t>(
+        rpg_os::math::round((((static_cast<double>(courage) + static_cast<double>(sagacity)) +
+                              static_cast<double>(intuition)) /
+                             6.0)));
+  } // Spirit: round((COU + SGC + INT) / 6)
+  [[nodiscard]] int32_t toughness() const noexcept {
+    return static_cast<int32_t>(rpg_os::math::round(
+        (((static_cast<double>(constitution) + static_cast<double>(constitution)) +
+          static_cast<double>(strength)) /
+         6.0)));
+  } // Toughness: round((CON + CON + STR) / 6)
 
   // ---- StatProvider (string -> member switch, no allocations) ----
   [[nodiscard]] int32_t getStat(std::string_view id) const noexcept {
@@ -327,6 +339,10 @@ public:
       return parrySwords();
     if (id == "RangedCombat")
       return rangedCombatBows();
+    if (id == "Spirit")
+      return spirit();
+    if (id == "Toughness")
+      return toughness();
     return 0;
   }
 

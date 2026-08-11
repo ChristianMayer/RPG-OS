@@ -131,6 +131,16 @@
       "id": "RangedCombat",
       "name": "Ranged Combat (Bows)",
       "formula": "6 + DEX_Bonus"
+    },
+    {
+      "id": "Spirit",
+      "name": "Spirit",
+      "formula": "round((COU + SGC + INT) / 6)"
+    },
+    {
+      "id": "Toughness",
+      "name": "Toughness",
+      "formula": "round((CON + CON + STR) / 6)"
     }
   ],
   "resource_pools": [
@@ -1164,7 +1174,27 @@
           "CON": 15,
           "STR": 15,
           "LifePoints_Max": 35
-        }
+        },
+        "attacks": [
+          {
+            "name": "Unarmed",
+            "to_hit": 12,
+            "damage": "1d6+1",
+            "reach": "short"
+          },
+          {
+            "name": "Long Sword",
+            "to_hit": 16,
+            "damage": "1d6+5",
+            "reach": "medium"
+          },
+          {
+            "name": "Whip",
+            "to_hit": 16,
+            "damage": "1d6+1",
+            "reach": "long"
+          }
+        ]
       },
       {
         "id": "irrhalk",
@@ -1401,7 +1431,7 @@
           {
             "name": "Beak",
             "to_hit": 14,
-            "damage": "1d3"
+            "damage": "1d3-1"
           }
         ]
       }
@@ -1415,7 +1445,9 @@
         "ae_cost": 16,
         "range": "Touch",
         "duration": "Immediate",
-        "target_category": "Creatures, Objects Properties: Clairvoyance Tradition: General",
+        "target_category": "Creatures, Objects",
+        "property": "Clairvoyance",
+        "traditions": "General",
         "improvement_cost": "C",
         "description": "Most mages who specialize in Clairvoyance spells need Analyze to observe an object or creature’s magic and make deductions about its type or effect. This spell reveals whether an object or creature is magical, and if so, it also reveals details about the object or creature’s arcane structure. This information can be useful for a magical analysis. When performing a magical analysis, the maximum number of QL you can normally achieve with the Magical Lore (appropriate application) check is equal to the QL of the Analyze spell. For example, a spellcaster who gets a result of 3 QL with Analyze can usually achieve no more than 3 QL in the Magical Lore check (exception—see the special ability Analyst on page 214). Similarly, with a QL of 4 in Analyze , the spellcaster can normally achieve at most a QL of 4 in the Magical Lore check for the analysis, and so on. For more about conducting magical analyses, see page 268."
       },
@@ -1585,7 +1617,7 @@
         "duration": "Sustained",
         "target_category": "Creatures",
         "property": "Illusion",
-        "traditions": "Elf",
+        "traditions": "Witch",
         "improvement_cost": "B",
         "description": "In the past, many witches lived in fear of angry village mobs and agents of the Inquisition. With Harmless Shape , they were able to cloak themselves in the illusion of an innocent child or other harmless creature, in order to escape their pursuers’ wrath. You take the shape of an inconspicuous person (such as a servant or beggar) that does not attract attention at the current location. The illusion changes your appearance and voice, but does not grant knowledge of things like languages or appropriate behavior. This spell does not hide larger objects or familiars. The spell itself picks the shape automatically—the caster cannot choose which appearance to take. For more about illusion spells and spotting illusions, see page 258."
       },
@@ -1721,7 +1753,7 @@
         "check": "COU/INT/CHA (modified by Spirit)",
         "casting_time": "2 Actions",
         "ae_cost": 8,
-        "range": "Touch (you cannot use a modification on this spell’s range)",
+        "range": "Touch (you cannot use a modification on this spell's range)",
         "duration": "QL x 15 in minutes",
         "target_category": "Living Creatures",
         "property": "Influence",
@@ -1930,9 +1962,9 @@
         "name": "Spellblade Spiritspear",
         "check": "SGC/INT/DEX",
         "casting_time": "8 hours",
-        "ae_cost": "depends on the weapon",
+        "ae_cost": "Depends on the weapon (you cannot use a modification on this ritual's cost)",
         "range": "8 yards",
-        "duration": "SP in days",
+        "duration": "QL in days",
         "target_category": "Objects",
         "property": "Object",
         "traditions": "General",
@@ -2173,6 +2205,7 @@
         "name": "Toad Poison",
         "type": "Contact or weapon poison, animal venom",
         "level": 4,
+        "save": "Toughness",
         "onset": "5 combat rounds",
         "duration": "30 minutes",
         "effects": [
@@ -2189,6 +2222,7 @@
         "name": "Arax",
         "type": "Weapon poison, animal venom",
         "level": 3,
+        "save": "Toughness",
         "price": "100 ST",
         "onset": "10 minutes",
         "duration": "1 day / 12 hours",
@@ -2206,6 +2240,7 @@
         "name": "Kelmon",
         "type": "Contact or weapon poison, plant poison",
         "level": 2,
+        "save": "Toughness",
         "price": "300 ST",
         "onset": "5 combat rounds",
         "duration": "30 minutes / 15 minutes",
@@ -2223,6 +2258,7 @@
         "name": "Tulmadron",
         "type": "Ingestion or weapon poison, mineral poison",
         "level": 4,
+        "save": "Toughness",
         "price": "1250 ST",
         "onset": "20 combat rounds",
         "duration": "50 combat rounds / 25 combat rounds",
@@ -2240,6 +2276,7 @@
         "name": "Wurara",
         "type": "Ingestion or weapon poison, plant poison",
         "level": 2,
+        "save": "Toughness",
         "price": "100 ST",
         "onset": "3 combat rounds",
         "duration": "4 hours / 2 hours",
@@ -2295,7 +2332,7 @@
         "level": 5,
         "save": "Spirit",
         "onset": "3 days",
-        "duration": "Varies",
+        "duration": "7 days/3 days",
         "effects": [
           {
             "stat": "condition",

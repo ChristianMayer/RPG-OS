@@ -15,6 +15,8 @@
 #include "test_util.hpp"
 
 #include <doctest/doctest.h>
+#include <fstream>
+#include <iterator>
 #include <rpg_os/universal/combat.hpp>
 #include <string>
 
@@ -62,9 +64,32 @@ TEST_CASE("combat: archetype spec uses derived attack/parry and a weapon") {
   CHECK(greatsword.damageExpression == "2d6");
 }
 
-TEST_CASE("combat: a bestiary entry without attacks falls back to derived values") {
+TEST_CASE("combat: a bestiary entry with attacks uses its best attack") {
   rpg_os::RulesetEngine engine;
   REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  rpg_os::CombatantSpec spec;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "heshthot", spec));
+  CHECK_FALSE(spec.isArchetype);
+  CHECK(spec.defenseValue == 7);           // bestiary `dodge`
+  CHECK(spec.attackValue == 16);           // best `to_hit` (Long Sword / Whip)
+  CHECK(spec.damageExpression == "1d6+5"); // the Long Sword's DP
+}
+
+TEST_CASE("combat: a bestiary entry without attacks falls back to derived values") {
+  // The shipped Heshthot has attacks, so strip them from a loaded copy to
+  // exercise the fallback path (no natural attack defined).
+  const std::string path = rulesetPath("tde5e_core.json");
+  std::ifstream file(path);
+  REQUIRE(file.good());
+  rpg_os::Json ruleset = rpg_os::Json::parse(
+      std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()));
+  for (rpg_os::Json &creature : ruleset["data"]["creatures"]) {
+    if (creature.value("id", "") == "heshthot") {
+      creature.erase("attacks");
+    }
+  }
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(ruleset.dump()));
   rpg_os::CombatantSpec spec;
   REQUIRE(rpg_os::makeCombatantSpec(engine, "heshthot", spec));
   CHECK_FALSE(spec.isArchetype);

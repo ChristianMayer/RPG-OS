@@ -91,6 +91,10 @@ TEST_CASE("tde5e_core: loads and resolves real TDE values") {
   CHECK(engine.calculateStat(*geron, "Attack") == 7);
   // Parry = 3 + AGI_Bonus; AGI_Bonus = floor((13 - 8) / 3) = 1 -> 4.
   CHECK(engine.calculateStat(*geron, "Parry") == 4);
+  // Spirit = round((COU + SGC + INT) / 6) = round(33 / 6) = 6 (TDE rounds up).
+  CHECK(engine.calculateStat(*geron, "Spirit") == 6);
+  // Toughness = round((CON + CON + STR) / 6) = round(39 / 6) = 7.
+  CHECK(engine.calculateStat(*geron, "Toughness") == 7);
 
   // Real TDE skill check: climbing links COU/AGI/STR (12/13/13); skill rating 7.
   auto rng = script({14, 12, 11}); // overshoots 2 + 0 + 0 = 2 -> 5 SP left.
