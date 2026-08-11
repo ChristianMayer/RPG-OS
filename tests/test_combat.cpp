@@ -15,6 +15,8 @@
 #include "test_util.hpp"
 
 #include <doctest/doctest.h>
+#include <fstream>
+#include <iterator>
 #include <rpg_os/universal/combat.hpp>
 #include <string>
 
@@ -62,9 +64,32 @@ TEST_CASE("combat: archetype spec uses derived attack/parry and a weapon") {
   CHECK(greatsword.damageExpression == "2d6");
 }
 
-TEST_CASE("combat: a bestiary entry without attacks falls back to derived values") {
+TEST_CASE("combat: a bestiary entry with attacks uses its best attack") {
   rpg_os::RulesetEngine engine;
   REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  rpg_os::CombatantSpec spec;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "heshthot", spec));
+  CHECK_FALSE(spec.isArchetype);
+  CHECK(spec.defenseValue == 7);           // bestiary `dodge`
+  CHECK(spec.attackValue == 16);           // best `to_hit` (Long Sword / Whip)
+  CHECK(spec.damageExpression == "1d6+5"); // the Long Sword's DP
+}
+
+TEST_CASE("combat: a bestiary entry without attacks falls back to derived values") {
+  // The shipped Heshthot has attacks, so strip them from a loaded copy to
+  // exercise the fallback path (no natural attack defined).
+  const std::string path = rulesetPath("tde5e_core.json");
+  std::ifstream file(path);
+  REQUIRE(file.good());
+  rpg_os::Json ruleset = rpg_os::Json::parse(
+      std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()));
+  for (rpg_os::Json &creature : ruleset["data"]["creatures"]) {
+    if (creature.value("id", "") == "heshthot") {
+      creature.erase("attacks");
+    }
+  }
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(ruleset.dump()));
   rpg_os::CombatantSpec spec;
   REQUIRE(rpg_os::makeCombatantSpec(engine, "heshthot", spec));
   CHECK_FALSE(spec.isArchetype);
@@ -127,4 +152,29 @@ TEST_CASE("combat: unknown combatant id is rejected") {
   REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
   rpg_os::CombatantSpec spec;
   CHECK_FALSE(rpg_os::makeCombatantSpec(engine, "no_such_creature", spec));
+}
+
+TEST_CASE("combat: brp_ugc opposed percentile combat runs to the end") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("brp_ugc.json")));
+  CHECK(rpg_os::resolveAttackCheckType(engine.ruleset()) == "brp_combat");
+  CHECK(rpg_os::resolveHitPointPool(engine.ruleset()) == "HP");
+
+  // Archetype: Attack = Brawl 25, Parry = Dodge 25, custom weapon.
+  rpg_os::CombatantSpec humanA;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "average_human", humanA, "1d12"));
+  CHECK(humanA.isArchetype);
+  CHECK(humanA.attackValue == 25);
+  CHECK(humanA.defenseValue == 25);
+
+  // Scripted RNG: human A wins initiative (13 vs 12), lands a critical (1,
+  // <= ceil(25/20) = 2) that is not parried (50 > 25) and rolls maximum
+  // damage (12) -> the other human's 12 hit points are gone in one round.
+  auto rng = script({2, 1, 1, 50, 12});
+  const rpg_os::FightOutcome outcome =
+      rpg_os::runFight(engine, humanA, humanA, "brp_combat", "HP", 100, rng);
+  CHECK(outcome.winnerIndex == 0);
+  CHECK(outcome.rounds == 1);
+  CHECK(outcome.remainingLp[0] == 12); // attacker untouched
+  CHECK(outcome.remainingLp[1] == 0);  // defender at 0
 }

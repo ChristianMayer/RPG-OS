@@ -346,6 +346,15 @@ inline CheckKind RulesetLoader::parseKind(std::string_view kind) {
   if (kind == "attack_vs_defense") {
     return CheckKind::AttackVsDefense;
   }
+  if (kind == "roll_under_d100") {
+    return CheckKind::RollUnderD100;
+  }
+  if (kind == "opposed_roll_under_d100") {
+    return CheckKind::OpposedRollUnderD100;
+  }
+  if (kind == "resistance_roll") {
+    return CheckKind::ResistanceRoll;
+  }
   throw std::invalid_argument(error("unknown check kind '" + std::string(kind) + "'"));
 }
 

@@ -105,7 +105,7 @@
         "properties": {
           "kind": {
             "type": "string",
-            "enum": ["additive_d20", "roll_under_d20", "triple_roll_under_pool", "attack_vs_defense"]
+            "enum": ["additive_d20", "roll_under_d20", "triple_roll_under_pool", "attack_vs_defense", "roll_under_d100", "opposed_roll_under_d100", "resistance_roll"]
           },
           "dice_expression": { "type": "string", "description": "e.g. '1d20'." },
           "bonus_stats": { "type": "array", "items": { "type": "string" } },
@@ -221,7 +221,185 @@
           }
         },
         "poisons": { "type": "array", "items": { "$ref": "#/definitions/afflictionRecord" } },
-        "diseases": { "type": "array", "items": { "$ref": "#/definitions/afflictionRecord" } }
+        "diseases": { "type": "array", "items": { "$ref": "#/definitions/afflictionRecord" } },
+
+        "damage_modifier": {
+          "type": "array",
+          "description": "BRP damage modifier table: STR+SIZ ranges to the damage-modifier dice (e.g. '2 to 12' -> '-1D6').",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "min": { "type": "integer" },
+              "max": { "type": "integer" },
+              "modifier": { "type": "string" }
+            }
+          }
+        },
+        "sorcery_spells": {
+          "type": "array",
+          "description": "Reference list of sorcery spells from the handout, categorized (Augmentation, Characteristic, Combat, Enhancement, Elemental, Manipulative, Occult, Summoning, Utility), with the level range each spell costs 1 power point per level.",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "category": { "type": "string" },
+              "levels": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "psychic_abilities": {
+          "type": "array",
+          "description": "Reference list of psychic abilities from the handout; each costs a minimum of 1 power point to use.",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "superpowers": {
+          "type": "array",
+          "description": "Reference list of superpowers from the handout.",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "mutations": {
+          "type": "array",
+          "description": "Random mutation table from the handout (roll D100); adverse mutations are flagged.",
+          "items": {
+            "type": "object",
+            "required": ["roll", "name"],
+            "additionalProperties": true,
+            "properties": {
+              "roll": { "type": "string" },
+              "name": { "type": "string" },
+              "adverse": { "type": "boolean" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "chaotic_features": {
+          "type": "array",
+          "description": "Chaotic Features table from the handout: optional features for demons and other creatures of chaos.",
+          "items": {
+            "type": "object",
+            "required": ["roll"],
+            "additionalProperties": true,
+            "properties": {
+              "roll": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "fumble_tables": {
+          "type": "object",
+          "description": "Combat fumble tables from the handout (natural weapon attack/parry, melee weapon attack/parry, missile weapon attack), keyed by table name.",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["roll"],
+              "additionalProperties": true,
+              "properties": {
+                "roll": { "type": "string" },
+                "result": { "type": "string" }
+              }
+            }
+          }
+        },
+        "major_wounds": {
+          "type": "array",
+          "description": "Major Wound table from the handout; consulted when a character suffers a major wound.",
+          "items": {
+            "type": "object",
+            "required": ["roll"],
+            "additionalProperties": true,
+            "properties": {
+              "roll": { "type": "string" },
+              "result": { "type": "string" }
+            }
+          }
+        },
+        "personality_traits": {
+          "type": "array",
+          "description": "Personality trait pairs from the handout; the value of the opposite trait is 100 minus the initial trait.",
+          "items": {
+            "type": "object",
+            "required": ["trait"],
+            "additionalProperties": true,
+            "properties": {
+              "trait": { "type": "string" },
+              "opposite": { "type": "string" }
+            }
+          }
+        },
+        "reputation": {
+          "type": "object",
+          "description": "Reputation gains list and observer modifiers from the handout.",
+          "additionalProperties": true,
+          "properties": {
+            "gains": { "type": "array", "items": { "type": "string" } },
+            "modifiers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "observer": { "type": "string" },
+                  "modifier": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "sanity": {
+          "type": "object",
+          "description": "Sanity reference tables from the handout: temporary insanity and its duration.",
+          "additionalProperties": true,
+          "properties": {
+            "temporary_insanity": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["roll"],
+                "additionalProperties": true,
+                "properties": {
+                  "roll": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            },
+            "temporary_insanity_duration": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["roll"],
+                "additionalProperties": true,
+                "properties": {
+                  "roll": { "type": "string" },
+                  "duration": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
       }
     }
   },

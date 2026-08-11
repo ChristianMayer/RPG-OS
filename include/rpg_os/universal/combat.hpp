@@ -78,7 +78,8 @@ struct FightOutcome {
     }
   }
   for (const CheckTypeDef &def : ruleset.checkTypes) {
-    if (def.config.kind == CheckKind::AttackVsDefense) {
+    if (def.config.kind == CheckKind::AttackVsDefense ||
+        def.config.kind == CheckKind::OpposedRollUnderD100) {
       return def.id;
     }
   }

@@ -72,8 +72,10 @@ int main(int argc, char **argv) {
 
   std::cout << "=== D&D 5e SRD (specific mode) ===\n";
   const rpg_os::Json dnd = loadRuleset(root, "dnd5e_srd.json");
-  const auto fighter = rpg_os::generated::dnd5e::Character::fromArchetype(dnd, "fighter_lvl1");
-  std::cout << "Fighter: STR " << fighter.strength << " (mod " << fighter.strengthModifier()
+  // The SRD ruleset stores text descriptions (classes/species/backgrounds/feats)
+  // rather than PC archetype blocks, so load a bestiary entry instead.
+  const auto fighter = rpg_os::generated::dnd5e::Character::fromCreature(dnd, "goblin_warrior");
+  std::cout << "Goblin: STR " << fighter.strength << " (mod " << fighter.strengthModifier()
             << "), AC " << fighter.armorClass() << ", HP " << fighter.hitPoints << '\n';
 
   rpg_os::CheckParams attackParams;

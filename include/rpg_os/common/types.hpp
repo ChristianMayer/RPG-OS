@@ -57,6 +57,24 @@ using StatValue = int32_t;
  * Eye's 3d20 talent checks produce. Bundling them avoids spreading check
  * bookkeeping across several ad-hoc return values.
  */
+/**
+ * Level of success of a percentile (d100) roll-under check (Basic Roleplaying).
+ *
+ * @par Why an ordered enum?
+ * BRP opposed combat is resolved via the Attack and Defense Matrix, which
+ * compares success levels — a Special beats a Success, a Critical beats a
+ * Special. Encoding the levels in ascending order lets the resolver compare
+ * them with a single integer comparison, in both the universal dispatch and
+ * the compiled specific-mode code, without a lookup table.
+ */
+enum class SuccessLevel : int8_t {
+  Fumble = 0,
+  Failure = 1,
+  Success = 2,
+  Special = 3,  ///< roll at or below stat/5
+  Critical = 4, ///< roll at or below stat/20; ranks above Special
+};
+
 struct CheckResult {
   /// Whether the check succeeded. Criticals override the raw comparison.
   bool isSuccess{false};
@@ -84,6 +102,10 @@ struct CheckResult {
   /// Kept in the shared struct so universal and specific mode report the
   /// same quality bands for the same remaining pool.
   int32_t qualityLevel{0};
+  /// Level of success of a percentile (d100) roll-under check (BRP).
+  /// Fail for every other mechanism; only @c RollUnderD100,
+  /// @c OpposedRollUnderD100 and @c ResistanceRoll fill it in.
+  SuccessLevel successLevel{SuccessLevel::Failure};
 };
 
 } // namespace rpg_os

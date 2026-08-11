@@ -14,6 +14,7 @@
  */
 #include "test_util.hpp"
 
+#include <brp_ugc_static.hpp>
 #include <dnd5e_srd_static.hpp>
 #include <doctest/doctest.h>
 #include <fstream>
@@ -29,6 +30,7 @@ using rpg_os::CheckParams;
 using rpg_os::CheckResult;
 using TdeCharacter = rpg_os::generated::tde5e::Character;
 using DndCharacter = rpg_os::generated::dnd5e::Character;
+using BrpCharacter = rpg_os::generated::brp_ugc::Character;
 
 std::string readFile(const char *name) {
   const std::string path = std::string(RPG_OS_SOURCE_DIR) + "/rulesets/" + name;
@@ -57,9 +59,11 @@ TEST_CASE("generated tde5e: named members, derived getters, and resources") {
 
   // Named derived getters (compiled formulas).
   CHECK(geron.maxLifePoints() == 31);  // 5 + 2 * CON
-  CHECK(geron.dodge() == 6);           // AGI / 2
+  CHECK(geron.dodge() == 7);           // round(AGI / 2) = round(13 / 2)
   CHECK(geron.attackSwordsSr6() == 7); // 6 + COU_Bonus
   CHECK(geron.parrySwords() == 4);     // 3 + AGI_Bonus
+  CHECK(geron.spirit() == 6);          // round((12 + 11 + 10) / 6)
+  CHECK(geron.toughness() == 7);       // round((13 + 13 + 13) / 6)
 
   // Resources initialized to max.
   CHECK(geron.lifePoints == 31);
@@ -97,8 +101,16 @@ TEST_CASE("generated tde5e: named skill checks match the universal engine (parit
 }
 
 TEST_CASE("generated dnd5e: named members, derived getters, cost table") {
-  const rpg_os::Json ruleset = loadRuleset("dnd5e_srd.json");
-  const DndCharacter fighter = DndCharacter::fromArchetype(ruleset, "fighter_lvl1");
+  // The SRD ruleset stores text descriptions (classes/species/backgrounds/feats)
+  // rather than archetype blocks, so construct a fighter directly via its
+  // named members. The data database is still loaded from the JSON at runtime.
+  DndCharacter fighter;
+  fighter.strength = 16;
+  fighter.dexterity = 14;
+  fighter.constitution = 14;
+  fighter.proficiencyBonus = 2;
+  fighter.maxHitPoints = 12;
+  fighter.hitPoints = 12;
 
   CHECK(fighter.strength == 16);
   CHECK(fighter.dexterity == 14);
@@ -115,8 +127,15 @@ TEST_CASE("generated dnd5e: named members, derived getters, cost table") {
 }
 
 TEST_CASE("generated dnd5e: attack check matches the universal engine (parity)") {
-  const rpg_os::Json ruleset = loadRuleset("dnd5e_srd.json");
-  const DndCharacter fighter = DndCharacter::fromArchetype(ruleset, "fighter_lvl1");
+  // Same fighter, built directly for the specific (generated) mode and via a
+  // JSON record for the universal mode.
+  DndCharacter fighter;
+  fighter.strength = 16;
+  fighter.dexterity = 14;
+  fighter.constitution = 14;
+  fighter.proficiencyBonus = 2;
+  fighter.maxHitPoints = 12;
+  fighter.hitPoints = 12;
 
   auto rng = script({10}); // 10 + STR_mod(3) + prof(2) = 15 >= AC 12
   const CheckResult specific = fighter.dnd5eAttackMelee(fighter, CheckParams{}, rng);
@@ -125,11 +144,13 @@ TEST_CASE("generated dnd5e: attack check matches the universal engine (parity)")
 
   rpg_os::RulesetEngine engine;
   REQUIRE(engine.loadRulesetFromJson(readFile("dnd5e_srd.json")));
-  auto universal = engine.createEntity("fighter_lvl1");
-  REQUIRE(universal != nullptr);
+  rpg_os::DynamicEntity universal(engine.ruleset(), "fighter");
+  rpg_os::Json record = rpg_os::Json::parse(
+      R"({"attributes":{"STR":16,"DEX":14,"CON":14,"proficiency_bonus":2,"HitPoints_Max":12}})");
+  universal.loadFromArchetype(record);
   auto rng2 = script({10});
   const CheckResult universalResult =
-      engine.executeCheck("dnd5e_attack_melee", *universal, universal.get(), CheckParams{}, rng2);
+      engine.executeCheck("dnd5e_attack_melee", universal, &universal, CheckParams{}, rng2);
   CHECK(universalResult.isSuccess == specific.isSuccess);
   CHECK(universalResult.marginOfSuccess == specific.marginOfSuccess);
   CHECK(universalResult.rawDiceRolls == specific.rawDiceRolls);
@@ -143,42 +164,145 @@ TEST_CASE("generated tde5e: loadArchetypes reads every archetype from JSON") {
   CHECK(heroes[1].courage == 12); // geron
 }
 
-TEST_CASE("generated code: variance-aware fromArchetype overloads") {
+TEST_CASE("generated code: variance-aware fromCreature (ranged hit points)") {
   const rpg_os::Json ruleset = loadRuleset("dnd5e_srd.json");
 
-  // Weakest/strongest map scalar attributes unchanged and ranged values to the
-  // dice bounds. The fighter archetype has no ranges, so both match the base.
-  auto rngWeak = script({0});
-  auto rngStrong = script({0});
-  const DndCharacter weakest =
-      DndCharacter::fromArchetype(ruleset, "fighter_lvl1", rpg_os::Variance::Weakest, rngWeak);
-  const DndCharacter strongest =
-      DndCharacter::fromArchetype(ruleset, "fighter_lvl1", rpg_os::Variance::Strongest, rngStrong);
-  CHECK(weakest.strength == 16);
-  CHECK(strongest.strength == 16);
-  CHECK(weakest.hitPoints == 12);
-  CHECK(strongest.hitPoints == 12);
-}
-
-TEST_CASE("generated code: variance-aware creatures (ranged hit points)") {
-  const rpg_os::Json ruleset = loadRuleset("dnd5e_srd.json");
-
-  // goblin_warrior has "HitPoints_Max": "3d6" -> HP in [3, 18].
+  // goblin_warrior carries "HitPoints_Max": "3d6" -> HP in [3, 18].
   auto rngWeak = script({0});
   auto rngStrong = script({0});
   const DndCharacter weakest =
       DndCharacter::fromCreature(ruleset, "goblin_warrior", rpg_os::Variance::Weakest, rngWeak);
   const DndCharacter strongest =
       DndCharacter::fromCreature(ruleset, "goblin_warrior", rpg_os::Variance::Strongest, rngStrong);
+  CHECK(weakest.strength == 8); // scalar attributes unchanged
+  CHECK(strongest.strength == 8);
   CHECK(weakest.maxHitPoints == 3);
   CHECK(strongest.maxHitPoints == 18);
   CHECK(weakest.hitPoints == 3);
   CHECK(strongest.hitPoints == 18);
+}
+
+TEST_CASE("generated code: loadCreatures reads the full bestiary") {
+  const rpg_os::Json ruleset = loadRuleset("dnd5e_srd.json");
 
   // loadCreatures picks every bestiary entry (full SRD bestiary).
   const std::vector<DndCharacter> monsters = DndCharacter::loadCreatures(ruleset);
-  REQUIRE(monsters.size() == 317);
-  // The SRD bestiary is alphabetical: the first creature is the aboleth.
-  CHECK(monsters[0].maxHitPoints >= 20);
+  REQUIRE(monsters.size() == 330);
+  // The SRD bestiary is alphabetical: the first creature is the aboleth
+  // (20d10 + 40, so HP falls in [60, 240]).
+  CHECK(monsters[0].maxHitPoints >= 60);
   CHECK(monsters[0].maxHitPoints <= 240);
+}
+
+TEST_CASE("generated brp_ugc: named members, derived getters, and resources") {
+  const rpg_os::Json ruleset = loadRuleset("brp_ugc.json");
+  const BrpCharacter human = BrpCharacter::fromArchetype(ruleset, "average_human");
+
+  // Named attribute members from the archetype record.
+  CHECK(human.strength == 11);
+  CHECK(human.constitution == 11);
+  CHECK(human.size == 13);
+  CHECK(human.power == 11);
+  CHECK(human.dexterity == 11);
+  CHECK(human.luck == 50);
+  CHECK(human.sanity == 50);
+
+  // Named skill members.
+  CHECK(human.brawl == 25);
+  CHECK(human.dodge == 25);
+  CHECK(human.spot == 25);
+  CHECK(human.language == 50);
+
+  // Named derived getters (compiled formulas).
+  CHECK(human.maxHitPoints() == 12);   // ceil((CON 11 + SIZ 13) / 2)
+  CHECK(human.maxPowerPoints() == 11); // = POW
+  CHECK(human.strengthX5() == 55);     // STR * 5
+  CHECK(human.dexterityX5() == 55);    // DEX * 5
+  CHECK(human.attack() == 25);         // = Brawl
+  CHECK(human.parryDefense() == 25);   // = Dodge
+  CHECK(human.initiative() == 11);     // = DEX
+
+  // Resources initialized to max.
+  CHECK(human.hitPoints == 12);
+  CHECK(human.powerPoints == 11);
+
+  // StatProvider: string -> member / method.
+  CHECK(human.getStat("STR") == 11);
+  CHECK(human.getStat("brawl") == 25);
+  CHECK(human.getStat("HitPoints_Max") == 12);
+  CHECK(human.getStat("nope") == 0);
+}
+
+TEST_CASE("generated brp_ugc: skill checks match the universal engine (parity)") {
+  const rpg_os::Json ruleset = loadRuleset("brp_ugc.json");
+  const BrpCharacter human = BrpCharacter::fromArchetype(ruleset, "average_human");
+
+  auto rng = script({5}); // Brawl 25 / 5 = 5 -> Special
+  const CheckResult specific = human.brpSkillBrawl(CheckParams{}, rng);
+  CHECK(specific.isSuccess);
+  CHECK(specific.successLevel == rpg_os::SuccessLevel::Special);
+  CHECK(specific.marginOfSuccess == 20);
+
+  // The same scenario through the universal engine must give identical results.
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(readFile("brp_ugc.json")));
+  auto universal = engine.createEntity("average_human");
+  REQUIRE(universal != nullptr);
+  auto rng2 = script({5});
+  const CheckResult universalResult =
+      engine.executeCheck("brp_skill_brawl", *universal, nullptr, CheckParams{}, rng2);
+  CHECK(universalResult.isSuccess == specific.isSuccess);
+  CHECK(universalResult.successLevel == specific.successLevel);
+  CHECK(universalResult.marginOfSuccess == specific.marginOfSuccess);
+  CHECK(universalResult.rawDiceRolls == specific.rawDiceRolls);
+}
+
+TEST_CASE("generated brp_ugc: resistance rolls match the universal engine (parity)") {
+  const rpg_os::Json ruleset = loadRuleset("brp_ugc.json");
+  const BrpCharacter human = BrpCharacter::fromArchetype(ruleset, "average_human");
+
+  // Equal POW (11 vs 11): chance 50; roll 40 succeeds.
+  auto rng = script({40});
+  const CheckResult specific = human.brpResistancePow(human, CheckParams{}, rng);
+  CHECK(specific.isSuccess);
+
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(readFile("brp_ugc.json")));
+  auto universal = engine.createEntity("average_human");
+  REQUIRE(universal != nullptr);
+  auto rng2 = script({40});
+  const CheckResult universalResult =
+      engine.executeCheck("brp_resistance_pow", *universal, universal.get(), CheckParams{}, rng2);
+  CHECK(universalResult.isSuccess == specific.isSuccess);
+  CHECK(universalResult.rawDiceRolls == specific.rawDiceRolls);
+}
+
+TEST_CASE("generated brp_ugc: opposed combat matches the universal engine (parity)") {
+  const rpg_os::Json ruleset = loadRuleset("brp_ugc.json");
+  const BrpCharacter human = BrpCharacter::fromArchetype(ruleset, "average_human");
+
+  // Attack 2 is Critical (2 <= ceil(25/20)); parry 10 is Success -> hit.
+  auto rng = script({2, 10});
+  const CheckResult specific = human.brpCombat(human, CheckParams{}, rng);
+  CHECK(specific.isSuccess);
+  CHECK(specific.successLevel == rpg_os::SuccessLevel::Critical);
+
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(readFile("brp_ugc.json")));
+  auto universal = engine.createEntity("average_human");
+  REQUIRE(universal != nullptr);
+  auto rng2 = script({2, 10});
+  const CheckResult universalResult =
+      engine.executeCheck("brp_combat", *universal, universal.get(), CheckParams{}, rng2);
+  CHECK(universalResult.isSuccess == specific.isSuccess);
+  CHECK(universalResult.successLevel == specific.successLevel);
+  CHECK(universalResult.rawDiceRolls == specific.rawDiceRolls);
+}
+
+TEST_CASE("generated brp_ugc: loadArchetypes reads the average human") {
+  const rpg_os::Json ruleset = loadRuleset("brp_ugc.json");
+  const std::vector<BrpCharacter> humans = BrpCharacter::loadArchetypes(ruleset);
+  REQUIRE(humans.size() == 1);
+  CHECK(humans[0].strength == 11);
+  CHECK(humans[0].brawl == 25);
 }
