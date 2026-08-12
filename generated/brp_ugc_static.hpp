@@ -37,12 +37,18 @@
 
 #include <array>
 #include <cstdint>
+#include <initializer_list>
 #include <rpg_os/common/json.hpp>
 #include <rpg_os/common/types.hpp>
+#include <rpg_os/core/advancement.hpp>
 #include <rpg_os/core/checks.hpp>
 #include <rpg_os/core/cost_table.hpp>
 #include <rpg_os/core/dice_engine.hpp>
+#include <rpg_os/core/equipment.hpp>
+#include <rpg_os/core/inventory.hpp>
 #include <rpg_os/core/math.hpp>
+#include <rpg_os/core/money.hpp>
+#include <rpg_os/core/spellbook.hpp>
 #include <rpg_os/core/variance.hpp>
 #include <string>
 #include <string_view>
@@ -136,6 +142,12 @@ public:
   // ---- resources ----
   int32_t hitPoints{0};   // HP (max: HitPoints_Max)
   int32_t powerPoints{0}; // PP (max: PowerPoints_Max)
+
+  // ---- bookkeeping (inventory, gear, wealth, spells, advancement) ----
+  rpg_os::Inventory inventory;
+  rpg_os::Equipment equipment;
+  rpg_os::Spellbook spellbook;
+  rpg_os::Advancement advancement;
 
   // ---- derived stats (compiled formulas) ----
   [[nodiscard]] int32_t maxHitPoints() const noexcept {
@@ -2026,6 +2038,22 @@ public:
         }
       }
     }
+    if (record.contains("equipment") && record.at("equipment").is_object()) {
+      for (const auto &[slot, item] : record.at("equipment").items()) {
+        (void)equipment.equip(slot, item.get<std::string>());
+      }
+    }
+    if (record.contains("spells_known") && record.at("spells_known").is_array()) {
+      for (const auto &spellId : record.at("spells_known")) {
+        spellbook.learn(spellId.get<std::string>());
+      }
+    }
+    if (record.contains("xp")) {
+      advancement.gainXp(record.at("xp").get<int64_t>());
+    }
+    if (record.contains("level")) {
+      advancement.level = record.at("level").get<int32_t>();
+    }
   }
 
   /// Loads a single archetype by id; throws std::invalid_argument when missing.
@@ -2144,6 +2172,11 @@ public:
   /// Loads every items record from the ruleset JSON.
   static std::vector<rpg_os::Json> loadItems(const rpg_os::Json &rulesetJson) {
     return loadSection(rulesetJson, "items");
+  }
+
+  /// Loads every curses record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadCurses(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "curses");
   }
 };
 

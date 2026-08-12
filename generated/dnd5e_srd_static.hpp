@@ -14,12 +14,18 @@
 
 #include <array>
 #include <cstdint>
+#include <initializer_list>
 #include <rpg_os/common/json.hpp>
 #include <rpg_os/common/types.hpp>
+#include <rpg_os/core/advancement.hpp>
 #include <rpg_os/core/checks.hpp>
 #include <rpg_os/core/cost_table.hpp>
 #include <rpg_os/core/dice_engine.hpp>
+#include <rpg_os/core/equipment.hpp>
+#include <rpg_os/core/inventory.hpp>
 #include <rpg_os/core/math.hpp>
+#include <rpg_os/core/money.hpp>
+#include <rpg_os/core/spellbook.hpp>
 #include <rpg_os/core/variance.hpp>
 #include <string>
 #include <string_view>
@@ -74,6 +80,39 @@ public:
 
   // ---- resources ----
   int32_t hitPoints{0}; // HP (max: HitPoints_Max)
+
+  // ---- bookkeeping (inventory, gear, wealth, spells, advancement) ----
+  rpg_os::Inventory inventory;
+  rpg_os::Equipment equipment;
+  rpg_os::Spellbook spellbook;
+  rpg_os::Advancement advancement;
+  rpg_os::Money money{0}; // wealth in base units
+
+  /// The ruleset's currency system (denominations + exchange).
+  static const rpg_os::CurrencySystem &currencySystem() {
+    static const rpg_os::CurrencySystem system =
+        rpg_os::CurrencySystem{"dnd_coins",
+                               "D&D Coins",
+                               "cp",
+                               {
+                                   rpg_os::Denomination{"cp", "Copper", "CP", 1},
+                                   rpg_os::Denomination{"sp", "Silver", "SP", 10},
+                                   rpg_os::Denomination{"gp", "Gold", "GP", 100},
+                                   rpg_os::Denomination{"pp", "Platinum", "PP", 1000},
+                               }};
+    return system;
+  }
+
+  /// Adds a bag of coins to the character's wealth, e.g.
+  /// `depositCoins({{{"gp", 2}, {"sp", 5}}})`.
+  void depositCoins(std::initializer_list<std::pair<std::string, int64_t>> coins) {
+    money += rpg_os::Money::fromCoins(currencySystem(), coins);
+  }
+
+  /// How many whole `denomId` coins the wealth equals (floor).
+  [[nodiscard]] int64_t coinAmount(std::string_view denomId) const {
+    return money.in(currencySystem(), denomId);
+  }
 
   // ---- derived stats (compiled formulas) ----
   [[nodiscard]] int32_t strengthModifier() const noexcept {
@@ -596,6 +635,29 @@ public:
         }
       }
     }
+    if (record.contains("wealth") && record.at("wealth").is_object()) {
+      int64_t total = 0;
+      for (const auto &[denom, qty] : record.at("wealth").items()) {
+        total += currencySystem().valueOf(denom, qty.get<int64_t>());
+      }
+      money = rpg_os::Money{total};
+    }
+    if (record.contains("equipment") && record.at("equipment").is_object()) {
+      for (const auto &[slot, item] : record.at("equipment").items()) {
+        (void)equipment.equip(slot, item.get<std::string>());
+      }
+    }
+    if (record.contains("spells_known") && record.at("spells_known").is_array()) {
+      for (const auto &spellId : record.at("spells_known")) {
+        spellbook.learn(spellId.get<std::string>());
+      }
+    }
+    if (record.contains("xp")) {
+      advancement.gainXp(record.at("xp").get<int64_t>());
+    }
+    if (record.contains("level")) {
+      advancement.level = record.at("level").get<int32_t>();
+    }
   }
 
   /// Loads a single archetype by id; throws std::invalid_argument when missing.
@@ -714,6 +776,11 @@ public:
   /// Loads every items record from the ruleset JSON.
   static std::vector<rpg_os::Json> loadItems(const rpg_os::Json &rulesetJson) {
     return loadSection(rulesetJson, "items");
+  }
+
+  /// Loads every curses record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadCurses(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "curses");
   }
 };
 

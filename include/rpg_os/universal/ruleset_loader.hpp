@@ -32,10 +32,12 @@
 
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <rpg_os/common/event_system.hpp>
 #include <rpg_os/common/json.hpp>
 #include <rpg_os/core/checks.hpp>
 #include <rpg_os/core/cost_table.hpp>
+#include <rpg_os/core/money.hpp>
 #include <rpg_os/universal/expression.hpp>
 #include <string>
 #include <string_view>
@@ -127,14 +129,17 @@ struct CostTableDef {
 ///
 /// @par Why one struct with all fields instead of per-type structs?
 /// The action types are few ("modify_event_damage", "consume_resource",
-/// "apply_condition") and each uses only a couple of fields. One struct with
-/// the union of fields keeps the loader, the engine's executor, and the code
-/// generator reading from the same shape — at the cost of a few unused
-/// fields per action, which is negligible for ruleset-sized data.
+/// "apply_condition", plus the bookkeeping actions "gain_item",
+/// "remove_item", "gain_currency", "spend_currency", "gain_xp") and each
+/// uses only a couple of fields. One struct with the union of fields keeps
+/// the loader, the engine's executor, and the code generator reading from the
+/// same shape — at the cost of a few unused fields per action, which is
+/// negligible for ruleset-sized data.
 struct EventActionDef {
-  std::string type;        ///< "modify_event_damage" | "consume_resource" | "apply_condition"
+  std::string type;        ///< the action kind (see the file doc comment)
   std::string resource;    ///< consume_resource: which resource
-  int32_t amount{0};       ///< consume_resource: constant amount
+  int32_t amount{0};       ///< amount: consumed/currency/XP amount, or item quantity
+  std::string item;        ///< gain_item / remove_item: the item id
   std::string formulaText; ///< modify_event_damage: damage expression
   Expression formula;      ///< parsed damage expression
   std::string condition;   ///< apply_condition: condition id
@@ -155,6 +160,40 @@ struct EventTriggerDef {
   std::string conditionText; ///< empty = always fires
   Expression condition;
   std::vector<EventActionDef> actions;
+};
+
+/// Optional carrying / encumbrance rules.
+///
+/// @par Why a capacity *formula* and ratio *levels*?
+/// Systems differ wildly in how much a hero can carry (D&D: 15 × STR pounds;
+/// BRP: encumbrance points; TDE: abstract). A formula keeps the limit
+/// data-driven, and a list of ratio ceilings (carried ÷ capacity) with an
+/// attached condition is the generic shape of "encumbered at 50%, heavily
+/// encumbered at 100%". A ruleset without an `encumbrance` section simply has
+/// @ref enabled == false and the engine reports no carrying limit.
+struct EncumbranceConfig {
+  bool enabled{false};
+  std::string weightUnit{"lb"};  ///< unit used by item `weight` fields
+  double defaultItemWeight{0.0}; ///< fallback when an item carries no weight
+  std::string capacityText;      ///< capacity formula; empty = no limit
+  Expression capacity;           ///< parsed capacity formula
+  struct Level {
+    double maxRatio{1.0};    ///< carried/capacity ceiling for this level
+    std::string conditionId; ///< condition applied at this level ("" = none)
+  };
+  std::vector<Level> levels;
+};
+
+/// Optional spell-casting configuration.
+///
+/// @par Why two styles?
+/// Pool-based systems (TDE's AE, BRP's PP) charge a per-spell cost drawn from
+/// a resource pool; vancian systems (D&D) limit how many spells of each level
+/// can be cast per day. The engine already handles the pool cost; this config
+/// adds the vancian slot schedule so both are data-driven.
+struct SpellcastingConfig {
+  std::string style{"pool"};        ///< "pool" or "slots"
+  std::map<int32_t, int32_t> slots; ///< level -> spell slots per day (vancian)
 };
 
 /**
@@ -192,6 +231,13 @@ public:
   std::vector<std::string> equipmentSlots;
   std::vector<EventTriggerDef> eventTriggers;
 
+  /// The ruleset's coinage; an empty `id` means it has no money.
+  CurrencySystem currencySystem;
+  /// Optional carrying / encumbrance rules.
+  EncumbranceConfig encumbrance;
+  /// Optional spell-casting configuration (vancian slots).
+  SpellcastingConfig spellcasting;
+
   /// The raw `data` section (archetypes, items, creatures) as JSON.
   Json data{};
 
@@ -220,6 +266,11 @@ public:
 
   /// Whether `conditionId` names a condition in the ruleset's `data.conditions`.
   [[nodiscard]] bool isCondition(std::string_view conditionId) const;
+
+  /// Whether the ruleset declares a currency system (i.e. has money).
+  [[nodiscard]] bool hasCurrency() const noexcept {
+    return !currencySystem.id.empty();
+  }
 };
 
 inline const AttributeDef *Ruleset::findAttribute(std::string_view statId) const {
@@ -345,6 +396,9 @@ private:
   static void parseCostTables(const Json &obj, Ruleset &out);
   static void parseEquipmentSlots(const Json &obj, Ruleset &out);
   static void parseEventTriggers(const Json &obj, Ruleset &out);
+  static void parseCurrencies(const Json &obj, Ruleset &out);
+  static void parseEncumbrance(const Json &obj, Ruleset &out);
+  static void parseSpellcasting(const Json &obj, Ruleset &out);
   static CheckRecipe parseRecipe(const Json &obj, std::string_view checkId);
   static EventType parseTrigger(std::string_view trigger);
 
@@ -652,6 +706,7 @@ inline void RulesetLoader::parseEventTriggers(const Json &obj, Ruleset &out) {
       act.type = action.at("type").get<std::string>();
       act.resource = action.value("resource", "");
       act.amount = action.value("amount", 0);
+      act.item = action.value("item", "");
       act.condition = action.value("condition", "");
       act.formulaText = action.value("formula", "");
       if (!act.formulaText.empty()) {
@@ -664,6 +719,71 @@ inline void RulesetLoader::parseEventTriggers(const Json &obj, Ruleset &out) {
       def.actions.push_back(std::move(act));
     }
     out.eventTriggers.push_back(std::move(def));
+  }
+}
+
+inline void RulesetLoader::parseCurrencies(const Json &obj, Ruleset &out) {
+  if (!obj.contains("currencies")) {
+    return;
+  }
+  const Json &cur = obj.at("currencies");
+  require(cur.is_object(), "'currencies' must be an object");
+  out.currencySystem.id = cur.value("id", "coins");
+  out.currencySystem.name = cur.value("name", out.currencySystem.id);
+  out.currencySystem.baseUnit = cur.value("base_unit", "");
+  require(!out.currencySystem.baseUnit.empty(), "'currencies' missing 'base_unit'");
+  require(cur.contains("denominations") && cur.at("denominations").is_array(),
+          "'currencies' missing 'denominations' array");
+  for (const Json &denom : cur.at("denominations")) {
+    require(denom.contains("id"), "currency denomination missing 'id'");
+    Denomination d;
+    d.id = denom.at("id").get<std::string>();
+    d.name = denom.value("name", d.id);
+    d.symbol = denom.value("symbol", d.id);
+    d.perBase = denom.value("per_base", 1);
+    out.currencySystem.denominations.push_back(std::move(d));
+  }
+  // The base unit must be one of the declared denominations.
+  require(out.currencySystem.find(out.currencySystem.baseUnit) != nullptr,
+          "currency base_unit '" + out.currencySystem.baseUnit + "' is not a denomination");
+}
+
+inline void RulesetLoader::parseEncumbrance(const Json &obj, Ruleset &out) {
+  if (!obj.contains("encumbrance")) {
+    return;
+  }
+  const Json &enc = obj.at("encumbrance");
+  require(enc.is_object(), "'encumbrance' must be an object");
+  out.encumbrance.enabled = true;
+  out.encumbrance.weightUnit = enc.value("weight_unit", "lb");
+  out.encumbrance.defaultItemWeight = enc.value("default_weight", 0.0);
+  out.encumbrance.capacityText = enc.value("capacity", "");
+  if (!out.encumbrance.capacityText.empty()) {
+    out.encumbrance.capacity = Expression(out.encumbrance.capacityText);
+  }
+  if (enc.contains("levels") && enc.at("levels").is_array()) {
+    for (const Json &level : enc.at("levels")) {
+      EncumbranceConfig::Level l;
+      l.maxRatio = level.value("max_ratio", 1.0);
+      l.conditionId = level.value("condition", "");
+      out.encumbrance.levels.push_back(std::move(l));
+    }
+  }
+}
+
+inline void RulesetLoader::parseSpellcasting(const Json &obj, Ruleset &out) {
+  if (!obj.contains("spellcasting")) {
+    return;
+  }
+  const Json &sc = obj.at("spellcasting");
+  require(sc.is_object(), "'spellcasting' must be an object");
+  const std::string style = sc.value("style", "pool");
+  require(style == "pool" || style == "slots", "'spellcasting' style must be 'pool' or 'slots'");
+  out.spellcasting.style = style;
+  if (sc.contains("slots") && sc.at("slots").is_object()) {
+    for (const auto &[level, count] : sc.at("slots").items()) {
+      out.spellcasting.slots[std::stoi(level)] = count.get<int32_t>();
+    }
   }
 }
 
@@ -693,6 +813,9 @@ inline Ruleset RulesetLoader::load(const Json &root) {
   parseCostTables(root, out);
   parseEquipmentSlots(root, out);
   parseEventTriggers(root, out);
+  parseCurrencies(root, out);
+  parseEncumbrance(root, out);
+  parseSpellcasting(root, out);
   if (root.contains("data")) {
     out.data = root.at("data");
   }
@@ -775,6 +898,16 @@ inline void RulesetLoader::validate(const Ruleset &ruleset) {
             "resource pool '" + def.id + "' references unknown max_stat '" + def.maxStat + "'");
   }
 
+  // Encumbrance capacity formula: bare identifiers must be known stats.
+  if (!ruleset.encumbrance.capacityText.empty()) {
+    for (const std::string &ident : ruleset.encumbrance.capacity.identifiers()) {
+      if (ident.find('.') == std::string::npos) {
+        require(ruleset.hasStat(ident),
+                "encumbrance capacity references unknown stat '" + ident + "'");
+      }
+    }
+  }
+
   // Skill attribute references must exist.
   for (const SkillDef &def : ruleset.skills) {
     for (const std::string &attr : def.attributes) {
@@ -827,7 +960,9 @@ inline void RulesetLoader::validate(const Ruleset &ruleset) {
   for (const EventTriggerDef &def : ruleset.eventTriggers) {
     for (const EventActionDef &action : def.actions) {
       require(action.type == "modify_event_damage" || action.type == "consume_resource" ||
-                  action.type == "apply_condition",
+                  action.type == "apply_condition" || action.type == "gain_item" ||
+                  action.type == "remove_item" || action.type == "gain_currency" ||
+                  action.type == "spend_currency" || action.type == "gain_xp",
               "event action in '" + def.id + "' has unknown type '" + action.type + "'");
     }
   }

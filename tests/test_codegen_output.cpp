@@ -330,10 +330,46 @@ TEST_CASE("generated characters store narrow stat types (no wasted int32)") {
                 "BRP skills must be byte-sized");
   static_assert(std::is_same_v<decltype(BrpCharacter::sanity), uint8_t>,
                 "BRP Sanity (0..100) fits a byte");
+  static_assert(std::is_same_v<decltype(TdeCharacter::money), rpg_os::Money>,
+                "wealth uses the shared Money type");
+  static_assert(std::is_same_v<decltype(TdeCharacter::advancement), rpg_os::Advancement>,
+                "advancement uses the shared Advancement type");
+  static_assert(std::is_same_v<decltype(TdeCharacter::inventory), rpg_os::Inventory>,
+                "inventory uses the shared Inventory type");
+  static_assert(std::is_same_v<decltype(TdeCharacter::equipment), rpg_os::Equipment>,
+                "gear uses the shared Equipment type");
+  static_assert(std::is_same_v<decltype(TdeCharacter::spellbook), rpg_os::Spellbook>,
+                "spells use the shared Spellbook type");
 
-  // The byte-sized storage keeps the whole character object small; a 59-skill
-  // TDE character must not balloon into hundreds of int32s.
-  CHECK(sizeof(TdeCharacter) <= 120);
+  // The byte-sized storage keeps the hot stat block small; the sheet
+  // bookkeeping members (inventory/equipment/spellbook/money/advancement) are
+  // fixed-size handles over heap state, so the whole object stays compact.
+  CHECK(sizeof(TdeCharacter) <= 512);
+}
+
+TEST_CASE("generated tde5e: wealth and starting gear load from the archetype (parity)") {
+  const rpg_os::Json ruleset = loadRuleset("tde5e_core.json");
+
+  // Specific mode: fromArchetype loads the bookkeeping fields too.
+  const TdeCharacter geron = TdeCharacter::fromArchetype(ruleset, "geron");
+  CHECK(geron.money.baseUnits() == 2500); // 25 Silbertaler
+  CHECK(geron.coinAmount("silbertaler") == 25);
+  CHECK(geron.equipment.itemIn("weapon_hand") == "longsword");
+  CHECK(geron.equipment.itemIn("body_armor") == "leather_armor");
+
+  // The typed money helpers agree with the shared Money type.
+  TdeCharacter rich;
+  rich.depositCoins({{"dukat", 1}, {"kreutzer", 3}});
+  CHECK(rich.money.baseUnits() == 200 + 30);
+  CHECK(rich.coinAmount("heller") == 230);
+
+  // Universal mode: the same record yields the same wealth (parity).
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(readFile("tde5e_core.json")));
+  const auto universal = engine.createEntity("geron");
+  REQUIRE(universal != nullptr);
+  CHECK(universal->money().baseUnits() == 2500);
+  CHECK(universal->equipment().itemIn("weapon_hand") == "longsword");
 }
 
 TEST_CASE("generated code: data section loaders expose spells/poisons/etc.") {

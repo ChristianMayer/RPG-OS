@@ -7,6 +7,17 @@
   "comment": "Data transcription of the German original 'Das Schwarze Auge 5. Edition - Regelwerk' (2. Druck). Attribute abbreviations COU SGC INT CHA DEX AGI CON STR follow the official English localization.",
   "namespace": "rpg_os::generated::tde5e",
   "spell_resource": "AE",
+  "currencies": {
+    "id": "tde_money",
+    "name": "Aventurian Coins",
+    "base_unit": "heller",
+    "denominations": [
+      { "id": "heller", "name": "Heller", "symbol": "H", "per_base": 1 },
+      { "id": "kreutzer", "name": "Kreutzer", "symbol": "K", "per_base": 10 },
+      { "id": "silbertaler", "name": "Silbertaler", "symbol": "ST", "per_base": 100 },
+      { "id": "dukat", "name": "Dukat", "symbol": "D", "per_base": 200 }
+    ]
+  },
   "attributes": [
     {
       "id": "COU",
@@ -998,7 +1009,7 @@
       "actions": [
         {
           "type": "modify_event_damage",
-          "formula": "max(0, event.damage - target.Armor_Rating)"
+          "formula": "max(0, event.damage - effective.Armor_Rating)"
         }
       ]
     },
@@ -1065,7 +1076,10 @@
           "willpower": 4,
           "intimidation": 3,
           "self_control": 2
-        }
+        },
+        "wealth": { "silbertaler": 25 },
+        "equipment": { "weapon_hand": "longsword", "body_armor": "leather_armor" },
+        "spells_known": []
       }
     ],
     "items": [

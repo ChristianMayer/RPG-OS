@@ -108,18 +108,19 @@ TEST_CASE("tde5e_core: loads and resolves real TDE values") {
 TEST_CASE("tde5e_core: armor absorption and wound triggers (real TDE)") {
   rpg_os::RulesetEngine engine;
   REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
-  auto geron = engine.createEntity("geron"); // Armor Rating 2
+  auto geron = engine.createEntity("geron"); // wears leather armour: AR 2 + 3
   REQUIRE(geron != nullptr);
   rpg_os::DynamicEntity orc(engine.ruleset(), "orc");
+  CHECK(geron->getEffectiveStat("Armor_Rating") == 5);
 
-  // 10 raw -> 10 - 2 (AR) = 8 applied; LP 31 -> 23.
-  CHECK(engine.applyDamage(orc, *geron, "LP", 10) == -8);
-  CHECK(geron->resource("LP") == 23);
+  // 10 raw -> 10 - 5 (effective AR) = 5 applied; LP 31 -> 26.
+  CHECK(engine.applyDamage(orc, *geron, "LP", 10) == -5);
+  CHECK(geron->resource("LP") == 26);
   CHECK_FALSE(geron->hasCondition("Wound"));
 
-  // 20 raw -> 18 applied (LP 23 -> 5); 18 > CON 13 -> Wound 1.
-  CHECK(engine.applyDamage(orc, *geron, "LP", 20) == -18);
-  CHECK(geron->resource("LP") == 5);
+  // 20 raw -> 15 applied (LP 26 -> 11); 15 > CON 13 -> Wound 1.
+  CHECK(engine.applyDamage(orc, *geron, "LP", 20) == -15);
+  CHECK(geron->resource("LP") == 11);
   CHECK(geron->hasCondition("Wound"));
   CHECK(geron->conditionStacks("Wound") == 1);
 }

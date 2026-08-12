@@ -36,6 +36,68 @@
       "description": "Optional: the resource pool id that casting a spell draws its cost from (e.g. 'AE' for astral energy). When set, the engine's castSpell spends a spell's cost automatically; empty means spells have no resource cost in this ruleset."
     },
 
+    "currencies": {
+      "type": "object",
+      "description": "Optional coinage. A ruleset without this section has no money; the engine then refuses money operations with UnknownCurrency. The base unit is the smallest coin and every denomination declares how many base units it is worth.",
+      "required": ["base_unit", "denominations"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "base_unit": { "type": "string", "description": "The smallest denomination id, e.g. 'cp'." },
+        "denominations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "per_base"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "description": "e.g. 'gp'." },
+              "name": { "type": "string", "description": "e.g. 'Gold'." },
+              "symbol": { "type": "string", "description": "e.g. 'GP'. Price strings match this symbol." },
+              "per_base": { "type": "integer", "description": "How many base units one of this coin is worth (e.g. 100 for a D&D gold piece with copper base)." }
+            }
+          }
+        }
+      }
+    },
+
+    "encumbrance": {
+      "type": "object",
+      "description": "Optional carrying rules. The capacity is a formula over stats (e.g. '15 * STR'); levels map carried/capacity ratios to a condition applied to the carrier. Without this section the engine reports no carrying limit.",
+      "additionalProperties": false,
+      "properties": {
+        "weight_unit": { "type": "string", "description": "Unit used by item 'weight' fields, e.g. 'lb'." },
+        "default_weight": { "type": "number", "description": "Fallback weight for items without a 'weight' field." },
+        "capacity": { "type": "string", "description": "Capacity formula over stats, e.g. '15 * STR'." },
+        "levels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "max_ratio": { "type": "number", "description": "Carried/capacity ratio ceiling for this level (0..)." },
+              "condition": { "type": "string", "description": "Condition applied at this level ('' = none)." }
+            }
+          }
+        }
+      }
+    },
+
+    "spellcasting": {
+      "type": "object",
+      "description": "Optional casting configuration. 'pool' (default) charges a per-spell cost from the spell_resource pool; 'slots' uses a vancian per-day schedule keyed by spell level.",
+      "additionalProperties": false,
+      "properties": {
+        "style": { "type": "string", "enum": ["pool", "slots"] },
+        "slots": {
+          "type": "object",
+          "additionalProperties": { "type": "integer" },
+          "description": "Vancian schedule: spell level -> slots per day."
+        }
+      }
+    },
+
     "attributes": {
       "type": "array",
       "minItems": 1,
@@ -210,9 +272,13 @@
               "type": "object",
               "required": ["type"],
               "properties": {
-                "type": { "type": "string", "enum": ["modify_event_damage", "consume_resource", "apply_condition"] },
-                "amount": { "$ref": "#/definitions/variantValue" },
+                "type": {
+                  "type": "string",
+                  "enum": ["modify_event_damage", "consume_resource", "apply_condition", "gain_item", "remove_item", "gain_currency", "spend_currency", "gain_xp"]
+                },
+                "amount": { "$ref": "#/definitions/variantValue", "description": "consume_resource: amount to spend; gain_item/remove_item: item quantity; gain_currency/spend_currency: base-unit amount; gain_xp: XP amount." },
                 "resource": { "type": "string" },
+                "item": { "type": "string", "description": "gain_item/remove_item: the item id." },
                 "condition": { "type": "string" },
                 "stacks": { "oneOf": [{ "type": "integer" }, { "type": "string" }], "description": "Stack count, or a formula string evaluated at runtime." },
                 "formula": { "type": "string" }
@@ -247,6 +313,11 @@
               "components": { "type": "string" },
               "damage": { "$ref": "#/definitions/variantValue" },
               "damage_type": { "type": "string" },
+              "effects": {
+                "type": "array",
+                "description": "Optional structured effects (the machine-readable form of the spell's prose: saves, half-on-save damage, conditions, healing, resistances). When present, the engine resolves these instead of the bare damage field.",
+                "items": { "$ref": "#/definitions/effectRecord" }
+              },
               "description": { "type": "string" }
             }
           }
@@ -260,12 +331,33 @@
             "properties": {
               "id": { "type": "string" },
               "name": { "type": "string" },
-              "description": { "type": "string" }
+              "description": { "type": "string" },
+              "max_stacks": { "type": "integer", "description": "Optional cap on the stack count." },
+              "stat_modifiers": {
+                "type": "array",
+                "description": "Optional mechanical effects: each entry modifies a stat, scaled by the condition's stack count. Same shape as item modifiers but with 'stat' instead of 'target_stat'.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "stat": { "type": "string", "description": "The stat the modifier affects." },
+                    "type": { "type": "string", "enum": ["add", "override", "multiply", "clamp"] },
+                    "value": { "description": "add/override value, or multiply factor." },
+                    "clamp_min": { "type": "integer" },
+                    "clamp_max": { "type": "integer" }
+                  }
+                }
+              }
             }
           }
         },
         "poisons": { "type": "array", "items": { "$ref": "#/definitions/afflictionRecord" } },
         "diseases": { "type": "array", "items": { "$ref": "#/definitions/afflictionRecord" } },
+        "curses": {
+          "type": "array",
+          "description": "Optional curses: same record shape as poisons/diseases (save + effects + duration), applied via the engine's applyAffliction('curses', ...) and curable.",
+          "items": { "$ref": "#/definitions/afflictionRecord" }
+        },
 
         "damage_modifier": {
           "type": "array",
@@ -462,6 +554,46 @@
         }
       ]
     },
+    "attackDef": {
+      "type": "object",
+      "description": "An attack roll the source makes against the target (spell attacks, breath-weapon attack lines, ...). The source rolls `dice` (default 1d20), adds each stat id in `bonus_stats` (resolved on the source, e.g. the ability `_mod` plus `proficiency_bonus`), and hits when the total is >= the target's `target_stat`. On a hit the damage (or condition) applies; on a miss it is reduced per `on_miss`.",
+      "additionalProperties": true,
+      "properties": {
+        "bonus_stats": { "type": "array", "items": { "type": "string" }, "description": "Stat ids (resolved on the attacking entity) added to the roll, e.g. [\"CHA_mod\", \"proficiency_bonus\"]." },
+        "dice": { "type": "string", "description": "Attack dice, default '1d20'." },
+        "target_stat": { "type": "string", "description": "The target's defensive stat used as the threshold (default 'AC')." },
+        "on_miss": { "type": "string", "enum": ["none", "half"], "description": "none (default): a miss applies nothing; half: a miss applies half the damage." }
+      }
+    },
+    "saveDef": {
+      "type": "object",
+      "description": "A saving throw a target makes against an effect. The target rolls `dice` (default 1d20), adds its `stat`, and succeeds when the total is >= the DC. The DC is a fixed number or a formula over the acting entity's (the caster's) stats, e.g. '8 + 2 + max(0, floor((INT - 10) / 2))'.",
+      "additionalProperties": true,
+      "properties": {
+        "stat": { "type": "string", "description": "The stat the target adds to the roll." },
+        "dc": { "oneOf": [{ "type": "integer" }, { "type": "string" }], "description": "Fixed DC, or a formula over the acting entity's stats." },
+        "dice": { "type": "string", "description": "Save dice, default '1d20'." },
+        "on_success": { "type": "string", "enum": ["half", "none"], "description": "half: halve the damage on a successful save; none (default): the effect does not apply." }
+      }
+    },
+    "effectRecord": {
+      "type": "object",
+      "description": "One structured, machine-readable rule effect (the extracted form of a prose rule). The engine resolves these automatically. Kinds: damage (with an optional save), condition (with an optional save), heal, and resist.",
+      "required": ["kind"],
+      "additionalProperties": true,
+      "properties": {
+        "kind": { "type": "string", "enum": ["damage", "condition", "heal", "temp_hp", "resist"] },
+        "dice": { "type": "string", "description": "damage/heal/temp_hp: dice, e.g. '8d6'." },
+        "type": { "type": "string", "description": "damage: the damage type (Fire, Psychic, ...)." },
+        "add": { "oneOf": [{ "type": "integer" }, { "type": "string" }], "description": "heal/temp_hp: a flat amount (or a formula over the acting entity's stats) added to the rolled dice." },
+        "condition": { "type": "string", "description": "condition: the condition id to apply." },
+        "stacks": { "type": "integer", "description": "condition: stack count (default 1)." },
+        "duration": { "type": "integer", "description": "condition: duration in ticks (0 = permanent)." },
+        "types": { "type": "array", "items": { "type": "string" }, "description": "resist: damage types the target becomes resistant to." },
+        "save": { "$ref": "#/definitions/saveDef", "description": "Optional saving throw the target must fail for the effect to apply (damage: on_success 'half' halves it)." },
+        "attack": { "$ref": "#/definitions/attackDef", "description": "Optional attack roll the source makes against the target (alternative to a save). On a hit the damage/condition applies; a miss applies nothing (or half damage for damage effects)." }
+      }
+    },
     "creatureRecord": {
       "type": "object",
       "required": ["id"],
@@ -473,6 +605,9 @@
         "type": { "type": "string" },
         "ac": { "$ref": "#/definitions/variantValue" },
         "speed": { "type": "string" },
+        "slot": { "type": "string", "description": "Item-only: the equipment slot this item fits (e.g. 'weapon_hand'); empty when it is not worn." },
+        "weight": { "oneOf": [{ "type": "string" }, { "type": "number" }], "description": "Item-only: weight, e.g. '2 lb.' or a number in the encumbrance weight unit." },
+        "value": { "oneOf": [{ "type": "string" }, { "type": "number" }], "description": "Item-only: price, e.g. '150 GP' or a number in base currency units." },
         "attributes": { "type": "object", "additionalProperties": { "$ref": "#/definitions/variantValue" } },
         "skills": { "type": "object", "additionalProperties": { "$ref": "#/definitions/variantValue" } },
         "resources": { "type": "object", "additionalProperties": { "$ref": "#/definitions/variantValue" } },
