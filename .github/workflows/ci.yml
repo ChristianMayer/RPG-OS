@@ -13,16 +13,24 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - { name: Ubuntu GCC,   os: ubuntu-latest, cc: gcc,   cxx: g++ }
-          - { name: Ubuntu Clang, os: ubuntu-latest, cc: clang, cxx: clang++ }
-          - { name: macOS Clang,  os: macos-latest,  cc: clang, cxx: clang++ }
+          # ubuntu-24.04 ships GCC 13 / clang 18 whose libstdc++ 13 provides
+          # C++23 <expected> (needed by the bookkeeping API). The versioned
+          # compiler binaries are used explicitly so the job is deterministic
+          # and cannot silently fall back to an older libstdc++.
+          - { name: Ubuntu GCC,   os: ubuntu-24.04, cc: gcc-13,   cxx: g++-13 }
+          - { name: Ubuntu Clang, os: ubuntu-24.04, cc: clang-18, cxx: clang++-18 }
+          - { name: macOS Clang,  os: macos-latest,  cc: clang,    cxx: clang++ }
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y ninja-build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++-13 clang-18
+          g++-13 --version | head -n 1
+          clang++-18 --version | head -n 1
 
       - name: Configure
         run: >

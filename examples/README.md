@@ -14,7 +14,8 @@ as an executable in the build.
   the winner (CLI-selectable combatants, `--csv` output for scripts). Built on
   the combat helpers in `include/rpg_os/universal/combat.hpp`; a Monte Carlo
   ELO ranking that runs many fights in parallel lives in
-  `scripts/elo_ranking.py`.
+  `scripts/elo_ranking.py`. A spellcaster (e.g. the TDE Magister) fights with
+  magic by default; `--no-magic` forces a pure weapon fight.
 
 Build:
 
@@ -26,6 +27,7 @@ cmake -S . -B build -G Ninja && cmake --build build
 ./build/bin/rpg_os_example_fight . irrhalk dog     # named pair
 ./build/bin/rpg_os_example_fight . --list          # all combatants
 ./build/bin/rpg_os_example_fight . --csv --batch 20 irrhalk toad
+./build/bin/rpg_os_example_fight . magister toad   # a mage fights with magic
 ```
 
 Not part of the library itself and not installed.

@@ -1080,6 +1080,32 @@
         "wealth": { "silbertaler": 25 },
         "equipment": { "weapon_hand": "longsword", "body_armor": "leather_armor" },
         "spells_known": []
+      },
+      {
+        "id": "magister",
+        "name": "Magister, the Aventurian Mage",
+        "attributes": {
+          "COU": 11,
+          "SGC": 13,
+          "INT": 15,
+          "CHA": 12,
+          "DEX": 10,
+          "AGI": 11,
+          "CON": 11,
+          "STR": 10,
+          "Armor_Rating": 0
+        },
+        "skills": {
+          "magical_lore": 6,
+          "sphere_lore": 5,
+          "myths_legends": 4,
+          "perception": 5,
+          "willpower": 5,
+          "self_control": 4
+        },
+        "wealth": { "silbertaler": 20 },
+        "equipment": { "weapon_hand": "dagger" },
+        "spells_known": ["fulminictus", "ignifaxius", "witch_s_claws"]
       }
     ],
     "items": [
