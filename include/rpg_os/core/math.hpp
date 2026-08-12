@@ -34,22 +34,49 @@
 namespace rpg_os {
 namespace math {
 
-/// Floors a value (matches std::floor). Delegates to the standard function so
-/// behaviour stays identical to what a reader of the formula would expect.
+namespace detail {
+/// Truncates toward zero (matches std::trunc) for any finite value that fits
+/// in an int64. The shared building block for the floor/ceil/round helpers
+/// below; the explicit casts keep this clean under -Wconversion.
+[[nodiscard]] constexpr double trunc(double value) noexcept {
+  return static_cast<double>(static_cast<int64_t>(value));
+}
+} // namespace detail
+
+/// Floors a value (matches std::floor).
+///
+/// @par Why not just return std::floor?
+/// C++23 makes @c std::floor @c constexpr, but older libstdc++ (GCC < 13, e.g.
+/// the clang toolchain on the CI runner) has not implemented that, so a
+/// @c static_assert on this helper would not compile there. This manual form is
+/// @c constexpr on every toolchain and matches @c std::floor exactly for all
+/// finite values in the int64 range.
 [[nodiscard]] constexpr double floor(double value) noexcept {
-  return std::floor(value);
+  const double t = detail::trunc(value);
+  return t > value ? t - 1.0 : t;
 }
 
-/// Ceils a value (matches std::ceil).
+/// Ceils a value (matches std::ceil). See @ref floor for why it does not
+/// delegate to @c std::ceil.
 [[nodiscard]] constexpr double ceil(double value) noexcept {
-  return std::ceil(value);
+  const double t = detail::trunc(value);
+  return t < value ? t + 1.0 : t;
 }
 
 /// Rounds half away from zero (matches std::round). Note this is *not* the
 /// same as "round half up" for negative values; formulas must be written with
-/// this convention in mind.
+/// this convention in mind. See @ref floor for why it does not delegate to
+/// @c std::round.
 [[nodiscard]] constexpr double round(double value) noexcept {
-  return std::round(value);
+  const double t = detail::trunc(value);
+  const double diff = value - t;
+  if (diff >= 0.5) {
+    return t + 1.0;
+  }
+  if (diff <= -0.5) {
+    return t - 1.0;
+  }
+  return t;
 }
 
 /// Minimum of two values (matches std::min).

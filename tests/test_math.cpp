@@ -115,5 +115,6 @@ TEST_CASE("math: helpers are constant expressions (compile-time evaluation)") {
   static_assert(rpg_os::math::clampInt(5, 0, 3) == 3);
   static_assert(rpg_os::math::toStat(2.99) == 2);
   static_assert(rpg_os::math::floor(3.7) == 3.0);
+  static_assert(rpg_os::math::ceil(3.2) == 4.0);
   static_assert(rpg_os::math::round(2.5) == 3.0);
 }
