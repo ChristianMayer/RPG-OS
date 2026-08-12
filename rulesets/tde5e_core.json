@@ -6,6 +6,7 @@
   "licence": "Open RPG Creative License (ORC). This product is licensed under the ORC License located at the Library of Congress at TX00[number TBD] and available online at various locations. All warranties are disclaimed as set forth therein. The Dark Eye (Das Schwarze Auge) is (c) Ulisses Spiele GmbH; this is a fan-made reference data file for RPG-OS, not affiliated with or endorsed by Ulisses Spiele.",
   "comment": "Data transcription of the German original 'Das Schwarze Auge 5. Edition - Regelwerk' (2. Druck). Attribute abbreviations COU SGC INT CHA DEX AGI CON STR follow the official English localization.",
   "namespace": "rpg_os::generated::tde5e",
+  "spell_resource": "AE",
   "attributes": [
     {
       "id": "COU",
@@ -757,25 +758,46 @@
   ],
   "check_types": {
     "tde_attribute": {
-      "kind": "roll_under_d20",
-      "attributes": [
-        "COU"
-      ],
-      "confirmation_roll": true
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "COU",
+      "critical_style": "face",
+      "critical_face": 1,
+      "critical_confirm": true,
+      "fumble_style": "face",
+      "fumble_face": 20,
+      "fumble_confirm": true,
+      "grading": "none",
+      "difficulty_mode": "to_stat"
     },
     "tde_talent": {
-      "kind": "triple_roll_under_pool",
-      "attributes": [
+      "resolution": "pool",
+      "dice": "3d20",
+      "pool_attributes": [
         "COU",
         "AGI",
         "STR"
       ],
-      "pool_stat": "climbing"
+      "pool_stat": "climbing",
+      "critical_style": "double",
+      "fumble_style": "double",
+      "grading": "pool_quality",
+      "difficulty_mode": "to_stat"
     },
     "tde_attack": {
-      "kind": "attack_vs_defense",
+      "resolution": "opposed",
+      "dice": "1d20",
       "attack_stat": "Attack",
-      "parry_stat": "Parry"
+      "parry_stat": "Parry",
+      "compare_levels": false,
+      "critical_style": "face",
+      "critical_face": 1,
+      "fumble_style": "face",
+      "fumble_face": 20,
+      "grading": "none",
+      "difficulty_mode": "to_stat"
     }
   },
   "cost_tables": {
@@ -2239,6 +2261,7 @@
           {
             "stat": "condition",
             "amount": 1,
+            "condition": "confusion",
             "description": "1 level of Confusion"
           }
         ],
@@ -2257,6 +2280,7 @@
           {
             "stat": "condition",
             "amount": 2,
+            "condition": "paralysis",
             "description": "2 levels of Paralysis (degraded: 1 level)"
           }
         ],
@@ -2275,6 +2299,7 @@
           {
             "stat": "condition",
             "amount": 4,
+            "condition": "paralysis",
             "description": "4 levels of Paralysis and 4D6 damage ignoring PRO (degraded: 2D6 and 1 level)"
           }
         ],
@@ -2293,6 +2318,7 @@
           {
             "stat": "condition",
             "amount": 2,
+            "condition": "pain",
             "description": "1D6 DP per round ignoring PRO, hallucinations (1 level Confusion) and 2 levels of Pain (degraded: 1D3 and 1 level Pain)"
           }
         ],
@@ -2311,6 +2337,7 @@
           {
             "stat": "condition",
             "amount": 2,
+            "condition": "confusion",
             "description": "1D6 ignoring PRO per hour and mental delusions (2 levels of Confusion); degraded: 1D3 and 1 level"
           }
         ],
@@ -2328,6 +2355,7 @@
           {
             "stat": "condition",
             "amount": 2,
+            "condition": "pain",
             "description": "One-time 1D6 DP (ignoring PRO) and 2 levels of Pain (degraded: 1 level of Pain)"
           }
         ],

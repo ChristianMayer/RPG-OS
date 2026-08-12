@@ -52,16 +52,20 @@ concept RandomNumberGenerator = requires(T &rng, int min, int max) {
 /**
  * Anything that can answer "what is the current value of stat `id`?".
  *
- * @par Why @c int32_t and @c std::string_view specifically?
- * A stat value is an @c int32_t (see @c types.hpp), and a stat is looked up
- * by its ruleset id. Binding both in the concept means the shared algorithms
- * never have to convert: the universal entity does a map lookup, the generated
- * character does a switch — both accept the same @c std::string_view key and
- * return the same integer type, so the template bodies are identical.
+ * @par Why any integral type (not a fixed @c int32_t)?
+ * Stat values are looked up by their ruleset id, and the algorithms only ever
+ * read them (promoting to the computation type where they combine them). That
+ * leaves the *storage* type free: the universal entity stores @c int32_t in
+ * hash maps, while generated specific-mode characters can store attributes and
+ * skills in the narrowest type that fits the ruleset's bounds (@c uint8_t,
+ * @c int8_t, ...) — a template over the stored integral type that costs
+ * nothing at runtime and shrinks the generated character objects. Both accept
+ * the same @c std::string_view key, so the shared algorithm bodies are
+ * identical for every storage width.
  */
 template <typename T>
 concept StatProvider = requires(const T &entity, std::string_view id) {
-  { entity.getStat(id) } -> std::same_as<int32_t>;
+  { entity.getStat(id) } -> std::integral;
 };
 
 /**

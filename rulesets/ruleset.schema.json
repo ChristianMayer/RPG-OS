@@ -31,6 +31,10 @@
       "default": "rpg_os::generated::<ruleset_id>",
       "description": "C++ namespace the code generator emits into."
     },
+    "spell_resource": {
+      "type": "string",
+      "description": "Optional: the resource pool id that casting a spell draws its cost from (e.g. 'AE' for astral energy). When set, the engine's castSpell spends a spell's cost automatically; empty means spells have no resource cost in this ruleset."
+    },
 
     "attributes": {
       "type": "array",
@@ -98,23 +102,63 @@
 
     "check_types": {
       "type": "object",
-      "description": "Named check configs keyed by check type id.",
+      "description": "Named checks keyed by check type id. Each entry is a generic, data-driven CheckRecipe (see core/checks.hpp): the engine knows no ruleset-specific mechanism, so a new game system is expressed purely as new recipe JSON. The recipe's resolution picks the fundamental shape; the other fields configure dice, comparison, reference source, criticals, grading, and difficulty handling.",
       "additionalProperties": {
         "type": "object",
-        "required": ["kind"],
         "properties": {
-          "kind": {
+          "description": { "type": "string", "description": "Optional human note (ignored by the engine)." },
+          "resolution": {
             "type": "string",
-            "enum": ["additive_d20", "roll_under_d20", "triple_roll_under_pool", "attack_vs_defense", "roll_under_d100", "opposed_roll_under_d100", "resistance_roll"]
+            "enum": ["threshold", "pool", "opposed", "resistance"],
+            "description": "threshold: one roll vs one reference. pool: independent rolls whose overshoot draws on a pool. opposed: attacker vs defender contest. resistance: one roll vs a chance derived from two stats."
           },
-          "dice_expression": { "type": "string", "description": "e.g. '1d20'." },
-          "bonus_stats": { "type": "array", "items": { "type": "string" } },
-          "target_stat": { "type": "string" },
-          "attributes": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
-          "pool_stat": { "type": "string" },
-          "use_confirmation_roll": { "type": "boolean" },
-          "attack_stat": { "type": "string" },
-          "parry_stat": { "type": "string" }
+          "dice": { "type": "string", "description": "Dice expression, e.g. '1d20', '1d100', '3d20'." },
+          "comparison": {
+            "type": "string",
+            "enum": ["ge", "le"],
+            "description": "ge: the (bonus-adjusted) roll must be >= the reference (additive checks). le: the roll must be <= the reference (roll-under checks)."
+          },
+          "threshold_source": {
+            "type": "string",
+            "enum": ["difficulty", "actor_stat", "target_stat"],
+            "description": "Where the reference comes from: the CheckParams difficulty, an actor stat, or a target stat."
+          },
+          "threshold_stat": { "type": "string", "description": "Stat id used by threshold_source actor_stat/target_stat." },
+          "bonus_stats": { "type": "array", "items": { "type": "string" }, "description": "Actor stats added to the rolled total (additive checks)." },
+          "pool_attributes": { "type": "array", "items": { "type": "string" }, "minItems": 1, "maxItems": 3, "description": "Pool resolution: the attributes each independent roll is checked against." },
+          "pool_stat": { "type": "string", "description": "Pool resolution: the stat providing the pool." },
+          "attack_stat": { "type": "string", "description": "Opposed / resistance: the attacker's (active) stat." },
+          "parry_stat": { "type": "string", "description": "Opposed / resistance: the defender's (passive) stat." },
+          "compare_levels": { "type": "boolean", "description": "Opposed: true compares graded success levels (a hit needs a strictly higher level); false resolves a staged roll-under contest (parry only after a successful attack)." },
+          "critical_style": {
+            "type": "string",
+            "enum": ["none", "face", "double", "percentile"],
+            "description": "Critical success detection: face (a specific die face), double (two equal dice), percentile (graded bands), none."
+          },
+          "critical_face": { "type": "integer", "description": "critical_style face: the die face that is a critical." },
+          "critical_confirm": { "type": "boolean", "description": "critical_style face: re-roll to confirm the critical." },
+          "fumble_style": {
+            "type": "string",
+            "enum": ["none", "face", "double", "percentile"],
+            "description": "Critical failure detection (same shapes as critical_style)."
+          },
+          "fumble_face": { "type": "integer", "description": "fumble_style face: the die face that is a fumble." },
+          "fumble_confirm": { "type": "boolean", "description": "fumble_style face: re-roll to confirm the fumble." },
+          "grading": {
+            "type": "string",
+            "enum": ["none", "percentile", "pool_quality"],
+            "description": "How much information the result carries: none, graded percentile success levels, or a quality level from the remaining pool."
+          },
+          "difficulty_mode": {
+            "type": "string",
+            "enum": ["to_threshold", "to_stat"],
+            "description": "How CheckParams.difficulty is applied: to_threshold means it IS the reference (a fixed DC); to_stat adds it to the stat forming the reference."
+          },
+          "difficulty_multiplier": {
+            "type": "string",
+            "enum": ["none", "double_halve"],
+            "description": "Whether Easy / Difficult scales the reference multiplicatively (double_halve)."
+          }
         }
       }
     },
@@ -465,8 +509,9 @@
           "items": {
             "type": "object",
             "properties": {
-              "stat": { "type": "string" },
+              "stat": { "type": "string", "description": "The stat, resource pool, or condition id this effect acts on. A resource pool id damages that pool; a condition id (or the explicit 'condition' field) applies condition stacks; any other stat id is reduced by amount." },
               "amount": { "$ref": "#/definitions/variantValue" },
+              "condition": { "type": "string", "description": "When stat is not itself a condition id, the condition id to apply (amount = stacks)." },
               "description": { "type": "string" }
             }
           }

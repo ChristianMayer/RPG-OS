@@ -70,12 +70,136 @@ def camel_case(text: str) -> str:
     return name
 
 
-class FormulaTranslator:
-    """Translates the restricted formula grammar to a C++ double expression.
+# Die sizes that have a dedicated user-defined literal suffix (_d2 ... _d100)
+# in rpg_os::dice_literals. A ruleset JSON may use any die size, so anything
+# outside this set falls back to the '"..."_dice' string literal form.
+COMMON_DIE_SIZES = frozenset({2, 3, 4, 6, 8, 10, 12, 20, 30, 100})
 
-    Identifiers are resolved via `resolve(identifier) -> C++ expression`; every
-    identifier is emitted as a double so arithmetic matches the universal
-    double-based evaluator exactly. `%` becomes std::fmod, `^` std::pow.
+
+def parse_dice_terms(expr: str):
+    """Splits a dice expression like '2d6+4' or '1d6-1d6' into a list of
+    (sign, kind, value, sides) terms, where kind is 'die' (value = count) or
+    'const' (value = number, sides = None). Returns None when the string is
+    not a well-formed dice expression (the caller then falls back to the
+    string literal form). Mirrors the grammar of
+    core/dice_engine.hpp's DiceExpression parser."""
+    terms: list[tuple[int, str, int, int | None]] = []
+    i = 0
+    n = len(expr)
+    while i < n:
+        if expr[i] == " ":
+            i += 1
+            continue
+        sign = 1
+        if expr[i] == "+":
+            i += 1
+        elif expr[i] == "-":
+            sign = -1
+            i += 1
+        start = i
+        while i < n and expr[i].isdigit():
+            i += 1
+        has_number = i > start
+        number = int(expr[start:i]) if has_number else None
+        if i < n and expr[i] in "dD":
+            i += 1
+            s_start = i
+            while i < n and expr[i].isdigit():
+                i += 1
+            if i == s_start:
+                return None  # 'd' with no sides
+            sides = int(expr[s_start:i])
+            if sides <= 0:
+                return None
+            count = number if has_number else 1  # "d20" == "1d20"
+            if count <= 0:
+                return None
+            terms.append((sign, "die", count, sides))
+        else:
+            if not has_number:
+                return None  # unexpected character / trailing operator
+            terms.append((sign, "const", number, None))
+    return terms
+
+
+def dice_literal(expr: str) -> str:
+    """Renders a dice expression string as C++ that builds a DiceExpression
+    from the readable die-size suffixes where possible — '1d20' becomes
+    `1_d20`, '2d6+4' becomes `2_d6 + 4` — falling back to the '"..."_dice'
+    string literal for unusual die sizes, malformed input, or
+    constant-only expressions."""
+    terms = parse_dice_terms(expr)
+    if not terms or not any(kind == "die" for _, kind, _, _ in terms):
+        return f'"{expr}"_dice'
+    rendered: list[str] = []
+    for i, (sign, kind, value, sides) in enumerate(terms):
+        if kind == "die":
+            if sides not in COMMON_DIE_SIZES:
+                return f'"{expr}"_dice'
+            token = f"{value}_d{sides}"
+        else:
+            token = str(value)
+        if i == 0:
+            rendered.append(("-" if sign < 0 else "") + token)
+        else:
+            rendered.append(("+ " if sign > 0 else "- ") + token)
+    return " ".join(rendered)
+
+
+class Expr:
+    """A translated C++ subexpression with type and range information.
+
+    kind is 'int' (exact integer arithmetic) or 'double' (floating point).
+    frac is set only for an exact integer division `num / den`: the value is
+    the *rational* num/den (emitted as a double division so later arithmetic
+    stays exact), but a directly wrapping floor/ceil/round can replace it with
+    the integer floorDiv/ceilDiv/roundDiv — keeping the generated hot path
+    free of floating point wherever the ruleset formula allows it, and with
+    the fast non-negative division helpers when the numerator is provably
+    non-negative and the denominator a positive constant.
+
+    non_neg records whether the value is provably >= 0 (ruleset stats are
+    stored as unsigned bytes, sums/products of non-negatives stay
+    non-negative), and const_val holds the integer value when the expression
+    is an integer literal, so the code generator can pick the simplest C++.
+    """
+
+    __slots__ = ("code", "kind", "frac", "non_neg", "const_val")
+
+    def __init__(self, code: str, kind: str, frac: "tuple[Expr, Expr] | None" = None,
+                 non_neg: bool = False, const_val: int | None = None):
+        self.code = code
+        self.kind = kind
+        self.frac = frac
+        self.non_neg = non_neg
+        self.const_val = const_val
+
+    @staticmethod
+    def int_(code: str, non_neg: bool = False, const_val: int | None = None) -> "Expr":
+        return Expr(code, "int", non_neg=non_neg, const_val=const_val)
+
+    @staticmethod
+    def dbl(code: str, non_neg: bool = False) -> "Expr":
+        return Expr(code, "double", non_neg=non_neg)
+
+    def is_positive_constant(self) -> bool:
+        """True when this is an integer literal greater than zero."""
+        return self.const_val is not None and self.const_val > 0
+
+    def as_double(self) -> str:
+        return self.code if self.kind == "double" else f"static_cast<double>({self.code})"
+
+
+class FormulaTranslator:
+    """Translates the restricted formula grammar to a typed C++ expression.
+
+    Identifiers are resolved via `resolve(identifier) -> C++ expression` and
+    are assumed to be integer-typed (attributes / skills / derived getters).
+    Integer arithmetic stays integer (no floating point in the generated hot
+    path); a division of two integers is kept as an exact rational that a
+    directly wrapping floor/ceil/round reduces with the integer division
+    helpers. The result matches the universal double-based evaluator exactly
+    (the parity tests pin this). `%` becomes std::fmod / `%`, `^` std::pow.
     """
 
     def __init__(self, resolve):
@@ -88,7 +212,7 @@ class FormulaTranslator:
         self._skip()
         if self._pos != len(self._text):
             raise ValueError(f"unexpected trailing characters in formula '{text}'")
-        return expr
+        return expr.code
 
     # -- token helpers -----------------------------------------------------
 
@@ -111,89 +235,137 @@ class FormulaTranslator:
     def _is_id_char(self, c: str) -> bool:
         return c.isalnum() or c in "_.'"
 
-    # -- grammar -----------------------------------------------------------
+    # -- grammar (every node returns an Expr) ------------------------------
 
-    def _parse_or(self):
+    def _parse_or(self) -> Expr:
         left = self._parse_and()
         while True:
             self._skip()
             if self._consume("||"):
-                left = f"({left} || {self._parse_and()})"
+                left = Expr.int_(f"({left.code} || {self._parse_and().code})")
             else:
                 return left
 
-    def _parse_and(self):
+    def _parse_and(self) -> Expr:
         left = self._parse_equality()
         while True:
             self._skip()
             if self._consume("&&"):
-                left = f"({left} && {self._parse_equality()})"
+                left = Expr.int_(f"({left.code} && {self._parse_equality().code})")
             else:
                 return left
 
-    def _parse_equality(self):
+    def _parse_equality(self) -> Expr:
         left = self._parse_relational()
         while True:
             self._skip()
             if self._consume("==") or self._consume("!="):
                 op = "==" if self._text[self._pos - 2 : self._pos] == "==" else "!="
-                left = f"({left} {op} {self._parse_relational()})"
+                right = self._parse_relational()
+                left = Expr.int_(f"({self._bin_operand(left)} {op} {self._bin_operand(right)})")
             else:
                 return left
 
-    def _parse_relational(self):
+    def _parse_relational(self) -> Expr:
         left = self._parse_additive()
         while True:
             self._skip()
             for op in ("<=", ">=", "<", ">"):
                 if self._consume(op):
-                    left = f"({left} {op} {self._parse_additive()})"
+                    right = self._parse_additive()
+                    left = Expr.int_(f"({self._bin_operand(left)} {op} {self._bin_operand(right)})")
                     break
             else:
                 return left
 
-    def _parse_additive(self):
+    def _bin_operand(self, expr: Expr) -> str:
+        """Operand for a comparison: integers compare directly, doubles promote."""
+        return expr.code if expr.kind == "int" else expr.as_double()
+
+    def _parse_additive(self) -> Expr:
         left = self._parse_multiplicative()
         while True:
             self._skip()
             for op in ("+", "-"):
                 if self._consume(op):
-                    left = f"({left} {op} {self._parse_multiplicative()})"
+                    right = self._parse_multiplicative()
+                    if left.kind == "int" and right.kind == "int":
+                        # A sum is non-negative if both sides are; a difference
+                        # is only provably non-negative when subtracting zero.
+                        non_neg = (left.non_neg and right.non_neg) if op == "+" else (
+                            left.non_neg and right.const_val == 0)
+                        left = Expr.int_(f"({left.code} {op} {right.code})", non_neg=non_neg)
+                    else:
+                        left = Expr.dbl(
+                            f"({left.as_double()} {op} {right.as_double()})",
+                            non_neg=left.non_neg and right.non_neg)
                     break
             else:
                 return left
 
-    def _parse_multiplicative(self):
+    def _parse_multiplicative(self) -> Expr:
         left = self._parse_unary()
         while True:
             self._skip()
             for op in ("*", "/", "%"):
                 if self._consume(op):
                     right = self._parse_unary()
-                    if op == "%":
-                        left = f"std::fmod({left}, {right})"
-                    else:
-                        left = f"({left} {op} {right})"
+                    if op == "*":
+                        if left.kind == "int" and right.kind == "int":
+                            left = Expr.int_(f"({left.code} * {right.code})",
+                                             non_neg=left.non_neg and right.non_neg)
+                        else:
+                            left = Expr.dbl(f"({left.as_double()} * {right.as_double()})",
+                                            non_neg=left.non_neg and right.non_neg)
+                    elif op == "/":
+                        if left.kind == "int" and right.kind == "int":
+                            # An exact rational: emit the double division (so
+                            # later arithmetic stays exact) and remember the
+                            # integer operands for a directly wrapping
+                            # floor/ceil/round, which can then pick the fast
+                            # non-negative helper when the numerator is proven
+                            # non-negative and the denominator is a positive
+                            # constant.
+                            left = Expr(
+                                f"static_cast<double>({left.code}) / static_cast<double>({right.code})",
+                                "double",
+                                frac=(left, right),
+                                non_neg=left.non_neg and right.is_positive_constant(),
+                            )
+                        else:
+                            left = Expr.dbl(f"({left.as_double()} / {right.as_double()})",
+                                            non_neg=left.non_neg and right.non_neg)
+                    else:  # '%'
+                        if left.kind == "int" and right.kind == "int":
+                            left = Expr.int_(f"({left.code} % {right.code})",
+                                             non_neg=left.non_neg and right.non_neg)
+                        else:
+                            left = Expr.dbl(f"std::fmod({left.as_double()}, {right.as_double()})")
                     break
             else:
                 return left
 
-    def _parse_unary(self):
+    def _parse_unary(self) -> Expr:
         self._skip()
         if self._consume("!"):
-            return f"(!{self._parse_unary()})"
+            return Expr.int_(f"(!{self._parse_unary().code})", non_neg=True)  # 0 or 1
         if self._consume("-"):
-            return f"(-{self._parse_unary()})"
+            inner = self._parse_unary()
+            if inner.kind == "int":
+                # Negation is non-negative only for the literal zero.
+                return Expr.int_(f"(-{inner.code})", non_neg=inner.const_val == 0)
+            return Expr.dbl(f"(-{inner.as_double()})", non_neg=inner.const_val == 0)
         return self._parse_power()
 
-    def _parse_power(self):
+    def _parse_power(self) -> Expr:
         left = self._parse_primary()
         self._skip()
         if self._consume("^"):
-            return f"std::pow({left}, {self._parse_unary()})"
+            right = self._parse_unary()
+            return Expr.dbl(f"std::pow({left.as_double()}, {right.as_double()})")
         return left
 
-    def _parse_primary(self):
+    def _parse_primary(self) -> Expr:
         self._skip()
         if self._pos >= len(self._text):
             raise ValueError(f"unexpected end of formula '{self._text}'")
@@ -223,10 +395,13 @@ class FormulaTranslator:
                             raise ValueError(f"expected ',' or ')' in '{self._text}'")
                         self._skip()
                 return self._call(ident, args)
-            return self._resolve(ident)
+            # A bare identifier is an integer stat reference; `resolve` also
+            # reports whether the referenced storage is unsigned (=> non-neg).
+            code, non_neg = self._resolve(ident)
+            return Expr.int_(code, non_neg=non_neg)
         raise ValueError(f"unexpected character '{c}' in formula '{self._text}'")
 
-    def _parse_number(self):
+    def _parse_number(self) -> Expr:
         start = self._pos
         while self._pos < len(self._text) and self._is_digit(self._text[self._pos]):
             self._pos += 1
@@ -238,30 +413,68 @@ class FormulaTranslator:
             raise ValueError(f"expected a number in formula '{self._text}'")
         raw = self._text[start : self._pos]
         if "." in raw:
-            return raw
-        return raw + ".0"
+            return Expr.dbl(raw)
+        value = int(raw)
+        return Expr.int_(raw, non_neg=value >= 0, const_val=value)
 
-    def _parse_identifier(self):
+    def _parse_identifier(self) -> str:
         start = self._pos
         while self._pos < len(self._text) and self._is_id_char(self._text[self._pos]):
             self._pos += 1
         return self._text[start : self._pos]
 
-    def _call(self, name: str, args: list[str]) -> str:
-        fn = {
-            "min": ("rpg_os::math::min", 2),
-            "max": ("rpg_os::math::max", 2),
-            "floor": ("rpg_os::math::floor", 1),
-            "ceil": ("rpg_os::math::ceil", 1),
-            "round": ("rpg_os::math::round", 1),
-            "clamp": ("rpg_os::math::clamp", 3),
-        }.get(name)
-        if fn is None:
-            raise ValueError(f"unknown function '{name}' in formula '{self._text}'")
-        cpp_name, arity = fn
-        if len(args) != arity:
-            raise ValueError(f"{name}() expects {arity} argument(s) in '{self._text}'")
-        return f"{cpp_name}({', '.join(args)})"
+    def _call(self, name: str, args: list[Expr]) -> Expr:
+        if name == "min":
+            if len(args) != 2:
+                raise ValueError(f"min() expects 2 arguments in '{self._text}'")
+            non_neg = args[0].non_neg and args[1].non_neg
+            if all(a.kind == "int" for a in args):
+                return Expr.int_(f"rpg_os::math::minI({args[0].code}, {args[1].code})",
+                                 non_neg=non_neg)
+            return Expr.dbl(f"rpg_os::math::min({args[0].as_double()}, {args[1].as_double()})",
+                            non_neg=non_neg)
+        if name == "max":
+            if len(args) != 2:
+                raise ValueError(f"max() expects 2 arguments in '{self._text}'")
+            non_neg = args[0].non_neg or args[1].non_neg
+            if all(a.kind == "int" for a in args):
+                return Expr.int_(f"rpg_os::math::maxI({args[0].code}, {args[1].code})",
+                                 non_neg=non_neg)
+            return Expr.dbl(f"rpg_os::math::max({args[0].as_double()}, {args[1].as_double()})",
+                            non_neg=non_neg)
+        if name in ("floor", "ceil", "round"):
+            if len(args) != 1:
+                raise ValueError(f"{name}() expects 1 argument in '{self._text}'")
+            arg = args[0]
+            if arg.frac is not None:
+                num, den = arg.frac
+                if num.non_neg and den.is_positive_constant():
+                    # Ruleset stats never go negative here: use the single
+                    # division fast path (floorDivN/ceilDivN/roundDivN).
+                    helper = {"floor": "floorDivN", "ceil": "ceilDivN",
+                              "round": "roundDivN"}[name]
+                else:
+                    helper = {"floor": "floorDiv", "ceil": "ceilDiv",
+                              "round": "roundDiv"}[name]
+                return Expr.int_(f"rpg_os::math::{helper}({num.code}, {den.code})",
+                                 non_neg=True)
+            if arg.kind == "int":
+                return arg  # floor/ceil/round of an integer is itself
+            fn = {"floor": "floor", "ceil": "ceil", "round": "round"}[name]
+            return Expr.dbl(f"rpg_os::math::{fn}({arg.as_double()})",
+                            non_neg=arg.non_neg)
+        if name == "clamp":
+            if len(args) != 3:
+                raise ValueError(f"clamp() expects 3 arguments in '{self._text}'")
+            if all(a.kind == "int" for a in args):
+                # A clamp to a non-negative lower bound is non-negative.
+                non_neg = args[1].non_neg or args[1].is_positive_constant()
+                return Expr.int_(
+                    f"rpg_os::math::clampInt({args[0].code}, {args[1].code}, {args[2].code})",
+                    non_neg=non_neg)
+            return Expr.dbl(
+                f"rpg_os::math::clamp({args[0].as_double()}, {args[1].as_double()}, {args[2].as_double()})")
+        raise ValueError(f"unknown function '{name}' in formula '{self._text}'")
 
 
 class Generator:
@@ -284,17 +497,56 @@ class Generator:
         for s in self.skills:
             self.skill_members[s["id"]] = camel_case(s.get("name", s["id"]))
 
-        # id -> C++ expression for use inside formulas (always double).
-        def resolve(ident: str) -> str:
+        # Stat ids that are kept wide (int32_t): these can grow beyond a byte
+        # (level, hit-point maxima, armor, proficiency) or back derived pools.
+        self.wide_attr_ids = {"proficiency_bonus", "level", "HitPoints_Max", "Armor_Rating"}
+
+        # id -> storage type for every emitted member (attributes + skills).
+        # The narrowest type that covers the ruleset-declared bounds is chosen
+        # (attributes/skills in the shipped rulesets fit a uint8_t); the wide
+        # ids above and all resource pools stay int32_t.
+        self.attr_types: dict[str, str] = {}
+        for a in self.attrs:
+            self.attr_types[a["id"]] = (
+                "int32_t" if a["id"] in self.wide_attr_ids
+                else self._narrow_type(a.get("min", 0), a.get("max", 255)))
+        self.skill_types: dict[str, str] = {
+            s["id"]: self._narrow_type(s.get("min", 0), s.get("max", 255)) for s in self.skills
+        }
+
+        # id -> (C++ expression, non_neg) for use inside formulas. Attributes,
+        # skills and derived getters are integer-typed; the translator keeps
+        # integer arithmetic (no floating point in the generated hot path) and
+        # only promotes to double where the formula itself needs an exact
+        # division. non_neg is true for unsigned byte storage, which lets the
+        # translator pick the single-division fast path for floor/ceil/round.
+        def resolve(ident: str) -> tuple[str, bool]:
             if ident in self.attr_members:
-                return f"static_cast<double>({self.attr_members[ident]})"
+                return f"static_cast<int>({self.attr_members[ident]})", \
+                    self.attr_types[ident].startswith("u")
             if ident in self.derived_methods:
-                return f"static_cast<double>({self.derived_methods[ident]}())"
+                return f"static_cast<int>({self.derived_methods[ident]}())", False
             if ident in self.skill_members:
-                return f"static_cast<double>({self.skill_members[ident]})"
+                return f"static_cast<int>({self.skill_members[ident]})", \
+                    self.skill_types[ident].startswith("u")
             raise ValueError(f"unknown stat '{ident}' referenced by a formula")
 
         self.translator = FormulaTranslator(resolve)
+
+    @staticmethod
+    def _narrow_type(min_value, max_value) -> str:
+        """Smallest integral storage type covering [min_value, max_value]."""
+        lo = int(min_value if min_value is not None else 0)
+        hi = int(max_value if max_value is not None else 255)
+        if lo >= 0 and hi <= 255:
+            return "uint8_t"
+        if lo >= -128 and hi <= 127:
+            return "int8_t"
+        if lo >= 0 and hi <= 65535:
+            return "uint16_t"
+        if lo >= -32768 and hi <= 32767:
+            return "int16_t"
+        return "int32_t"
 
     # -- members -----------------------------------------------------------
 
@@ -351,6 +603,7 @@ class Generator:
         lines.extend(self._per_skill_checks())
         lines.extend(self._cost_table_accessors())
         lines.extend(self._data_loaders())
+        lines.extend(self._data_section_loaders())
         lines.append("};")
         lines.append("")
         for ns in reversed(self._namespace_parts()):
@@ -382,16 +635,17 @@ class Generator:
         return camel_case(name if name else sid)
 
     def _attribute_members(self) -> list[str]:
-        lines = ["  // ---- core attributes ----"]
+        lines = ["  // ---- core attributes (narrow storage where the ruleset allows) ----"]
         for a in self.attrs:
-            if a["id"] in ("proficiency_bonus", "level", "HitPoints_Max", "Armor_Rating"):
+            if a["id"] in self.wide_attr_ids:
                 continue
             member = self.attr_members[a["id"]]
-            lines.append(f"  int32_t {member}{{ {a.get('default', 10)} }};  // {a['id']} {a.get('name', '')}")
-        extras = [a for a in self.attrs if a["id"] in ("proficiency_bonus", "level", "HitPoints_Max", "Armor_Rating")]
+            cpp_type = self.attr_types[a["id"]]
+            lines.append(f"  {cpp_type} {member}{{ {a.get('default', 10)} }};  // {a['id']} {a.get('name', '')}")
+        extras = [a for a in self.attrs if a["id"] in self.wide_attr_ids]
         if extras:
             lines.append("")
-            lines.append("  // ---- other base stats ----")
+            lines.append("  // ---- other base stats (kept wide) ----")
             for a in extras:
                 member = self.attr_members[a["id"]]
                 lines.append(f"  int32_t {member}{{ {a.get('default', 0)} }};  // {a['id']} {a.get('name', '')}")
@@ -400,9 +654,10 @@ class Generator:
     def _skill_members_block(self) -> list[str]:
         if not self.skills:
             return []
-        lines = ["", "  // ---- skill ratings ----"]
+        lines = ["", "  // ---- skill ratings (narrow storage where the ruleset allows) ----"]
         for s in self.skills:
-            lines.append(f"  int32_t {self.skill_members[s['id']]}{{ {s.get('default', 0)} }};  // {s['id']} ({s.get('name', '')})")
+            cpp_type = self.skill_types[s["id"]]
+            lines.append(f"  {cpp_type} {self.skill_members[s['id']]}{{ {s.get('default', 0)} }};  // {s['id']} ({s.get('name', '')})")
         return lines
 
     def _resource_members(self) -> list[str]:
@@ -434,79 +689,103 @@ class Generator:
         lines.append("  }")
         return lines
 
+    def _recipe_init(self, cfg: dict) -> tuple[list[str], bool]:
+        """Designated-initializer lines for a rpg_os::CheckRecipe from a check
+        config, plus whether the check needs a target entity.
+
+        Every check the code generator emits is expressed as a *generic*
+        recipe (see core/checks.hpp) rather than a ruleset-specific algorithm;
+        the generated method is the only place a ruleset's check names appear.
+        """
+        lines: list[str] = []
+        resolution = cfg.get("resolution", "threshold")
+        lines.append("    .resolution = rpg_os::Resolution::" + {
+            "threshold": "Threshold", "pool": "Pool", "opposed": "Opposed",
+            "resistance": "Resistance",
+        }.get(resolution, "Threshold") + ",")
+        lines.append(f'    .dice = {dice_literal(cfg.get("dice", "1d20"))},')
+        lines.append("    .comparison = rpg_os::Comparison::" + {
+            "ge": "GreaterEqual", "le": "LessEqual",
+        }.get(cfg.get("comparison", "ge"), "GreaterEqual") + ",")
+        source = cfg.get("threshold_source", "difficulty")
+        lines.append("    .thresholdSource = rpg_os::ThresholdSource::" + {
+            "difficulty": "Difficulty", "actor_stat": "ActorStat",
+            "target_stat": "TargetStat",
+        }.get(source, "Difficulty") + ",")
+        if cfg.get("threshold_stat"):
+            lines.append(f'    .thresholdStat = "{cfg["threshold_stat"]}",')
+        if cfg.get("bonus_stats"):
+            lines.append("    .bonusStats = {" + ", ".join(f'"{b}"' for b in cfg["bonus_stats"]) + "},")
+        if cfg.get("pool_attributes"):
+            attrs = cfg["pool_attributes"]
+            lines.append("    .poolAttributes = {" + ", ".join(f'"{a}"' for a in attrs) + "},")
+            lines.append(f"    .numPoolAttributes = {len(attrs)},")
+        if cfg.get("pool_stat"):
+            lines.append(f'    .poolStat = "{cfg["pool_stat"]}",')
+        if cfg.get("attack_stat"):
+            lines.append(f'    .attackStat = "{cfg["attack_stat"]}",')
+        if cfg.get("parry_stat"):
+            lines.append(f'    .parryStat = "{cfg["parry_stat"]}",')
+        if cfg.get("compare_levels"):
+            lines.append("    .compareLevels = true,")
+        lines.append("    .criticalStyle = rpg_os::CriticalStyle::" + {
+            "none": "None", "face": "Face", "double": "DoubleRoll",
+            "percentile": "PercentileBand",
+        }.get(cfg.get("critical_style", "none"), "None") + ",")
+        if cfg.get("critical_face"):
+            lines.append(f"    .criticalFace = {cfg['critical_face']},")
+        if cfg.get("critical_confirm"):
+            lines.append("    .criticalConfirm = true,")
+        lines.append("    .fumbleStyle = rpg_os::CriticalStyle::" + {
+            "none": "None", "face": "Face", "double": "DoubleRoll",
+            "percentile": "PercentileBand",
+        }.get(cfg.get("fumble_style", "none"), "None") + ",")
+        if cfg.get("fumble_face"):
+            lines.append(f"    .fumbleFace = {cfg['fumble_face']},")
+        if cfg.get("fumble_confirm"):
+            lines.append("    .fumbleConfirm = true,")
+        lines.append("    .grading = rpg_os::Grading::" + {
+            "none": "None", "percentile": "Percentile",
+            "pool_quality": "PoolQuality",
+        }.get(cfg.get("grading", "none"), "None") + ",")
+        lines.append("    .difficultyMode = rpg_os::DifficultyMode::" + {
+            "to_threshold": "ToThreshold", "to_stat": "ToStat",
+        }.get(cfg.get("difficulty_mode", "to_threshold"), "ToThreshold") + ",")
+        lines.append("    .difficultyMultiplier = rpg_os::DifficultyMultiplier::" + {
+            "none": "None", "double_halve": "DoubleHalve",
+        }.get(cfg.get("difficulty_multiplier", "none"), "None") + ",")
+        needs_target = resolution in ("opposed", "resistance") or (
+            resolution == "threshold" and source == "target_stat")
+        return lines, needs_target
+
     def _check_methods(self) -> list[str]:
         lines = ["", "  // ---- named checks (from check_types) ----"]
         for cid, cfg in self.checks.items():
             method = camel_case(cid)
-            kind = cfg["kind"]
-            if kind == "additive_d20":
-                bonus = cfg.get("bonus_stats", [])
-                arr = ", ".join(f'"{b}"' for b in bonus)
-                n = len(bonus)
-                lines.append(f"  /// Additive d20 check '{cid}'.")
+            init_lines, needs_target = self._recipe_init(cfg)
+            lines.append(f"  /// Named check '{cid}' (see the ruleset's check_types).")
+            if needs_target:
                 lines.append("  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>")
                 lines.append(f"  [[nodiscard]] rpg_os::CheckResult {method}(const Target& target, "
                              "const rpg_os::CheckParams& params, Rng& rng) const {")
-                if n:
-                    lines.append(f"    const std::array<std::string_view, {n}> bonus{{{arr}}};")
-                    lines.append(f'    return rpg_os::resolveAdditiveD20(*this, target, "{cfg.get("dice_expression", "1d20")}", bonus, "{cfg.get("target_stat", "")}", params, rng);')
-                else:
-                    lines.append(f'    const std::array<std::string_view, 0> bonus{{}};')
-                    lines.append(f'    return rpg_os::resolveAdditiveD20(*this, target, "{cfg.get("dice_expression", "1d20")}", bonus, "{cfg.get("target_stat", "")}", params, rng);')
-                lines.append("  }")
-            elif kind == "roll_under_d20":
-                attr = cfg["attributes"][0]
-                confirm = "true" if cfg.get("confirmation_roll", False) else "false"
-                lines.append(f"  /// Roll-under d20 attribute check '{cid}'.")
-                lines.append("  template <rpg_os::RandomNumberGenerator Rng>")
-                lines.append(f"  [[nodiscard]] rpg_os::CheckResult {method}(const rpg_os::CheckParams& params, Rng& rng) const {{")
-                lines.append(f'    return rpg_os::resolveRollUnderD20(*this, "{attr}", {confirm}, params, rng);')
-                lines.append("  }")
-            elif kind == "triple_roll_under_pool":
-                attrs = cfg["attributes"]
-                pool = cfg["pool_stat"]
-                lines.append(f"  /// 3d20 talent check '{cid}'.")
-                lines.append("  template <rpg_os::RandomNumberGenerator Rng>")
-                lines.append(f"  [[nodiscard]] rpg_os::CheckResult {method}(const rpg_os::CheckParams& params, Rng& rng) const {{")
-                lines.append(f'    return rpg_os::resolveTripleRollUnderPool(*this, "{attrs[0]}", "{attrs[1]}", "{attrs[2]}", "{pool}", params, rng);')
-                lines.append("  }")
-            elif kind == "attack_vs_defense":
-                lines.append(f"  /// Attack vs. defense check '{cid}'.")
-                lines.append("  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>")
-                lines.append(f"  [[nodiscard]] rpg_os::CheckResult {method}(const Target& target, "
-                             "const rpg_os::CheckParams& params, Rng& rng) const {")
-                lines.append(f'    return rpg_os::resolveAttackVsDefense(*this, target, "{cfg["attack_stat"]}", "{cfg["parry_stat"]}", params, rng);')
-                lines.append("  }")
-            elif kind == "roll_under_d100":
-                attr = cfg["attributes"][0]
-                lines.append(f"  /// Percentile roll-under check '{cid}' (BRP).")
-                lines.append("  template <rpg_os::RandomNumberGenerator Rng>")
-                lines.append(f"  [[nodiscard]] rpg_os::CheckResult {method}(const rpg_os::CheckParams& params, Rng& rng) const {{")
-                lines.append(f'    return rpg_os::resolveRollUnderD100(*this, "{attr}", params, rng);')
-                lines.append("  }")
-            elif kind == "opposed_roll_under_d100":
-                lines.append(f"  /// Opposed percentile contest check '{cid}' (BRP).")
-                lines.append("  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>")
-                lines.append(f"  [[nodiscard]] rpg_os::CheckResult {method}(const Target& target, "
-                             "const rpg_os::CheckParams& params, Rng& rng) const {")
-                lines.append(f'    return rpg_os::resolveOpposedRollUnderD100(*this, target, "{cfg["attack_stat"]}", "{cfg["parry_stat"]}", params, rng);')
-                lines.append("  }")
-            elif kind == "resistance_roll":
-                lines.append(f"  /// BRP resistance roll '{cid}'.")
-                lines.append("  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>")
-                lines.append(f"  [[nodiscard]] rpg_os::CheckResult {method}(const Target& target, "
-                             "const rpg_os::CheckParams& params, Rng& rng) const {")
-                lines.append(f'    return rpg_os::resolveResistanceRoll(*this, target, "{cfg["attack_stat"]}", "{cfg["parry_stat"]}", params, rng);')
-                lines.append("  }")
             else:
-                raise ValueError(f"unknown check kind '{kind}' in check type '{cid}'")
+                lines.append("  template <rpg_os::RandomNumberGenerator Rng>")
+                lines.append(f"  [[nodiscard]] rpg_os::CheckResult {method}(const rpg_os::CheckParams& params, Rng& rng) const {{")
+            lines.append("    static const rpg_os::CheckRecipe recipe{")
+            lines.extend(init_lines)
+            lines.append("    };")
+            if needs_target:
+                lines.append("    return rpg_os::resolveCheck(*this, target, recipe, params, rng);")
+            else:
+                lines.append("    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);")
+            lines.append("  }")
             lines.append("")
         return lines
 
     def _per_skill_checks(self) -> list[str]:
         if not self.skills:
             return []
-        lines = ["  // ---- per-skill talent checks (TDE: each skill has its own attributes) ----"]
+        lines = ["  // ---- per-skill checks (each skill's own linked attributes as a pool) ----"]
         for s in self.skills:
             if len(s.get("attributes", [])) != 3:
                 continue
@@ -515,7 +794,18 @@ class Generator:
             attrs = s["attributes"]
             lines.append("  template <rpg_os::RandomNumberGenerator Rng>")
             lines.append(f"  [[nodiscard]] rpg_os::CheckResult {method}(const rpg_os::CheckParams& params, Rng& rng) const {{")
-            lines.append(f'    return rpg_os::resolveTripleRollUnderPool(*this, "{attrs[0]}", "{attrs[1]}", "{attrs[2]}", "{s["id"]}", params, rng);')
+            lines.append("    static const rpg_os::CheckRecipe recipe{")
+            lines.append("      .resolution = rpg_os::Resolution::Pool,")
+            lines.append(f'      .dice = {dice_literal("3d20")},')
+            lines.append(f"      .poolAttributes = {{\"{attrs[0]}\", \"{attrs[1]}\", \"{attrs[2]}\"}},")
+            lines.append("      .numPoolAttributes = 3,")
+            lines.append(f'      .poolStat = "{s["id"]}",')
+            lines.append("      .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,")
+            lines.append("      .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,")
+            lines.append("      .grading = rpg_os::Grading::PoolQuality,")
+            lines.append("      .difficultyMode = rpg_os::DifficultyMode::ToStat,")
+            lines.append("    };")
+            lines.append("    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);")
             lines.append("  }")
         return lines
 
@@ -557,14 +847,16 @@ class Generator:
             lines.append("    if (record.contains(\"attributes\")) {")
             lines.append("      for (const auto& [key, value] : record.at(\"attributes\").items()) {")
             for a in self.attrs:
-                lines.append(f"        if (key == \"{a['id']}\") {{ {self.attr_members[a['id']]} = rpg_os::readVariantValue(value, variance, rng); }}")
+                cpp_type = self.attr_types[a["id"]]
+                lines.append(f"        if (key == \"{a['id']}\") {{ {self.attr_members[a['id']]} = static_cast<{cpp_type}>(rpg_os::readVariantValue(value, variance, rng)); }}")
             lines.append("      }")
             lines.append("    }")
         if self.skills:
             lines.append("    if (record.contains(\"skills\")) {")
             lines.append("      for (const auto& [key, value] : record.at(\"skills\").items()) {")
             for s in self.skills:
-                lines.append(f"        if (key == \"{s['id']}\") {{ {self.skill_members[s['id']]} = rpg_os::readVariantValue(value, variance, rng); }}")
+                cpp_type = self.skill_types[s["id"]]
+                lines.append(f"        if (key == \"{s['id']}\") {{ {self.skill_members[s['id']]} = static_cast<{cpp_type}>(rpg_os::readVariantValue(value, variance, rng)); }}")
             lines.append("      }")
             lines.append("    }")
         # refresh resources to their maximum, then honour explicit overrides
@@ -658,6 +950,35 @@ class Generator:
         lines.append("    }")
         lines.append("    return out;")
         lines.append("  }")
+        return lines
+
+
+    def _data_section_loaders(self) -> list[str]:
+        """Typed loaders for every free-form data section (spells, conditions,
+        poisons, diseases, items, ...). The records stay raw JSON — their shape
+        is ruleset-specific by design — but the generated code hands them to
+        the application so nothing in the ruleset's data database is out of
+        reach."""
+        lines = ["", "  // ---- free-form data section loaders ----",
+                 "  /// Loads every record from a named `data` section as raw JSON.",
+                 "  static std::vector<rpg_os::Json> loadSection(const rpg_os::Json& rulesetJson,",
+                 "                                               std::string_view section) {",
+                 "    std::vector<rpg_os::Json> out;",
+                 "    const auto& data = rulesetJson.at(\"data\");",
+                 "    if (data.contains(section)) {",
+                 "      for (const auto& record : data.at(section)) {",
+                 "        out.push_back(record);",
+                 "      }",
+                 "    }",
+                 "    return out;",
+                 "  }"]
+        for section in ("spells", "conditions", "poisons", "diseases", "items"):
+            method = f"load{section[:1].upper()}{section[1:]}"
+            lines.append("")
+            lines.append(f"  /// Loads every {section} record from the ruleset JSON.")
+            lines.append(f"  static std::vector<rpg_os::Json> {method}(const rpg_os::Json& rulesetJson) {{")
+            lines.append(f"    return loadSection(rulesetJson, \"{section}\");")
+            lines.append("  }")
         return lines
 
 

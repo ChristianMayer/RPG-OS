@@ -3,100 +3,151 @@
 
 /**
  * @file test_checks.cpp
- * @brief Tests for the shared check resolution algorithms (@c rpg_os::checks).
+ * @brief Tests for the generic, data-driven check resolver (@c rpg_os::checks).
  *
- * Includes the acceptance case studies from the design spec (content.md §9):
- *   - D&D attack roll vs. AC (additive d20)
- *   - DSA 3d20 talent check with Talent Prowess pool
- *
- * Every mechanism is tested with scripted dice so the exact outcome (hit,
- * margin, critical, remaining pool, quality level) is pinned. These are the
- * shared algorithms both engine modes call, making this file the core of the
- * parity guarantee.
+ * Every mechanism the shipped rulesets use is expressed as a @c CheckRecipe
+ * — a generic composition of dice, comparison, reference source, criticals,
+ * grading, and difficulty handling — and resolved by the single
+ * @c rpg_os::resolveCheck function. This file pins the exact outcome of each
+ * recipe shape with scripted dice (hit, margin, critical, remaining pool,
+ * quality level), and is the core of the parity guarantee between the
+ * universal engine and the generated specific-mode code.
  */
 #include "test_util.hpp"
 
 #include <doctest/doctest.h>
 #include <rpg_os/core/checks.hpp>
 
-using rpg_os::CheckConfig;
-using rpg_os::CheckKind;
 using rpg_os::CheckParams;
+using rpg_os::CheckRecipe;
 using rpg_os::CheckResult;
+using rpg_os::operator""_dice;
 
 namespace {
 
-CheckConfig additiveConfig() {
-  CheckConfig cfg;
-  cfg.kind = CheckKind::AdditiveD20;
-  cfg.diceExpression = "1d20";
-  cfg.bonusStats = {"STR_mod", "proficiency_bonus"};
-  cfg.targetStat = "AC";
-  return cfg;
+/// Additive threshold check: roll 1d20 + bonus stats, compare >= target AC.
+CheckRecipe additiveConfig() {
+  CheckRecipe recipe;
+  recipe.resolution = rpg_os::Resolution::Threshold;
+  recipe.dice = "1d20"_dice;
+  recipe.comparison = rpg_os::Comparison::GreaterEqual;
+  recipe.thresholdSource = rpg_os::ThresholdSource::TargetStat;
+  recipe.thresholdStat = "AC";
+  recipe.bonusStats = {"STR_mod", "proficiency_bonus"};
+  recipe.criticalStyle = rpg_os::CriticalStyle::Face;
+  recipe.criticalFace = 20;
+  recipe.fumbleStyle = rpg_os::CriticalStyle::Face;
+  recipe.fumbleFace = 1;
+  recipe.difficultyMode = rpg_os::DifficultyMode::ToThreshold;
+  return recipe;
 }
 
-CheckConfig dsaTalentConfig() {
-  CheckConfig cfg;
-  cfg.kind = CheckKind::TripleRollUnderPool;
-  cfg.attributes = {"COU", "AGI", "STR"};
-  cfg.numAttributes = 3;
-  cfg.poolStat = "climbing";
-  return cfg;
+/// Pool check: three independent rolls against three attributes, overshoot
+/// drawn from a skill pool, double-roll criticals, pool quality grading.
+CheckRecipe dsaTalentConfig() {
+  CheckRecipe recipe;
+  recipe.resolution = rpg_os::Resolution::Pool;
+  recipe.dice = "3d20"_dice;
+  recipe.poolAttributes = {"COU", "AGI", "STR"};
+  recipe.numPoolAttributes = 3;
+  recipe.poolStat = "climbing";
+  recipe.criticalStyle = rpg_os::CriticalStyle::DoubleRoll;
+  recipe.fumbleStyle = rpg_os::CriticalStyle::DoubleRoll;
+  recipe.grading = rpg_os::Grading::PoolQuality;
+  recipe.difficultyMode = rpg_os::DifficultyMode::ToStat;
+  return recipe;
 }
 
-CheckConfig attributeCheckConfig(bool confirmation) {
-  CheckConfig cfg;
-  cfg.kind = CheckKind::RollUnderD20;
-  cfg.attributes[0] = "COU";
-  cfg.numAttributes = 1;
-  cfg.useConfirmationRoll = confirmation;
-  return cfg;
+/// Roll-under threshold check against an actor attribute, with optional
+/// confirmation rolls for natural criticals / fumbles.
+CheckRecipe attributeCheckConfig(bool confirmation) {
+  CheckRecipe recipe;
+  recipe.resolution = rpg_os::Resolution::Threshold;
+  recipe.dice = "1d20"_dice;
+  recipe.comparison = rpg_os::Comparison::LessEqual;
+  recipe.thresholdSource = rpg_os::ThresholdSource::ActorStat;
+  recipe.thresholdStat = "COU";
+  recipe.criticalStyle = rpg_os::CriticalStyle::Face;
+  recipe.criticalFace = 1;
+  recipe.criticalConfirm = confirmation;
+  recipe.fumbleStyle = rpg_os::CriticalStyle::Face;
+  recipe.fumbleFace = 20;
+  recipe.fumbleConfirm = confirmation;
+  recipe.difficultyMode = rpg_os::DifficultyMode::ToStat;
+  return recipe;
 }
 
-CheckConfig combatConfig() {
-  CheckConfig cfg;
-  cfg.kind = CheckKind::AttackVsDefense;
-  cfg.attackStat = "AT";
-  cfg.parryStat = "PA";
-  return cfg;
+/// Staged roll-under contest: attack then parry (parry only after a hit).
+CheckRecipe combatConfig() {
+  CheckRecipe recipe;
+  recipe.resolution = rpg_os::Resolution::Opposed;
+  recipe.dice = "1d20"_dice;
+  recipe.attackStat = "AT";
+  recipe.parryStat = "PA";
+  recipe.compareLevels = false;
+  recipe.criticalStyle = rpg_os::CriticalStyle::Face;
+  recipe.criticalFace = 1;
+  recipe.fumbleStyle = rpg_os::CriticalStyle::Face;
+  recipe.fumbleFace = 20;
+  recipe.difficultyMode = rpg_os::DifficultyMode::ToStat;
+  return recipe;
 }
 
-CheckConfig d100Config() {
-  CheckConfig cfg;
-  cfg.kind = CheckKind::RollUnderD100;
-  cfg.attributes[0] = "spot_hidden";
-  cfg.numAttributes = 1;
-  return cfg;
+/// Percentile roll-under check against an actor skill, graded into
+/// Critical / Special / Success / Failure / Fumble, Easy/Difficult scaling.
+CheckRecipe d100Config() {
+  CheckRecipe recipe;
+  recipe.resolution = rpg_os::Resolution::Threshold;
+  recipe.dice = "1d100"_dice;
+  recipe.comparison = rpg_os::Comparison::LessEqual;
+  recipe.thresholdSource = rpg_os::ThresholdSource::ActorStat;
+  recipe.thresholdStat = "spot_hidden";
+  recipe.criticalStyle = rpg_os::CriticalStyle::PercentileBand;
+  recipe.fumbleStyle = rpg_os::CriticalStyle::PercentileBand;
+  recipe.grading = rpg_os::Grading::Percentile;
+  recipe.difficultyMode = rpg_os::DifficultyMode::ToStat;
+  recipe.difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve;
+  return recipe;
 }
 
-CheckConfig opposedD100Config() {
-  CheckConfig cfg;
-  cfg.kind = CheckKind::OpposedRollUnderD100;
-  cfg.attackStat = "fighting";
-  cfg.parryStat = "dodge";
-  return cfg;
+/// Opposed percentile contest comparing graded success levels.
+CheckRecipe opposedD100Config() {
+  CheckRecipe recipe;
+  recipe.resolution = rpg_os::Resolution::Opposed;
+  recipe.dice = "1d100"_dice;
+  recipe.attackStat = "fighting";
+  recipe.parryStat = "dodge";
+  recipe.compareLevels = true;
+  recipe.criticalStyle = rpg_os::CriticalStyle::PercentileBand;
+  recipe.fumbleStyle = rpg_os::CriticalStyle::PercentileBand;
+  recipe.grading = rpg_os::Grading::Percentile;
+  recipe.difficultyMode = rpg_os::DifficultyMode::ToStat;
+  return recipe;
 }
 
-CheckConfig resistanceConfig() {
-  CheckConfig cfg;
-  cfg.kind = CheckKind::ResistanceRoll;
-  cfg.attackStat = "POW";
-  cfg.parryStat = "POW";
-  return cfg;
+/// Resistance check: a single roll against a chance derived from two stats.
+CheckRecipe resistanceConfig() {
+  CheckRecipe recipe;
+  recipe.resolution = rpg_os::Resolution::Resistance;
+  recipe.dice = "1d100"_dice;
+  recipe.attackStat = "POW";
+  recipe.parryStat = "POW";
+  recipe.difficultyMode = rpg_os::DifficultyMode::ToStat;
+  return recipe;
 }
 
 } // namespace
 
 // ---------------------------------------------------------------------------
-// Additive d20 (D&D)
+// Additive threshold (d20 vs a target stat or DC)
 // ---------------------------------------------------------------------------
 
-TEST_CASE("AdditiveD20: hit when total meets the target's AC") {
+TEST_CASE("Additive threshold: hit when total meets the target's stat") {
   MockStats fighter;
   fighter.values = {{"STR_mod", 3}, {"proficiency_bonus", 2}};
   MockStats orc;
   orc.values = {{"AC", 15}};
-  const CheckConfig cfg = additiveConfig();
+  const CheckRecipe cfg = additiveConfig();
   const CheckParams params;
 
   auto r1 = script({10}); // 10 + 3 + 2 = 15 >= 15 -> hit, margin 0
@@ -116,12 +167,12 @@ TEST_CASE("AdditiveD20: hit when total meets the target's AC") {
   CHECK(good.marginOfSuccess == 1);
 }
 
-TEST_CASE("AdditiveD20: natural 20 always hits, natural 1 always misses") {
+TEST_CASE("Additive threshold: natural 20 always hits, natural 1 always misses") {
   MockStats fighter;
   fighter.values = {{"STR_mod", 0}, {"proficiency_bonus", 0}};
   MockStats target;
   target.values = {{"AC", 30}}; // unreachable by modifiers alone
-  const CheckConfig cfg = additiveConfig();
+  const CheckRecipe cfg = additiveConfig();
   const CheckParams params;
 
   auto r1 = script({20});
@@ -135,11 +186,12 @@ TEST_CASE("AdditiveD20: natural 20 always hits, natural 1 always misses") {
   CHECK(fumble.isCriticalFailure);
 }
 
-TEST_CASE("AdditiveD20: uses params.difficulty as DC when no target stat") {
+TEST_CASE("Additive threshold: uses params.difficulty as DC when no target stat") {
   MockStats rogue;
   rogue.values = {{"DEX_mod", 4}, {"proficiency_bonus", 3}};
-  CheckConfig cfg = additiveConfig();
-  cfg.targetStat = "";
+  CheckRecipe cfg = additiveConfig();
+  cfg.thresholdSource = rpg_os::ThresholdSource::Difficulty;
+  cfg.thresholdStat = "";
   cfg.bonusStats = {"DEX_mod", "proficiency_bonus"};
   CheckParams params;
   params.difficulty = 15;
@@ -154,14 +206,14 @@ TEST_CASE("AdditiveD20: uses params.difficulty as DC when no target stat") {
 }
 
 // ---------------------------------------------------------------------------
-// TripleRollUnderPool (DSA skill check) — real TDE 2nd-printing rules
+// Pool check (three roll-unders against a shared pool)
 // ---------------------------------------------------------------------------
 
-TEST_CASE("TripleRollUnderPool: unmodified skill check succeeds with SP left") {
+TEST_CASE("Pool: unmodified skill check succeeds with pool left") {
   // Geron: COU 12, AGI 13, STR 11, Climbing skill rating 7, no modifier.
   MockStats geron;
   geron.values = {{"COU", 12}, {"AGI", 13}, {"STR", 11}, {"climbing", 7}};
-  const CheckConfig cfg = dsaTalentConfig();
+  const CheckRecipe cfg = dsaTalentConfig();
   const CheckParams params;
 
   // Rolls 14, 12, 11 vs EAVs 12, 13, 11: die1 over by 2, die2/3 fine. The
@@ -175,10 +227,10 @@ TEST_CASE("TripleRollUnderPool: unmodified skill check succeeds with SP left") {
   CHECK(result.rawDiceRolls == std::vector<int>{14, 12, 11});
 }
 
-TEST_CASE("TripleRollUnderPool: difficulty modifies the EAVs (TDE)") {
+TEST_CASE("Pool: difficulty modifies the effective attribute values") {
   MockStats geron;
   geron.values = {{"COU", 12}, {"AGI", 13}, {"STR", 11}, {"climbing", 7}};
-  const CheckConfig cfg = dsaTalentConfig();
+  const CheckRecipe cfg = dsaTalentConfig();
 
   // Penalty -3 -> EAVs 9, 10, 8; overshoots 5 + 2 + 3 = 10 > 7 -> fail, -3 left.
   CheckParams penalty;
@@ -199,10 +251,10 @@ TEST_CASE("TripleRollUnderPool: difficulty modifies the EAVs (TDE)") {
   CHECK(ok.qualityLevel == 3);
 }
 
-TEST_CASE("TripleRollUnderPool: EAV below 1 fails automatically") {
+TEST_CASE("Pool: EAV below 1 fails automatically") {
   MockStats hero;
   hero.values = {{"COU", 5}, {"AGI", 12}, {"STR", 12}, {"climbing", 7}};
-  const CheckConfig cfg = dsaTalentConfig();
+  const CheckRecipe cfg = dsaTalentConfig();
   CheckParams penalty;
   penalty.difficulty = -6; // COU EAV = -1
   auto rng = script({});
@@ -212,10 +264,10 @@ TEST_CASE("TripleRollUnderPool: EAV below 1 fails automatically") {
   CHECK(result.rawDiceRolls.empty()); // no dice rolled
 }
 
-TEST_CASE("TripleRollUnderPool: double-1 is a critical success, double-20 a critical failure") {
+TEST_CASE("Pool: double-1 is a critical success, double-20 a critical failure") {
   MockStats hero;
   hero.values = {{"COU", 8}, {"AGI", 8}, {"STR", 8}, {"climbing", 2}};
-  const CheckConfig cfg = dsaTalentConfig();
+  const CheckRecipe cfg = dsaTalentConfig();
   const CheckParams params;
 
   auto r1 = script({1, 1, 18}); // double-1 overrides the failed third roll
@@ -230,13 +282,13 @@ TEST_CASE("TripleRollUnderPool: double-1 is a critical success, double-20 a crit
 }
 
 // ---------------------------------------------------------------------------
-// RollUnderD20 (DSA attribute check)
+// Roll-under threshold (attribute check)
 // ---------------------------------------------------------------------------
 
-TEST_CASE("RollUnderD20: succeeds on a roll at or below the attribute") {
+TEST_CASE("Roll-under threshold: succeeds on a roll at or below the attribute") {
   MockStats hero;
   hero.values = {{"COU", 12}};
-  const CheckConfig cfg = attributeCheckConfig(false);
+  const CheckRecipe cfg = attributeCheckConfig(false);
   const CheckParams params;
 
   auto r1 = script({12});
@@ -245,10 +297,10 @@ TEST_CASE("RollUnderD20: succeeds on a roll at or below the attribute") {
   CHECK_FALSE(rpg_os::resolveCheck(hero, rpg_os::NullStatProvider{}, cfg, params, r2).isSuccess);
 }
 
-TEST_CASE("RollUnderD20: difficulty modifies the effective attribute") {
+TEST_CASE("Roll-under threshold: difficulty modifies the effective attribute") {
   MockStats hero;
   hero.values = {{"COU", 12}};
-  const CheckConfig cfg = attributeCheckConfig(false);
+  const CheckRecipe cfg = attributeCheckConfig(false);
   CheckParams bonus;
   bonus.difficulty = 3; // +3 -> EAV 15
   auto r1 = script({15});
@@ -262,10 +314,10 @@ TEST_CASE("RollUnderD20: difficulty modifies the effective attribute") {
   CHECK_FALSE(rpg_os::resolveCheck(hero, rpg_os::NullStatProvider{}, cfg, penalty, r3).isSuccess);
 }
 
-TEST_CASE("RollUnderD20: EAV below 1 is an automatic failure") {
+TEST_CASE("Roll-under threshold: EAV below 1 is an automatic failure") {
   MockStats hero;
   hero.values = {{"COU", 5}};
-  const CheckConfig cfg = attributeCheckConfig(false);
+  const CheckRecipe cfg = attributeCheckConfig(false);
   CheckParams penalty;
   penalty.difficulty = -6; // EAV -1
   auto rng = script({});
@@ -275,10 +327,10 @@ TEST_CASE("RollUnderD20: EAV below 1 is an automatic failure") {
   CHECK(result.rawDiceRolls.empty()); // no dice rolled
 }
 
-TEST_CASE("RollUnderD20: confirmation rolls decide criticals and botches") {
+TEST_CASE("Roll-under threshold: confirmation rolls decide criticals and fumbles") {
   MockStats hero;
   hero.values = {{"COU", 12}};
-  const CheckConfig cfg = attributeCheckConfig(true);
+  const CheckRecipe cfg = attributeCheckConfig(true);
   const CheckParams params;
 
   // nat 1, confirm 5 (<= 12): critical success.
@@ -293,23 +345,23 @@ TEST_CASE("RollUnderD20: confirmation rolls decide criticals and botches") {
   CHECK(plain.isSuccess);
   CHECK_FALSE(plain.isCriticalSuccess);
 
-  // nat 20, confirm 5 (<= 12): regular failure, not a botch.
+  // nat 20, confirm 5 (<= 12): regular failure, not a fumble.
   auto r3 = script({20, 5});
   const CheckResult fail = rpg_os::resolveCheck(hero, rpg_os::NullStatProvider{}, cfg, params, r3);
   CHECK_FALSE(fail.isSuccess);
   CHECK_FALSE(fail.isCriticalFailure);
 
-  // nat 20, confirm 20: botch.
+  // nat 20, confirm 20: fumble.
   auto r4 = script({20, 20});
   const CheckResult botch = rpg_os::resolveCheck(hero, rpg_os::NullStatProvider{}, cfg, params, r4);
   CHECK_FALSE(botch.isSuccess);
   CHECK(botch.isCriticalFailure);
 }
 
-TEST_CASE("RollUnderD20: without confirmation, nat 1 / nat 20 are direct") {
+TEST_CASE("Roll-under threshold: without confirmation, nat 1 / nat 20 are direct") {
   MockStats hero;
   hero.values = {{"COU", 12}};
-  const CheckConfig cfg = attributeCheckConfig(false);
+  const CheckRecipe cfg = attributeCheckConfig(false);
   const CheckParams params;
 
   auto r1 = script({1});
@@ -322,15 +374,15 @@ TEST_CASE("RollUnderD20: without confirmation, nat 1 / nat 20 are direct") {
 }
 
 // ---------------------------------------------------------------------------
-// AttackVsDefense (DSA combat)
+// Staged opposed contest (attack then parry)
 // ---------------------------------------------------------------------------
 
-TEST_CASE("AttackVsDefense: hit when the attack succeeds and the parry fails") {
+TEST_CASE("Staged contest: hit when the attack succeeds and the parry fails") {
   MockStats attacker;
   attacker.values = {{"AT", 13}};
   MockStats defender;
   defender.values = {{"PA", 10}};
-  const CheckConfig cfg = combatConfig();
+  const CheckRecipe cfg = combatConfig();
   const CheckParams params;
 
   // attack 11 (<= 13) hits; parry 12 (> 10) fails -> hit.
@@ -346,12 +398,12 @@ TEST_CASE("AttackVsDefense: hit when the attack succeeds and the parry fails") {
   CHECK_FALSE(rpg_os::resolveCheck(attacker, defender, cfg, params, r3).isSuccess);
 }
 
-TEST_CASE("AttackVsDefense: natural 1 is a critical hit, natural 20 a fumble") {
+TEST_CASE("Staged contest: natural 1 is a critical hit, natural 20 a fumble") {
   MockStats attacker;
   attacker.values = {{"AT", 13}};
   MockStats defender;
   defender.values = {{"PA", 10}};
-  const CheckConfig cfg = combatConfig();
+  const CheckRecipe cfg = combatConfig();
   const CheckParams params;
 
   // attack nat 1 -> critical success, defender still rolls.
@@ -368,14 +420,14 @@ TEST_CASE("AttackVsDefense: natural 1 is a critical hit, natural 20 a fumble") {
 }
 
 // ---------------------------------------------------------------------------
-// RollUnderD100 (BRP percentile check)
+// Percentile roll-under (graded)
 // ---------------------------------------------------------------------------
 
-TEST_CASE("RollUnderD100: grades Success, Special and Critical (BRP)") {
+TEST_CASE("Percentile: grades Success, Special and Critical") {
   // Skill 50: Critical <= 3 (50/20), Special <= 10 (50/5), Success <= 50.
   MockStats investigator;
   investigator.values = {{"spot_hidden", 50}};
-  const CheckConfig cfg = d100Config();
+  const CheckRecipe cfg = d100Config();
   const CheckParams params;
 
   auto r1 = script({50}); // Success
@@ -410,11 +462,11 @@ TEST_CASE("RollUnderD100: grades Success, Special and Critical (BRP)") {
   CHECK(fumble.isCriticalFailure);
 }
 
-TEST_CASE("RollUnderD100: fumble band depends on the skill rating (BRP table)") {
+TEST_CASE("Percentile: fumble band depends on the skill rating") {
   // Skill 20: fumble band is 96-00 (95 + ceil(20/20) = 96).
   MockStats low;
   low.values = {{"spot_hidden", 20}};
-  const CheckConfig cfg = d100Config();
+  const CheckRecipe cfg = d100Config();
   const CheckParams params;
   auto r1 = script({96});
   const CheckResult lowFumble =
@@ -434,10 +486,10 @@ TEST_CASE("RollUnderD100: fumble band depends on the skill rating (BRP table)") 
   CHECK_FALSE(highFailure.isCriticalFailure);
 }
 
-TEST_CASE("RollUnderD100: margin is stat - roll and difficulty shifts the stat") {
+TEST_CASE("Percentile: margin is stat - roll and difficulty shifts the stat") {
   MockStats investigator;
   investigator.values = {{"spot_hidden", 50}};
-  const CheckConfig cfg = d100Config();
+  const CheckRecipe cfg = d100Config();
 
   auto r1 = script({45});
   const CheckResult ok =
@@ -454,14 +506,14 @@ TEST_CASE("RollUnderD100: margin is stat - roll and difficulty shifts the stat")
   CHECK(fail.marginOfSuccess == -10);
 }
 
-TEST_CASE("RollUnderD100: Easy doubles and Difficult halves the stat (BRP)") {
+TEST_CASE("Percentile: Easy doubles and Difficult halves the stat") {
   MockStats investigator;
   investigator.values = {{"spot_hidden", 40}};
-  const CheckConfig cfg = d100Config();
+  const CheckRecipe cfg = d100Config();
 
   // Easy: the skill rating is doubled (40 -> 80).
   CheckParams easy;
-  easy.difficultyMode = rpg_os::DifficultyMode::Easy;
+  easy.difficultyScale = rpg_os::DifficultyScale::Easy;
   auto r1 = script({60});
   const CheckResult ok =
       rpg_os::resolveCheck(investigator, rpg_os::NullStatProvider{}, cfg, easy, r1);
@@ -470,7 +522,7 @@ TEST_CASE("RollUnderD100: Easy doubles and Difficult halves the stat (BRP)") {
 
   // Difficult: the skill rating is halved (40 -> 20).
   CheckParams difficult;
-  difficult.difficultyMode = rpg_os::DifficultyMode::Difficult;
+  difficult.difficultyScale = rpg_os::DifficultyScale::Difficult;
   auto r2 = script({25});
   const CheckResult fail =
       rpg_os::resolveCheck(investigator, rpg_os::NullStatProvider{}, cfg, difficult, r2);
@@ -483,15 +535,15 @@ TEST_CASE("RollUnderD100: Easy doubles and Difficult halves the stat (BRP)") {
 }
 
 // ---------------------------------------------------------------------------
-// OpposedRollUnderD100 (BRP combat, Attack and Defense Matrix)
+// Opposed percentile contest (compare graded levels)
 // ---------------------------------------------------------------------------
 
-TEST_CASE("OpposedRollUnderD100: strictly higher success level hits (matrix)") {
+TEST_CASE("Opposed percentile: strictly higher success level hits") {
   MockStats attacker;
   attacker.values = {{"fighting", 60}};
   MockStats defender;
   defender.values = {{"dodge", 50}};
-  const CheckConfig cfg = opposedD100Config();
+  const CheckRecipe cfg = opposedD100Config();
   const CheckParams params;
 
   // Attack 5 is Special (5 <= 12); defence 45 is Success -> the Special hits.
@@ -504,12 +556,12 @@ TEST_CASE("OpposedRollUnderD100: strictly higher success level hits (matrix)") {
   CHECK_FALSE(rpg_os::resolveCheck(attacker, defender, cfg, params, r2).isSuccess);
 }
 
-TEST_CASE("OpposedRollUnderD100: equal levels are parried, fumbles never hit") {
+TEST_CASE("Opposed percentile: equal levels are parried, fumbles never hit") {
   MockStats attacker;
   attacker.values = {{"fighting", 60}};
   MockStats defender;
   defender.values = {{"dodge", 50}};
-  const CheckConfig cfg = opposedD100Config();
+  const CheckRecipe cfg = opposedD100Config();
   const CheckParams params;
 
   // Both roll Success (45 and 45): equal levels -> the defender parries.
@@ -524,12 +576,12 @@ TEST_CASE("OpposedRollUnderD100: equal levels are parried, fumbles never hit") {
   CHECK(fumble.isCriticalFailure);
 }
 
-TEST_CASE("OpposedRollUnderD100: critical beats special, fumble never wins") {
+TEST_CASE("Opposed percentile: critical beats special, fumble never wins") {
   MockStats attacker;
   attacker.values = {{"fighting", 60}};
   MockStats defender;
   defender.values = {{"dodge", 50}};
-  const CheckConfig cfg = opposedD100Config();
+  const CheckRecipe cfg = opposedD100Config();
   const CheckParams params;
 
   // Attack 01 is a Critical; defence 08 is Special (8 <= 10) -> critical hits.
@@ -541,15 +593,15 @@ TEST_CASE("OpposedRollUnderD100: critical beats special, fumble never wins") {
 }
 
 // ---------------------------------------------------------------------------
-// ResistanceRoll (BRP resistance table)
+// Resistance (single roll against a table-derived chance)
 // ---------------------------------------------------------------------------
 
-TEST_CASE("ResistanceRoll: chance is 50 + 5 x the characteristic difference") {
+TEST_CASE("Resistance: chance is 50 + 5 x the characteristic difference") {
   MockStats active;
   active.values = {{"POW", 15}};
   MockStats passive;
   passive.values = {{"POW", 12}};
-  const CheckConfig cfg = resistanceConfig();
+  const CheckRecipe cfg = resistanceConfig();
 
   // chance = 50 + 5 * (15 - 12) = 65; roll 50 succeeds, roll 70 fails.
   auto r1 = script({50});
@@ -562,12 +614,12 @@ TEST_CASE("ResistanceRoll: chance is 50 + 5 x the characteristic difference") {
   CHECK(fail.marginOfSuccess == -5);
 }
 
-TEST_CASE("ResistanceRoll: automatic success/failure beyond the rollable band") {
+TEST_CASE("Resistance: automatic success/failure beyond the rollable band") {
   MockStats strong;
   strong.values = {{"POW", 18}};
   MockStats weak;
   weak.values = {{"POW", 3}};
-  const CheckConfig cfg = resistanceConfig();
+  const CheckRecipe cfg = resistanceConfig();
 
   // chance = 50 + 5 * 15 = 125 -> automatic success, no die rolled.
   auto r1 = script({});
@@ -583,18 +635,18 @@ TEST_CASE("ResistanceRoll: automatic success/failure beyond the rollable band") 
 }
 
 // ---------------------------------------------------------------------------
-// Shared helper
+// Shared helpers
 // ---------------------------------------------------------------------------
 
-TEST_CASE("Algorithm templates: callable directly with string_view params") {
-  // This is the path generated specific-mode code takes: string literals for
-  // every parameter, so the compiler can inline and fold everything.
+TEST_CASE("Generic resolver: data-driven recipes need no ruleset-specific code") {
+  // Every recipe below is expressed purely as data; the resolver is one
+  // generic function. A new game system writes a new recipe, nothing else.
   MockStats geron;
   geron.values = {{"COU", 12}, {"AGI", 13}, {"STR", 11}, {"climbing", 7}};
-  const rpg_os::CheckParams params{/*difficulty=*/0, /*situationalModifier=*/0};
+  const rpg_os::CheckParams params;
   auto rng = script({14, 12, 11});
   const CheckResult result =
-      rpg_os::resolveTripleRollUnderPool(geron, "COU", "AGI", "STR", "climbing", params, rng);
+      rpg_os::resolveCheck(geron, rpg_os::NullStatProvider{}, dsaTalentConfig(), params, rng);
   CHECK(result.isSuccess);
   CHECK(result.remainingPool == 5);
 }

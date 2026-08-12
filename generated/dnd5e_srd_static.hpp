@@ -39,72 +39,66 @@ public:
   /// Default-constructs a character; resources start at their maximum.
   Character() : hitPoints(maxHitPoints) {}
 
-  // ---- core attributes ----
-  int32_t strength{10};     // STR Strength
-  int32_t dexterity{10};    // DEX Dexterity
-  int32_t constitution{10}; // CON Constitution
-  int32_t intelligence{10}; // INT Intelligence
-  int32_t wisdom{10};       // WIS Wisdom
-  int32_t charisma{10};     // CHA Charisma
+  // ---- core attributes (narrow storage where the ruleset allows) ----
+  uint8_t strength{10};     // STR Strength
+  uint8_t dexterity{10};    // DEX Dexterity
+  uint8_t constitution{10}; // CON Constitution
+  uint8_t intelligence{10}; // INT Intelligence
+  uint8_t wisdom{10};       // WIS Wisdom
+  uint8_t charisma{10};     // CHA Charisma
 
-  // ---- other base stats ----
+  // ---- other base stats (kept wide) ----
   int32_t proficiencyBonus{2}; // proficiency_bonus Proficiency Bonus
   int32_t level{1};            // level Level
   int32_t maxHitPoints{10};    // HitPoints_Max Max Hit Points
 
-  // ---- skill ratings ----
-  int32_t acrobatics{0};     // acrobatics (Acrobatics)
-  int32_t animalHandling{0}; // animal_handling (Animal Handling)
-  int32_t arcana{0};         // arcana (Arcana)
-  int32_t athletics{0};      // athletics (Athletics)
-  int32_t deception{0};      // deception (Deception)
-  int32_t history{0};        // history (History)
-  int32_t insight{0};        // insight (Insight)
-  int32_t intimidation{0};   // intimidation (Intimidation)
-  int32_t investigation{0};  // investigation (Investigation)
-  int32_t medicine{0};       // medicine (Medicine)
-  int32_t nature{0};         // nature (Nature)
-  int32_t perception{0};     // perception (Perception)
-  int32_t performance{0};    // performance (Performance)
-  int32_t persuasion{0};     // persuasion (Persuasion)
-  int32_t religion{0};       // religion (Religion)
-  int32_t sleightOfHand{0};  // sleight_of_hand (Sleight of Hand)
-  int32_t stealth{0};        // stealth (Stealth)
-  int32_t survival{0};       // survival (Survival)
+  // ---- skill ratings (narrow storage where the ruleset allows) ----
+  uint8_t acrobatics{0};     // acrobatics (Acrobatics)
+  uint8_t animalHandling{0}; // animal_handling (Animal Handling)
+  uint8_t arcana{0};         // arcana (Arcana)
+  uint8_t athletics{0};      // athletics (Athletics)
+  uint8_t deception{0};      // deception (Deception)
+  uint8_t history{0};        // history (History)
+  uint8_t insight{0};        // insight (Insight)
+  uint8_t intimidation{0};   // intimidation (Intimidation)
+  uint8_t investigation{0};  // investigation (Investigation)
+  uint8_t medicine{0};       // medicine (Medicine)
+  uint8_t nature{0};         // nature (Nature)
+  uint8_t perception{0};     // perception (Perception)
+  uint8_t performance{0};    // performance (Performance)
+  uint8_t persuasion{0};     // persuasion (Persuasion)
+  uint8_t religion{0};       // religion (Religion)
+  uint8_t sleightOfHand{0};  // sleight_of_hand (Sleight of Hand)
+  uint8_t stealth{0};        // stealth (Stealth)
+  uint8_t survival{0};       // survival (Survival)
 
   // ---- resources ----
   int32_t hitPoints{0}; // HP (max: HitPoints_Max)
 
   // ---- derived stats (compiled formulas) ----
   [[nodiscard]] int32_t strengthModifier() const noexcept {
-    return static_cast<int32_t>(
-        rpg_os::math::floor(((static_cast<double>(strength) - 10.0) / 2.0)));
+    return static_cast<int32_t>(rpg_os::math::floorDiv((static_cast<int>(strength) - 10), 2));
   } // STR_mod: floor((STR - 10) / 2)
   [[nodiscard]] int32_t dexterityModifier() const noexcept {
-    return static_cast<int32_t>(
-        rpg_os::math::floor(((static_cast<double>(dexterity) - 10.0) / 2.0)));
+    return static_cast<int32_t>(rpg_os::math::floorDiv((static_cast<int>(dexterity) - 10), 2));
   } // DEX_mod: floor((DEX - 10) / 2)
   [[nodiscard]] int32_t constitutionModifier() const noexcept {
-    return static_cast<int32_t>(
-        rpg_os::math::floor(((static_cast<double>(constitution) - 10.0) / 2.0)));
+    return static_cast<int32_t>(rpg_os::math::floorDiv((static_cast<int>(constitution) - 10), 2));
   } // CON_mod: floor((CON - 10) / 2)
   [[nodiscard]] int32_t intelligenceModifier() const noexcept {
-    return static_cast<int32_t>(
-        rpg_os::math::floor(((static_cast<double>(intelligence) - 10.0) / 2.0)));
+    return static_cast<int32_t>(rpg_os::math::floorDiv((static_cast<int>(intelligence) - 10), 2));
   } // INT_mod: floor((INT - 10) / 2)
   [[nodiscard]] int32_t wisdomModifier() const noexcept {
-    return static_cast<int32_t>(rpg_os::math::floor(((static_cast<double>(wisdom) - 10.0) / 2.0)));
+    return static_cast<int32_t>(rpg_os::math::floorDiv((static_cast<int>(wisdom) - 10), 2));
   } // WIS_mod: floor((WIS - 10) / 2)
   [[nodiscard]] int32_t charismaModifier() const noexcept {
-    return static_cast<int32_t>(
-        rpg_os::math::floor(((static_cast<double>(charisma) - 10.0) / 2.0)));
+    return static_cast<int32_t>(rpg_os::math::floorDiv((static_cast<int>(charisma) - 10), 2));
   } // CHA_mod: floor((CHA - 10) / 2)
   [[nodiscard]] int32_t armorClass() const noexcept {
-    return static_cast<int32_t>((10.0 + static_cast<double>(dexterityModifier())));
+    return static_cast<int32_t>((10 + static_cast<int>(dexterityModifier())));
   } // AC: 10 + DEX_mod
   [[nodiscard]] int32_t proficiencyBonusByLevel() const noexcept {
-    return static_cast<int32_t>(
-        (rpg_os::math::floor(((static_cast<double>(level) - 1.0) / 4.0)) + 2.0));
+    return static_cast<int32_t>((rpg_os::math::floorDiv((static_cast<int>(level) - 1), 4) + 2));
   } // proficiency_bonus_by_level: floor((level - 1) / 4) + 2
 
   // ---- StatProvider (string -> member switch, no allocations) ----
@@ -183,119 +177,303 @@ public:
   }
 
   // ---- named checks (from check_types) ----
-  /// Additive d20 check 'dnd5e_attack_melee'.
+  /// Named check 'dnd5e_attack_melee' (see the ruleset's check_types).
   template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult
   dnd5eAttackMelee(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 2> bonus{"STR_mod", "proficiency_bonus"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "AC", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::TargetStat,
+        .thresholdStat = "AC",
+        .bonusStats = {"STR_mod", "proficiency_bonus"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, target, recipe, params, rng);
   }
 
-  /// Additive d20 check 'dnd5e_attack_ranged'.
+  /// Named check 'dnd5e_attack_ranged' (see the ruleset's check_types).
   template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult
   dnd5eAttackRanged(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 2> bonus{"DEX_mod", "proficiency_bonus"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "AC", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::TargetStat,
+        .thresholdStat = "AC",
+        .bonusStats = {"DEX_mod", "proficiency_bonus"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, target, recipe, params, rng);
   }
 
-  /// Additive d20 check 'dnd5e_check_str'.
-  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
-  [[nodiscard]] rpg_os::CheckResult
-  dnd5eCheckStr(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 1> bonus{"STR_mod"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  /// Named check 'dnd5e_check_str' (see the ruleset's check_types).
+  template <rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult dnd5eCheckStr(const rpg_os::CheckParams &params,
+                                                  Rng &rng) const {
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .bonusStats = {"STR_mod"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Additive d20 check 'dnd5e_check_dex'.
-  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
-  [[nodiscard]] rpg_os::CheckResult
-  dnd5eCheckDex(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 1> bonus{"DEX_mod"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  /// Named check 'dnd5e_check_dex' (see the ruleset's check_types).
+  template <rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult dnd5eCheckDex(const rpg_os::CheckParams &params,
+                                                  Rng &rng) const {
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .bonusStats = {"DEX_mod"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Additive d20 check 'dnd5e_check_con'.
-  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
-  [[nodiscard]] rpg_os::CheckResult
-  dnd5eCheckCon(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 1> bonus{"CON_mod"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  /// Named check 'dnd5e_check_con' (see the ruleset's check_types).
+  template <rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult dnd5eCheckCon(const rpg_os::CheckParams &params,
+                                                  Rng &rng) const {
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .bonusStats = {"CON_mod"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Additive d20 check 'dnd5e_check_int'.
-  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
-  [[nodiscard]] rpg_os::CheckResult
-  dnd5eCheckInt(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 1> bonus{"INT_mod"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  /// Named check 'dnd5e_check_int' (see the ruleset's check_types).
+  template <rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult dnd5eCheckInt(const rpg_os::CheckParams &params,
+                                                  Rng &rng) const {
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .bonusStats = {"INT_mod"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Additive d20 check 'dnd5e_check_wis'.
-  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
-  [[nodiscard]] rpg_os::CheckResult
-  dnd5eCheckWis(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 1> bonus{"WIS_mod"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  /// Named check 'dnd5e_check_wis' (see the ruleset's check_types).
+  template <rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult dnd5eCheckWis(const rpg_os::CheckParams &params,
+                                                  Rng &rng) const {
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .bonusStats = {"WIS_mod"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Additive d20 check 'dnd5e_check_cha'.
-  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
-  [[nodiscard]] rpg_os::CheckResult
-  dnd5eCheckCha(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 1> bonus{"CHA_mod"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  /// Named check 'dnd5e_check_cha' (see the ruleset's check_types).
+  template <rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult dnd5eCheckCha(const rpg_os::CheckParams &params,
+                                                  Rng &rng) const {
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .bonusStats = {"CHA_mod"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Additive d20 check 'dnd5e_save_str'.
-  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
-  [[nodiscard]] rpg_os::CheckResult
-  dnd5eSaveStr(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 1> bonus{"STR_mod"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  /// Named check 'dnd5e_save_str' (see the ruleset's check_types).
+  template <rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult dnd5eSaveStr(const rpg_os::CheckParams &params,
+                                                 Rng &rng) const {
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .bonusStats = {"STR_mod"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Additive d20 check 'dnd5e_save_dex'.
-  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
-  [[nodiscard]] rpg_os::CheckResult
-  dnd5eSaveDex(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 1> bonus{"DEX_mod"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  /// Named check 'dnd5e_save_dex' (see the ruleset's check_types).
+  template <rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult dnd5eSaveDex(const rpg_os::CheckParams &params,
+                                                 Rng &rng) const {
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .bonusStats = {"DEX_mod"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Additive d20 check 'dnd5e_save_con'.
-  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
-  [[nodiscard]] rpg_os::CheckResult
-  dnd5eSaveCon(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 1> bonus{"CON_mod"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  /// Named check 'dnd5e_save_con' (see the ruleset's check_types).
+  template <rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult dnd5eSaveCon(const rpg_os::CheckParams &params,
+                                                 Rng &rng) const {
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .bonusStats = {"CON_mod"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Additive d20 check 'dnd5e_save_int'.
-  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
-  [[nodiscard]] rpg_os::CheckResult
-  dnd5eSaveInt(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 1> bonus{"INT_mod"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  /// Named check 'dnd5e_save_int' (see the ruleset's check_types).
+  template <rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult dnd5eSaveInt(const rpg_os::CheckParams &params,
+                                                 Rng &rng) const {
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .bonusStats = {"INT_mod"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Additive d20 check 'dnd5e_save_wis'.
-  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
-  [[nodiscard]] rpg_os::CheckResult
-  dnd5eSaveWis(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 1> bonus{"WIS_mod"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  /// Named check 'dnd5e_save_wis' (see the ruleset's check_types).
+  template <rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult dnd5eSaveWis(const rpg_os::CheckParams &params,
+                                                 Rng &rng) const {
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .bonusStats = {"WIS_mod"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Additive d20 check 'dnd5e_save_cha'.
-  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
-  [[nodiscard]] rpg_os::CheckResult
-  dnd5eSaveCha(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    const std::array<std::string_view, 1> bonus{"CHA_mod"};
-    return rpg_os::resolveAdditiveD20(*this, target, "1d20", bonus, "", params, rng);
+  /// Named check 'dnd5e_save_cha' (see the ruleset's check_types).
+  template <rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult dnd5eSaveCha(const rpg_os::CheckParams &params,
+                                                 Rng &rng) const {
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .bonusStats = {"CHA_mod"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  // ---- per-skill talent checks (TDE: each skill has its own attributes) ----
+  // ---- per-skill checks (each skill's own linked attributes as a pool) ----
 
   // ---- cost / progression tables ----
   /// Cost table 'xp_to_level'.
@@ -324,89 +502,89 @@ public:
     if (record.contains("attributes")) {
       for (const auto &[key, value] : record.at("attributes").items()) {
         if (key == "STR") {
-          strength = rpg_os::readVariantValue(value, variance, rng);
+          strength = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "DEX") {
-          dexterity = rpg_os::readVariantValue(value, variance, rng);
+          dexterity = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "CON") {
-          constitution = rpg_os::readVariantValue(value, variance, rng);
+          constitution = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "INT") {
-          intelligence = rpg_os::readVariantValue(value, variance, rng);
+          intelligence = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "WIS") {
-          wisdom = rpg_os::readVariantValue(value, variance, rng);
+          wisdom = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "CHA") {
-          charisma = rpg_os::readVariantValue(value, variance, rng);
+          charisma = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "proficiency_bonus") {
-          proficiencyBonus = rpg_os::readVariantValue(value, variance, rng);
+          proficiencyBonus = static_cast<int32_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "level") {
-          level = rpg_os::readVariantValue(value, variance, rng);
+          level = static_cast<int32_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "HitPoints_Max") {
-          maxHitPoints = rpg_os::readVariantValue(value, variance, rng);
+          maxHitPoints = static_cast<int32_t>(rpg_os::readVariantValue(value, variance, rng));
         }
       }
     }
     if (record.contains("skills")) {
       for (const auto &[key, value] : record.at("skills").items()) {
         if (key == "acrobatics") {
-          acrobatics = rpg_os::readVariantValue(value, variance, rng);
+          acrobatics = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "animal_handling") {
-          animalHandling = rpg_os::readVariantValue(value, variance, rng);
+          animalHandling = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "arcana") {
-          arcana = rpg_os::readVariantValue(value, variance, rng);
+          arcana = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "athletics") {
-          athletics = rpg_os::readVariantValue(value, variance, rng);
+          athletics = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "deception") {
-          deception = rpg_os::readVariantValue(value, variance, rng);
+          deception = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "history") {
-          history = rpg_os::readVariantValue(value, variance, rng);
+          history = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "insight") {
-          insight = rpg_os::readVariantValue(value, variance, rng);
+          insight = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "intimidation") {
-          intimidation = rpg_os::readVariantValue(value, variance, rng);
+          intimidation = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "investigation") {
-          investigation = rpg_os::readVariantValue(value, variance, rng);
+          investigation = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "medicine") {
-          medicine = rpg_os::readVariantValue(value, variance, rng);
+          medicine = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "nature") {
-          nature = rpg_os::readVariantValue(value, variance, rng);
+          nature = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "perception") {
-          perception = rpg_os::readVariantValue(value, variance, rng);
+          perception = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "performance") {
-          performance = rpg_os::readVariantValue(value, variance, rng);
+          performance = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "persuasion") {
-          persuasion = rpg_os::readVariantValue(value, variance, rng);
+          persuasion = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "religion") {
-          religion = rpg_os::readVariantValue(value, variance, rng);
+          religion = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "sleight_of_hand") {
-          sleightOfHand = rpg_os::readVariantValue(value, variance, rng);
+          sleightOfHand = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "stealth") {
-          stealth = rpg_os::readVariantValue(value, variance, rng);
+          stealth = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "survival") {
-          survival = rpg_os::readVariantValue(value, variance, rng);
+          survival = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
       }
     }
@@ -497,6 +675,45 @@ public:
       out.push_back(std::move(character));
     }
     return out;
+  }
+
+  // ---- free-form data section loaders ----
+  /// Loads every record from a named `data` section as raw JSON.
+  static std::vector<rpg_os::Json> loadSection(const rpg_os::Json &rulesetJson,
+                                               std::string_view section) {
+    std::vector<rpg_os::Json> out;
+    const auto &data = rulesetJson.at("data");
+    if (data.contains(section)) {
+      for (const auto &record : data.at(section)) {
+        out.push_back(record);
+      }
+    }
+    return out;
+  }
+
+  /// Loads every spells record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadSpells(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "spells");
+  }
+
+  /// Loads every conditions record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadConditions(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "conditions");
+  }
+
+  /// Loads every poisons record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadPoisons(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "poisons");
+  }
+
+  /// Loads every diseases record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadDiseases(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "diseases");
+  }
+
+  /// Loads every items record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadItems(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "items");
   }
 };
 

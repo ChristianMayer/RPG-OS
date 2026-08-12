@@ -61,16 +61,16 @@ struct FightOutcome {
   int32_t remainingLp[2]{0, 0}; ///< hit points left at the end
 };
 
-/// Finds the id of the ruleset's attack-vs-defence check type ("tde_attack"
-/// when present, otherwise the first `attack_vs_defense` check). Returns an
-/// empty string when the ruleset has none.
+/// Finds the id of the ruleset's opposed combat check type ("tde_attack"
+/// when present, otherwise the first check whose resolution is opposed).
+/// Returns an empty string when the ruleset has none.
 ///
 /// @par Why a preferred id plus a fallback?
 /// The Dark Eye's shipped check is canonically named "tde_attack", but the
-/// simulator should also work on any other ruleset that declares an
-/// attack-vs-defense check. Preferring the known name, then falling back to
-/// "any check of the right kind", keeps both the shipped rulesets and generic
-/// ones working.
+/// simulator should also work on any other ruleset that declares an opposed
+/// combat check. Preferring the known name, then falling back to "any check
+/// with an opposed resolution", keeps both the shipped rulesets and generic
+/// ones working without hard-coding a ruleset's naming into the engine.
 [[nodiscard]] inline std::string resolveAttackCheckType(const Ruleset &ruleset) {
   for (const CheckTypeDef &def : ruleset.checkTypes) {
     if (def.id == "tde_attack") {
@@ -78,8 +78,7 @@ struct FightOutcome {
     }
   }
   for (const CheckTypeDef &def : ruleset.checkTypes) {
-    if (def.config.kind == CheckKind::AttackVsDefense ||
-        def.config.kind == CheckKind::OpposedRollUnderD100) {
+    if (def.recipe.resolution == Resolution::Opposed) {
       return def.id;
     }
   }

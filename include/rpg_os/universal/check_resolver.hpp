@@ -5,13 +5,13 @@
  * @file check_resolver.hpp
  * @brief Check resolver (universal mode).
  *
- * A thin runtime layer over the shared algorithms in @c core/checks.hpp: it
- * looks up a named `check_types` config in the ruleset and dispatches through
- * @c resolveCheck. Specific-mode generated code calls the algorithm
- * templates directly instead, so no work is duplicated.
+ * A thin runtime layer over the generic resolver in @c core/checks.hpp: it
+ * looks up a named `check_types` recipe in the ruleset and dispatches through
+ * @c resolveCheck. Specific-mode generated code calls @c resolveCheck with a
+ * `constexpr` recipe directly, so no work is duplicated.
  *
  * @par Why a separate, near-empty class?
- * Keeping the name -> @c CheckConfig lookup separate from the engine facade
+ * Keeping the name -> @c CheckRecipe lookup separate from the engine facade
  * gives the universal mode a tiny, independently testable seam: it answers
  * exactly "given a ruleset and a check name, resolve this check" and nothing
  * more. The engine composes it with entity creation, damage, and events.
@@ -47,7 +47,7 @@ public:
     if (def == nullptr) {
       throw std::invalid_argument("unknown check type '" + std::string(checkTypeId) + "'");
     }
-    return resolveCheck(actor, target, def->config, params, rng);
+    return resolveCheck(actor, target, def->recipe, params, rng);
   }
 };
 

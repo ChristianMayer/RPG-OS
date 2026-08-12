@@ -198,16 +198,17 @@ public:
   }
 
   /// Resolves a skill check for a named skill, using the skill's own linked
-  /// attributes and the skill rating as the pool (real TDE model, where every
-  /// talent has its own three attributes). Skill checks have no target. Throws
-  /// std::invalid_argument for an unknown skill or a skill without three linked
-  /// attributes.
+  /// attributes and the skill rating as the pool (the generic pool
+  /// resolution applied to the skill's three linked attributes). Skill checks
+  /// have no target. Throws std::invalid_argument for an unknown skill or a
+  /// skill without exactly three linked attributes.
   ///
-  /// @par Why bypass the check-type mechanism here?
-  /// A talent check *is* a 3d20 pool check whose attributes live on the skill
-  /// definition, not in a named check type. Driving it straight from the
-  /// skill keeps the ruleset from having to duplicate each talent as a check
-  /// type — one source of truth for a talent's attributes.
+  /// @par Why drive it from the skill definition rather than a check type?
+  /// A skill check's attributes live on the skill definition, not in a named
+  /// check type. Building a generic pool recipe from those attributes keeps
+  /// the skill as the single source of truth and requires no ruleset-specific
+  /// code — the pool resolution (and its double-roll criticals and quality
+  /// grading) is entirely described by the recipe.
   template <RandomNumberGenerator Rng>
   [[nodiscard]] CheckResult executeSkillCheck(std::string_view skillId, const DynamicEntity &actor,
                                               const CheckParams &params, Rng &rng) const {
@@ -217,10 +218,19 @@ public:
     }
     if (skill->attributes.size() != 3) {
       throw std::invalid_argument("skill '" + std::string(skillId) +
-                                  "' is not a three-attribute talent");
+                                  "' is not a three-attribute skill check");
     }
-    return resolveTripleRollUnderPool(actor, skill->attributes[0], skill->attributes[1],
-                                      skill->attributes[2], skillId, params, rng);
+    CheckRecipe recipe;
+    recipe.resolution = Resolution::Pool;
+    recipe.dice = "3d20"_dice;
+    recipe.numPoolAttributes = 3;
+    recipe.poolAttributes = {skill->attributes[0], skill->attributes[1], skill->attributes[2]};
+    recipe.poolStat = std::string(skillId);
+    recipe.criticalStyle = CriticalStyle::DoubleRoll;
+    recipe.fumbleStyle = CriticalStyle::DoubleRoll;
+    recipe.grading = Grading::PoolQuality;
+    recipe.difficultyMode = DifficultyMode::ToStat;
+    return resolveCheck(actor, NullStatProvider{}, recipe, params, rng);
   }
 
   /// Resolves a skill check using a fresh default RNG. Convenience overload.
@@ -259,6 +269,224 @@ public:
     data.payload["applied_damage"] = -applied;
     fireEvent(EventType::OnDamageTaken, data, actor, &target, env);
     return applied;
+  }
+
+  /// Looks up a raw data record by id in a named `data` section (e.g.
+  /// "spells", "poisons", "diseases", "conditions", "items", "archetypes",
+  /// "creatures"). Returns nullptr when the section or record does not exist.
+  ///
+  /// @par Why raw JSON?
+  /// The `data` database is intentionally free-form — each ruleset's records
+  /// carry exactly the fields its source book has. The engine exposes every
+  /// record verbatim so an application can read anything the ruleset covers
+  /// (magic, illness, equipment, ...) without the engine having to model it.
+  [[nodiscard]] const Json *findDataRecord(std::string_view section, std::string_view id) const {
+    if (!m_ruleset.data.is_object()) {
+      return nullptr;
+    }
+    const auto it = m_ruleset.data.find(std::string(section));
+    if (it == m_ruleset.data.end() || !it->is_array()) {
+      return nullptr;
+    }
+    for (const Json &record : *it) {
+      if (record.value("id", "") == id) {
+        return &record;
+      }
+    }
+    return nullptr;
+  }
+
+  /// The named data record accessors for the common sections.
+  [[nodiscard]] const Json *findSpell(std::string_view id) const {
+    return findDataRecord("spells", id);
+  }
+  [[nodiscard]] const Json *findItem(std::string_view id) const {
+    return findDataRecord("items", id);
+  }
+  [[nodiscard]] const Json *findCondition(std::string_view id) const {
+    return findDataRecord("conditions", id);
+  }
+  [[nodiscard]] const Json *findPoison(std::string_view id) const {
+    return findDataRecord("poisons", id);
+  }
+  [[nodiscard]] const Json *findDisease(std::string_view id) const {
+    return findDataRecord("diseases", id);
+  }
+  [[nodiscard]] const Json *findArchetype(std::string_view id) const {
+    return findDataRecord("archetypes", id);
+  }
+  [[nodiscard]] const Json *findCreature(std::string_view id) const {
+    return findDataRecord("creatures", id);
+  }
+
+  /// The outcome of casting a spell through @ref castSpell.
+  struct SpellResult {
+    bool cast{false};         ///< the spell was cast (cost paid; declared check passed)
+    CheckResult check;        ///< the casting check, when the spell declares one
+    int32_t cost{0};          ///< resource points spent
+    int32_t appliedDamage{0}; ///< damage applied to the target (when the spell deals damage)
+    std::string resourceId;   ///< the resource pool the cost was drawn from
+  };
+
+  /// The outcome of applying an affliction through @ref applyAffliction.
+  struct AfflictionResult {
+    bool resisted{false};      ///< a declared save was passed
+    bool saveRolled{false};    ///< a save check was rolled
+    int32_t effectsApplied{0}; ///< how many structured effects were applied
+  };
+
+  /// Casts a spell from the ruleset's `data.spells` (see @ref SpellResult).
+  ///
+  /// The casting is fully data-driven: the cost is read from the spell record
+  /// (`cost` / `ae_cost`, or `level` — one point per level), drawn from the
+  /// ruleset's declared `spell_resource` (or the caller-supplied resource),
+  /// and the spell's `check` field (a named check type or an "A/B/C"
+  /// attribute list) is resolved when present. A spell with `damage` applies
+  /// the rolled damage to the target's primary hit-point pool through the
+  /// event pipeline. Throws std::invalid_argument for an unknown spell.
+  template <RandomNumberGenerator Rng>
+  [[nodiscard]] SpellResult castSpell(std::string_view spellId, DynamicEntity &actor,
+                                      DynamicEntity *target, const CheckParams &params, Rng &rng) {
+    return castSpell(spellId, actor, target, spellResourceId(), params, rng);
+  }
+
+  /// As above, but draws the cost from `resourceId` instead of the ruleset's
+  /// declared spell resource.
+  template <RandomNumberGenerator Rng>
+  [[nodiscard]] SpellResult castSpell(std::string_view spellId, DynamicEntity &actor,
+                                      DynamicEntity *target, std::string_view resourceId,
+                                      const CheckParams &params, Rng &rng) {
+    SpellResult result;
+    const Json *spell = findSpell(spellId);
+    if (spell == nullptr) {
+      throw std::invalid_argument("unknown spell '" + std::string(spellId) + "'");
+    }
+    // Cost: `cost` or `ae_cost`, else `level` (one point per level).
+    if (spell->contains("cost") && spell->at("cost").is_number_integer()) {
+      result.cost = spell->at("cost").get<int32_t>();
+    } else if (spell->contains("ae_cost") && spell->at("ae_cost").is_number_integer()) {
+      result.cost = spell->at("ae_cost").get<int32_t>();
+    } else if (spell->contains("level") && spell->at("level").is_number_integer()) {
+      result.cost = spell->at("level").get<int32_t>();
+    }
+    result.resourceId = std::string(resourceId);
+    if (result.cost > 0 && !resourceId.empty()) {
+      if (actor.resource(resourceId) < result.cost) {
+        result.cast = false; // cannot afford the spell
+        return result;
+      }
+      (void)actor.modifyResource(resourceId, -result.cost);
+    }
+
+    // Casting check (named check type, or an "A/B/C" attribute list).
+    if (spell->contains("check") && spell->at("check").is_string()) {
+      const std::string checkText = spell->at("check").get<std::string>();
+      if (m_ruleset.findCheckType(checkText) != nullptr) {
+        const NullStatProvider noTarget;
+        result.check =
+            target != nullptr
+                ? CheckResolver::resolve(m_ruleset, actor, *target, checkText, params, rng)
+                : CheckResolver::resolve(m_ruleset, actor, noTarget, checkText, params, rng);
+      } else {
+        result.check = resolveSpellCheck(actor, checkText, params, rng);
+      }
+      result.cast = result.check.isSuccess;
+    } else {
+      result.cast = true;
+    }
+
+    // Damage: roll the spell's damage and apply it to the target's hit points.
+    // `applyDamage` reports the (negative) pool delta, so negate it into the
+    // positive "damage dealt" the caller expects.
+    if (target != nullptr && spell->contains("damage")) {
+      const int32_t damage = readVariantValue(spell->at("damage"), Variance::Random, rng);
+      const std::string hitPool = resolveHitPointPoolId();
+      if (!hitPool.empty()) {
+        result.appliedDamage = -applyDamage(actor, *target, hitPool, damage);
+      }
+    }
+    return result;
+  }
+
+  /// Casts a spell using a fresh default RNG (convenience overload).
+  [[nodiscard]] SpellResult castSpell(std::string_view spellId, DynamicEntity &actor,
+                                      DynamicEntity *target, const CheckParams &params) {
+    DefaultRandom rng;
+    return castSpell(spellId, actor, target, params, rng);
+  }
+
+  /// Applies an affliction (a poison or disease) from `data.<section>` to
+  /// `victim` (see @ref AfflictionResult).
+  ///
+  /// The application is fully data-driven: if the record declares a `save`
+  /// stat, the victim rolls a generic roll-under check against it and the
+  /// affliction is resisted on success. Otherwise (or on a failed save) every
+  /// structured `effects[]` entry is applied: a resource pool id damages that
+  /// pool, a condition id (or the effect's `condition` field) applies stacks,
+  /// and any other stat id is reduced by `amount`. Prose-only effects are left
+  /// for the caller, who can read the full record via @ref findPoison /
+  /// @ref findDisease. Throws std::invalid_argument for an unknown record.
+  template <RandomNumberGenerator Rng>
+  [[nodiscard]] AfflictionResult applyAffliction(std::string_view section, std::string_view id,
+                                                 DynamicEntity &victim, const CheckParams &params,
+                                                 Rng &rng) {
+    AfflictionResult result;
+    const Json *affliction = findDataRecord(section, id);
+    if (affliction == nullptr) {
+      throw std::invalid_argument("unknown " + std::string(section) + " '" + std::string(id) + "'");
+    }
+    if (affliction->contains("save") && affliction->at("save").is_string()) {
+      const std::string save = affliction->at("save").get<std::string>();
+      if (m_ruleset.hasStat(save)) {
+        result.saveRolled = true;
+        CheckRecipe recipe;
+        recipe.resolution = Resolution::Threshold;
+        recipe.dice = "1d20"_dice;
+        recipe.comparison = Comparison::LessEqual;
+        recipe.thresholdSource = ThresholdSource::ActorStat;
+        recipe.thresholdStat = save;
+        recipe.difficultyMode = DifficultyMode::ToStat;
+        const CheckResult saveResult =
+            resolveCheck(victim, NullStatProvider{}, recipe, params, rng);
+        if (saveResult.isSuccess) {
+          result.resisted = true;
+          return result;
+        }
+      }
+    }
+    if (affliction->contains("effects") && affliction->at("effects").is_array()) {
+      for (const Json &effect : affliction->at("effects")) {
+        const std::string stat = effect.value("stat", "");
+        if (stat.empty()) {
+          continue;
+        }
+        int32_t amount = 1;
+        if (effect.contains("amount")) {
+          amount = readVariantValue(effect.at("amount"), Variance::Random, rng);
+        }
+        if (m_ruleset.isResourcePool(stat)) {
+          (void)victim.modifyResource(stat, -amount);
+          ++result.effectsApplied;
+        } else if (effect.contains("condition") && effect.at("condition").is_string()) {
+          victim.addCondition(effect.at("condition").get<std::string>(), amount);
+          ++result.effectsApplied;
+        } else if (m_ruleset.isCondition(stat)) {
+          victim.addCondition(stat, amount);
+          ++result.effectsApplied;
+        } else if (m_ruleset.findAttribute(stat) != nullptr) {
+          victim.setBaseAttribute(stat, victim.baseAttribute(stat) - amount);
+          ++result.effectsApplied;
+        }
+      }
+    }
+    return result;
+  }
+
+  /// Applies an affliction using a fresh default RNG (convenience overload).
+  [[nodiscard]] AfflictionResult applyAffliction(std::string_view section, std::string_view id,
+                                                 DynamicEntity &victim, const CheckParams &params) {
+    DefaultRandom rng;
+    return applyAffliction(section, id, victim, params, rng);
   }
 
   /// Registers a user-facing event listener (returns a handle for removal).
@@ -344,6 +572,62 @@ private:
           action.stacksText.empty() ? 1 : math::toStat(action.stacks.evaluate(context));
       subject.addCondition(action.condition, stacks);
     }
+  }
+
+  /// The ruleset's declared spell resource (empty when none).
+  [[nodiscard]] std::string spellResourceId() const {
+    return m_ruleset.spellResource;
+  }
+
+  /// The id of the ruleset's primary hit-point pool (the first resource pool
+  /// with a minimum of 0), e.g. "HP" / "LP". Empty when none exists.
+  [[nodiscard]] std::string resolveHitPointPoolId() const {
+    for (const ResourcePoolDef &pool : m_ruleset.resourcePools) {
+      if (pool.minValue == 0) {
+        return pool.id;
+      }
+    }
+    return {};
+  }
+
+  /// Resolves a spell's casting check from its raw "A/B/C" attribute list
+  /// (e.g. "SGC/SGC/INT", or "COU/INT/CHA (modified by Spirit)" — the
+  /// parenthetical suffix and whitespace are ignored). The check is a generic
+  /// 3d20 pool roll against the listed attributes with no skill pool.
+  template <RandomNumberGenerator Rng>
+  [[nodiscard]] CheckResult resolveSpellCheck(const DynamicEntity &actor,
+                                              std::string_view checkText, const CheckParams &params,
+                                              Rng &rng) const {
+    CheckRecipe recipe;
+    recipe.resolution = Resolution::Pool;
+    recipe.dice = "3d20"_dice;
+    recipe.criticalStyle = CriticalStyle::DoubleRoll;
+    recipe.fumbleStyle = CriticalStyle::DoubleRoll;
+    recipe.grading = Grading::PoolQuality;
+    recipe.difficultyMode = DifficultyMode::ToStat;
+
+    const std::size_t paren = checkText.find('(');
+    const std::string_view head =
+        paren == std::string_view::npos ? checkText : checkText.substr(0, paren);
+    std::size_t begin = 0;
+    while (begin < head.size()) {
+      while (begin < head.size() && (head[begin] == ' ' || head[begin] == '/')) {
+        ++begin;
+      }
+      if (begin >= head.size()) {
+        break;
+      }
+      std::size_t end = begin;
+      while (end < head.size() && head[end] != '/' && head[end] != ' ') {
+        ++end;
+      }
+      if (recipe.numPoolAttributes < 3) {
+        recipe.poolAttributes[recipe.numPoolAttributes++] =
+            std::string(head.substr(begin, end - begin));
+      }
+      begin = end;
+    }
+    return resolveCheck(actor, NullStatProvider{}, recipe, params, rng);
   }
 
   Ruleset m_ruleset;

@@ -102,9 +102,9 @@ struct CheckResult {
   /// Kept in the shared struct so universal and specific mode report the
   /// same quality bands for the same remaining pool.
   int32_t qualityLevel{0};
-  /// Level of success of a percentile (d100) roll-under check (BRP).
-  /// Fail for every other mechanism; only @c RollUnderD100,
-  /// @c OpposedRollUnderD100 and @c ResistanceRoll fill it in.
+  /// Level of success of a percentile (d100) roll-under check.
+  /// Fail for every other mechanism; only recipes that use percentile grading
+  /// (and resistance rolls) fill it in.
   SuccessLevel successLevel{SuccessLevel::Failure};
 };
 

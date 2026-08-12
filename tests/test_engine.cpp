@@ -52,9 +52,14 @@ constexpr std::string_view kRuleset = R"json(
   ],
   "check_types": {
     "dsa4_talent": {
-      "kind": "triple_roll_under_pool",
-      "attributes": ["COU", "AGI", "STR"],
-      "pool_stat": "climbing"
+      "resolution": "pool",
+      "dice": "3d20",
+      "pool_attributes": ["COU", "AGI", "STR"],
+      "pool_stat": "climbing",
+      "critical_style": "double",
+      "fumble_style": "double",
+      "grading": "pool_quality",
+      "difficulty_mode": "to_stat"
     }
   },
   "event_triggers": [

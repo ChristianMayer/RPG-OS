@@ -36,29 +36,29 @@ namespace math {
 
 /// Floors a value (matches std::floor). Delegates to the standard function so
 /// behaviour stays identical to what a reader of the formula would expect.
-[[nodiscard]] inline double floor(double value) noexcept {
+[[nodiscard]] constexpr double floor(double value) noexcept {
   return std::floor(value);
 }
 
 /// Ceils a value (matches std::ceil).
-[[nodiscard]] inline double ceil(double value) noexcept {
+[[nodiscard]] constexpr double ceil(double value) noexcept {
   return std::ceil(value);
 }
 
 /// Rounds half away from zero (matches std::round). Note this is *not* the
 /// same as "round half up" for negative values; formulas must be written with
 /// this convention in mind.
-[[nodiscard]] inline double round(double value) noexcept {
+[[nodiscard]] constexpr double round(double value) noexcept {
   return std::round(value);
 }
 
 /// Minimum of two values (matches std::min).
-[[nodiscard]] inline double min(double a, double b) noexcept {
+[[nodiscard]] constexpr double min(double a, double b) noexcept {
   return std::min(a, b);
 }
 
 /// Maximum of two values (matches std::max).
-[[nodiscard]] inline double max(double a, double b) noexcept {
+[[nodiscard]] constexpr double max(double a, double b) noexcept {
   return std::max(a, b);
 }
 
@@ -70,7 +70,7 @@ namespace math {
 /// lifetime subtlety and is trivially inlined. Hand-rolling the comparison
 /// also avoids the @c NaN pitfall being a silent pass-through (NaN compares
 /// false and thus returns @c lo, matching the clamp semantics rulesets want).
-[[nodiscard]] inline double clamp(double value, double lo, double hi) noexcept {
+[[nodiscard]] constexpr double clamp(double value, double lo, double hi) noexcept {
   return value < lo ? lo : (value > hi ? hi : value);
 }
 
@@ -81,8 +81,87 @@ namespace math {
 /// not formula doubles. A dedicated overload keeps those call sites free of
 /// @c static_cast noise and preserves exact integer semantics (no rounding of
 /// fractional bounds).
-[[nodiscard]] inline int32_t clampInt(int32_t value, int32_t lo, int32_t hi) noexcept {
+[[nodiscard]] constexpr int32_t clampInt(int32_t value, int32_t lo, int32_t hi) noexcept {
   return value < lo ? lo : (value > hi ? hi : value);
+}
+
+/// Integer minimum (matches std::min on ints, but free of the Windows
+/// min/max macro hazard and of any double conversion).
+[[nodiscard]] constexpr int minI(int a, int b) noexcept {
+  return a < b ? a : b;
+}
+
+/// Integer maximum (see @ref minI).
+[[nodiscard]] constexpr int maxI(int a, int b) noexcept {
+  return a > b ? a : b;
+}
+
+/// Integer floor division: the largest integer <= a/b (handles negative
+/// operands exactly like floor applied to the rational a/b).
+///
+/// @par Why a dedicated integer division?
+/// The generated specific-mode code compiles formula divisions to integer
+/// arithmetic (no floating point in the hot path). A plain C++ `/` truncates
+/// toward zero, which is not floor for negatives; this helper makes
+/// `floor(a / b)` in a formula byte-identical to the universal double
+/// evaluator's `math::floor(a / b)`.
+///
+/// @par When can a cheaper form be used?
+/// Ruleset stats are overwhelmingly non-negative (attributes and skills are
+/// stored as unsigned bytes), so most formula divisions never see a negative
+/// numerator. For those @ref floorDivN / @ref ceilDivN / @ref roundDivN reduce
+/// to a single integer division. Only formulas that can legitimately go
+/// negative (e.g. D&D ability modifiers like `(STR - 10) / 2`) need the
+/// general form here.
+[[nodiscard]] constexpr int floorDiv(int a, int b) noexcept {
+  const int q = a / b;
+  const int r = a % b;
+  return (r != 0 && ((r < 0) != (b < 0))) ? q - 1 : q;
+}
+
+/// Integer ceiling division: the smallest integer >= a/b (see @ref floorDiv).
+[[nodiscard]] constexpr int ceilDiv(int a, int b) noexcept {
+  const int q = a / b;
+  const int r = a % b;
+  return (r != 0 && ((r > 0) == (b > 0))) ? q + 1 : q;
+}
+
+/// Integer division rounded half away from zero (matches std::round applied
+/// to the rational a/b; see @ref floorDiv).
+[[nodiscard]] constexpr int roundDiv(int a, int b) noexcept {
+  const int absB = b < 0 ? -b : b;
+  const int r = a % b;
+  const int absR = r < 0 ? -r : r;
+  if (2 * absR >= absB) {
+    return (a < 0) != (b < 0) ? a / b - 1 : a / b + 1;
+  }
+  return a / b;
+}
+
+/// Non-negative floor division: a / b floored, valid only when @c a >= 0 and
+/// @c b > 0. For non-negative operands a plain C++ `/` (which truncates toward
+/// zero) already equals floor, so this is a single division with no sign
+/// handling — the fast path for ruleset stats that never go negative.
+///
+/// @par Why a separate function instead of assuming it inside floorDiv?
+/// Some formulas (D&D ability modifiers) do produce negative numerators; the
+/// general @ref floorDiv keeps those exact. This variant documents and
+/// exploits the non-negativity precondition so callers who know their values
+/// are non-negative (the generated code proves it) pay nothing extra.
+[[nodiscard]] constexpr int floorDivN(int a, int b) noexcept {
+  return a / b;
+}
+
+/// Non-negative ceiling division: ceil(a / b) for @c a >= 0, @c b > 0, as a
+/// single division (see @ref floorDivN).
+[[nodiscard]] constexpr int ceilDivN(int a, int b) noexcept {
+  return (a + b - 1) / b;
+}
+
+/// Non-negative division rounded half away from zero: round(a / b) for
+/// @c a >= 0, @c b > 0, as a single division (see @ref floorDivN).
+[[nodiscard]] constexpr int roundDivN(int a, int b) noexcept {
+  return (a + b / 2) / b;
 }
 
 /// Converts a formula result (double) to an integer stat value.
@@ -94,7 +173,7 @@ namespace math {
 /// while hit-point averages round down by convention). This helper therefore
 /// only performs the type conversion, truncating toward zero, so the engine
 /// never silently imposes a rounding rule the ruleset did not ask for.
-[[nodiscard]] inline int32_t toStat(double value) noexcept {
+[[nodiscard]] constexpr int32_t toStat(double value) noexcept {
   return static_cast<int32_t>(value);
 }
 

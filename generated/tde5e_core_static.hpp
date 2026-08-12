@@ -45,79 +45,79 @@ public:
       : lifePoints(maxLifePoints()), arcaneEnergy(maxArcaneEnergy()),
         karmaPoints(maxKarmaPoints()) {}
 
-  // ---- core attributes ----
-  int32_t courage{10};      // COU Courage
-  int32_t sagacity{10};     // SGC Sagacity
-  int32_t intuition{10};    // INT Intuition
-  int32_t charisma{10};     // CHA Charisma
-  int32_t dexterity{10};    // DEX Dexterity
-  int32_t agility{10};      // AGI Agility
-  int32_t constitution{10}; // CON Constitution
-  int32_t strength{10};     // STR Strength
+  // ---- core attributes (narrow storage where the ruleset allows) ----
+  uint8_t courage{10};      // COU Courage
+  uint8_t sagacity{10};     // SGC Sagacity
+  uint8_t intuition{10};    // INT Intuition
+  uint8_t charisma{10};     // CHA Charisma
+  uint8_t dexterity{10};    // DEX Dexterity
+  uint8_t agility{10};      // AGI Agility
+  uint8_t constitution{10}; // CON Constitution
+  uint8_t strength{10};     // STR Strength
 
-  // ---- other base stats ----
+  // ---- other base stats (kept wide) ----
   int32_t armorRating{0}; // Armor_Rating Armor Rating
 
-  // ---- skill ratings ----
-  int32_t bodyControl{0};     // body_control (Body Control)
-  int32_t carousing{0};       // carousing (Carousing)
-  int32_t climbing{0};        // climbing (Climbing)
-  int32_t dancing{0};         // dancing (Dancing)
-  int32_t featOfStrength{0};  // feat_of_strength (Feat of Strength)
-  int32_t flying{0};          // flying (Flying)
-  int32_t gaukelei{0};        // gaukelei (Gaukelei)
-  int32_t perception{0};      // perception (Perception)
-  int32_t pickpocket{0};      // pickpocket (Pickpocket)
-  int32_t riding{0};          // riding (Riding)
-  int32_t selfControl{0};     // self_control (Self-Control)
-  int32_t singing{0};         // singing (Singing)
-  int32_t stealth{0};         // stealth (Stealth)
-  int32_t swimming{0};        // swimming (Swimming)
-  int32_t disguise{0};        // disguise (Disguise)
-  int32_t empathy{0};         // empathy (Empathy)
-  int32_t etiquette{0};       // etiquette (Etiquette)
-  int32_t fastTalk{0};        // fast_talk (Fast-Talk)
-  int32_t intimidation{0};    // intimidation (Intimidation)
-  int32_t persuasion{0};      // persuasion (Persuasion)
-  int32_t seduction{0};       // seduction (Seduction)
-  int32_t streetwise{0};      // streetwise (Streetwise)
-  int32_t willpower{0};       // willpower (Willpower)
-  int32_t animalLore{0};      // animal_lore (Animal Lore)
-  int32_t fishing{0};         // fishing (Fishing)
-  int32_t orienting{0};       // orienting (Orienting)
-  int32_t plantLore{0};       // plant_lore (Plant Lore)
-  int32_t ropes{0};           // ropes (Ropes)
-  int32_t survival{0};        // survival (Survival)
-  int32_t tracking{0};        // tracking (Tracking)
-  int32_t astronomy{0};       // astronomy (Astronomy)
-  int32_t gambling{0};        // gambling (Gambling)
-  int32_t geography{0};       // geography (Geography)
-  int32_t history{0};         // history (History)
-  int32_t law{0};             // law (Law)
-  int32_t magicalLore{0};     // magical_lore (Magical Lore)
-  int32_t math{0};            // math (Math)
-  int32_t mechanics{0};       // mechanics (Mechanics)
-  int32_t mythsLegends{0};    // myths_legends (Myths & Legends)
-  int32_t religions{0};       // religions (Religions)
-  int32_t sphereLore{0};      // sphere_lore (Sphere Lore)
-  int32_t warfare{0};         // warfare (Warfare)
-  int32_t alchemy{0};         // alchemy (Alchemy)
-  int32_t artisticAbility{0}; // artistic_ability (Artistic Ability)
-  int32_t clothworking{0};    // clothworking (Clothworking)
-  int32_t commerce{0};        // commerce (Commerce)
-  int32_t driving{0};         // driving (Driving)
-  int32_t earthencraft{0};    // earthencraft (Earthencraft)
-  int32_t leatherworking{0};  // leatherworking (Leatherworking)
-  int32_t metalworking{0};    // metalworking (Metalworking)
-  int32_t music{0};           // music (Music)
-  int32_t pickLocks{0};       // pick_locks (Pick Locks)
-  int32_t prepareFood{0};     // prepare_food (Prepare Food)
-  int32_t sailing{0};         // sailing (Sailing)
-  int32_t treatDisease{0};    // treat_disease (Treat Disease)
-  int32_t treatPoison{0};     // treat_poison (Treat Poison)
-  int32_t treatSoul{0};       // treat_soul (Treat Soul)
-  int32_t treatWounds{0};     // treat_wounds (Treat Wounds)
-  int32_t woodworking{0};     // woodworking (Woodworking)
+  // ---- skill ratings (narrow storage where the ruleset allows) ----
+  uint8_t bodyControl{0};     // body_control (Body Control)
+  uint8_t carousing{0};       // carousing (Carousing)
+  uint8_t climbing{0};        // climbing (Climbing)
+  uint8_t dancing{0};         // dancing (Dancing)
+  uint8_t featOfStrength{0};  // feat_of_strength (Feat of Strength)
+  uint8_t flying{0};          // flying (Flying)
+  uint8_t gaukelei{0};        // gaukelei (Gaukelei)
+  uint8_t perception{0};      // perception (Perception)
+  uint8_t pickpocket{0};      // pickpocket (Pickpocket)
+  uint8_t riding{0};          // riding (Riding)
+  uint8_t selfControl{0};     // self_control (Self-Control)
+  uint8_t singing{0};         // singing (Singing)
+  uint8_t stealth{0};         // stealth (Stealth)
+  uint8_t swimming{0};        // swimming (Swimming)
+  uint8_t disguise{0};        // disguise (Disguise)
+  uint8_t empathy{0};         // empathy (Empathy)
+  uint8_t etiquette{0};       // etiquette (Etiquette)
+  uint8_t fastTalk{0};        // fast_talk (Fast-Talk)
+  uint8_t intimidation{0};    // intimidation (Intimidation)
+  uint8_t persuasion{0};      // persuasion (Persuasion)
+  uint8_t seduction{0};       // seduction (Seduction)
+  uint8_t streetwise{0};      // streetwise (Streetwise)
+  uint8_t willpower{0};       // willpower (Willpower)
+  uint8_t animalLore{0};      // animal_lore (Animal Lore)
+  uint8_t fishing{0};         // fishing (Fishing)
+  uint8_t orienting{0};       // orienting (Orienting)
+  uint8_t plantLore{0};       // plant_lore (Plant Lore)
+  uint8_t ropes{0};           // ropes (Ropes)
+  uint8_t survival{0};        // survival (Survival)
+  uint8_t tracking{0};        // tracking (Tracking)
+  uint8_t astronomy{0};       // astronomy (Astronomy)
+  uint8_t gambling{0};        // gambling (Gambling)
+  uint8_t geography{0};       // geography (Geography)
+  uint8_t history{0};         // history (History)
+  uint8_t law{0};             // law (Law)
+  uint8_t magicalLore{0};     // magical_lore (Magical Lore)
+  uint8_t math{0};            // math (Math)
+  uint8_t mechanics{0};       // mechanics (Mechanics)
+  uint8_t mythsLegends{0};    // myths_legends (Myths & Legends)
+  uint8_t religions{0};       // religions (Religions)
+  uint8_t sphereLore{0};      // sphere_lore (Sphere Lore)
+  uint8_t warfare{0};         // warfare (Warfare)
+  uint8_t alchemy{0};         // alchemy (Alchemy)
+  uint8_t artisticAbility{0}; // artistic_ability (Artistic Ability)
+  uint8_t clothworking{0};    // clothworking (Clothworking)
+  uint8_t commerce{0};        // commerce (Commerce)
+  uint8_t driving{0};         // driving (Driving)
+  uint8_t earthencraft{0};    // earthencraft (Earthencraft)
+  uint8_t leatherworking{0};  // leatherworking (Leatherworking)
+  uint8_t metalworking{0};    // metalworking (Metalworking)
+  uint8_t music{0};           // music (Music)
+  uint8_t pickLocks{0};       // pick_locks (Pick Locks)
+  uint8_t prepareFood{0};     // prepare_food (Prepare Food)
+  uint8_t sailing{0};         // sailing (Sailing)
+  uint8_t treatDisease{0};    // treat_disease (Treat Disease)
+  uint8_t treatPoison{0};     // treat_poison (Treat Poison)
+  uint8_t treatSoul{0};       // treat_soul (Treat Soul)
+  uint8_t treatWounds{0};     // treat_wounds (Treat Wounds)
+  uint8_t woodworking{0};     // woodworking (Woodworking)
 
   // ---- resources ----
   int32_t lifePoints{0};   // LP (max: LifePoints_Max)
@@ -126,55 +126,52 @@ public:
 
   // ---- derived stats (compiled formulas) ----
   [[nodiscard]] int32_t maxLifePoints() const noexcept {
-    return static_cast<int32_t>((5.0 + (2.0 * static_cast<double>(constitution))));
+    return static_cast<int32_t>((5 + (2 * static_cast<int>(constitution))));
   } // LifePoints_Max: 5 + 2 * CON
   [[nodiscard]] int32_t maxArcaneEnergy() const noexcept {
-    return static_cast<int32_t>((20.0 + static_cast<double>(intuition)));
+    return static_cast<int32_t>((20 + static_cast<int>(intuition)));
   } // ArcaneEnergy_Max: 20 + INT
   [[nodiscard]] int32_t maxKarmaPoints() const noexcept {
-    return static_cast<int32_t>((20.0 + static_cast<double>(courage)));
+    return static_cast<int32_t>((20 + static_cast<int>(courage)));
   } // KarmaPoints_Max: 20 + COU
   [[nodiscard]] int32_t dodge() const noexcept {
-    return static_cast<int32_t>(rpg_os::math::round((static_cast<double>(agility) / 2.0)));
+    return static_cast<int32_t>(rpg_os::math::roundDivN(static_cast<int>(agility), 2));
   } // Dodge: round(AGI / 2)
   [[nodiscard]] int32_t initiative() const noexcept {
     return static_cast<int32_t>(
-        rpg_os::math::round(((static_cast<double>(courage) + static_cast<double>(agility)) / 2.0)));
+        rpg_os::math::roundDivN((static_cast<int>(courage) + static_cast<int>(agility)), 2));
   } // Initiative: round((COU + AGI) / 2)
   [[nodiscard]] int32_t courageBonus() const noexcept {
-    return static_cast<int32_t>(rpg_os::math::floor(((static_cast<double>(courage) - 8.0) / 3.0)));
+    return static_cast<int32_t>(rpg_os::math::floorDiv((static_cast<int>(courage) - 8), 3));
   } // COU_Bonus: floor((COU - 8) / 3)
   [[nodiscard]] int32_t agilityBonus() const noexcept {
-    return static_cast<int32_t>(rpg_os::math::floor(((static_cast<double>(agility) - 8.0) / 3.0)));
+    return static_cast<int32_t>(rpg_os::math::floorDiv((static_cast<int>(agility) - 8), 3));
   } // AGI_Bonus: floor((AGI - 8) / 3)
   [[nodiscard]] int32_t dexterityBonus() const noexcept {
-    return static_cast<int32_t>(
-        rpg_os::math::floor(((static_cast<double>(dexterity) - 8.0) / 3.0)));
+    return static_cast<int32_t>(rpg_os::math::floorDiv((static_cast<int>(dexterity) - 8), 3));
   } // DEX_Bonus: floor((DEX - 8) / 3)
   [[nodiscard]] int32_t strengthBonus() const noexcept {
-    return static_cast<int32_t>(rpg_os::math::floor(((static_cast<double>(strength) - 8.0) / 3.0)));
+    return static_cast<int32_t>(rpg_os::math::floorDiv((static_cast<int>(strength) - 8), 3));
   } // STR_Bonus: floor((STR - 8) / 3)
   [[nodiscard]] int32_t attackSwordsSr6() const noexcept {
-    return static_cast<int32_t>((6.0 + static_cast<double>(courageBonus())));
+    return static_cast<int32_t>((6 + static_cast<int>(courageBonus())));
   } // Attack: 6 + COU_Bonus
   [[nodiscard]] int32_t parrySwords() const noexcept {
-    return static_cast<int32_t>(
-        (rpg_os::math::floor((6.0 / 2.0)) + static_cast<double>(agilityBonus())));
+    return static_cast<int32_t>((rpg_os::math::floorDivN(6, 2) + static_cast<int>(agilityBonus())));
   } // Parry: floor(6 / 2) + AGI_Bonus
   [[nodiscard]] int32_t rangedCombatBows() const noexcept {
-    return static_cast<int32_t>((6.0 + static_cast<double>(dexterityBonus())));
+    return static_cast<int32_t>((6 + static_cast<int>(dexterityBonus())));
   } // RangedCombat: 6 + DEX_Bonus
   [[nodiscard]] int32_t spirit() const noexcept {
-    return static_cast<int32_t>(
-        rpg_os::math::round((((static_cast<double>(courage) + static_cast<double>(sagacity)) +
-                              static_cast<double>(intuition)) /
-                             6.0)));
+    return static_cast<int32_t>(rpg_os::math::roundDivN(
+        ((static_cast<int>(courage) + static_cast<int>(sagacity)) + static_cast<int>(intuition)),
+        6));
   } // Spirit: round((COU + SGC + INT) / 6)
   [[nodiscard]] int32_t toughness() const noexcept {
-    return static_cast<int32_t>(rpg_os::math::round(
-        (((static_cast<double>(constitution) + static_cast<double>(constitution)) +
-          static_cast<double>(strength)) /
-         6.0)));
+    return static_cast<int32_t>(
+        rpg_os::math::roundDivN(((static_cast<int>(constitution) + static_cast<int>(constitution)) +
+                                 static_cast<int>(strength)),
+                                6));
   } // Toughness: round((CON + CON + STR) / 6)
 
   // ---- StatProvider (string -> member switch, no allocations) ----
@@ -347,340 +344,1009 @@ public:
   }
 
   // ---- named checks (from check_types) ----
-  /// Roll-under d20 attribute check 'tde_attribute'.
+  /// Named check 'tde_attribute' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult tdeAttribute(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveRollUnderD20(*this, "COU", true, params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "COU",
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 1,
+        .criticalConfirm = true,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 20,
+        .fumbleConfirm = true,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// 3d20 talent check 'tde_talent'.
+  /// Named check 'tde_talent' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult tdeTalent(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "AGI", "STR", "climbing", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .poolAttributes = {"COU", "AGI", "STR"},
+        .numPoolAttributes = 3,
+        .poolStat = "climbing",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Attack vs. defense check 'tde_attack'.
+  /// Named check 'tde_attack' (see the ruleset's check_types).
   template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult tdeAttack(const Target &target,
                                               const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveAttackVsDefense(*this, target, "Attack", "Parry", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Opposed,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .attackStat = "Attack",
+        .parryStat = "Parry",
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 1,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 20,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, target, recipe, params, rng);
   }
 
-  // ---- per-skill talent checks (TDE: each skill has its own attributes) ----
+  // ---- per-skill checks (each skill's own linked attributes as a pool) ----
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkBodyControl(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "AGI", "AGI", "CON", "body_control", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"AGI", "AGI", "CON"},
+        .numPoolAttributes = 3,
+        .poolStat = "body_control",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkCarousing(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "CON", "STR", "carousing", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "CON", "STR"},
+        .numPoolAttributes = 3,
+        .poolStat = "carousing",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkClimbing(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "AGI", "STR", "climbing", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "AGI", "STR"},
+        .numPoolAttributes = 3,
+        .poolStat = "climbing",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkDancing(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "CHA", "DEX", "dancing", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "CHA", "DEX"},
+        .numPoolAttributes = 3,
+        .poolStat = "dancing",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkFeatOfStrength(const rpg_os::CheckParams &params,
                                                         Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "CON", "STR", "STR", "feat_of_strength",
-                                              params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"CON", "STR", "STR"},
+        .numPoolAttributes = 3,
+        .poolStat = "feat_of_strength",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkFlying(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "INT", "AGI", "flying", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "INT", "AGI"},
+        .numPoolAttributes = 3,
+        .poolStat = "flying",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkGaukelei(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "CHA", "DEX", "gaukelei", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "CHA", "DEX"},
+        .numPoolAttributes = 3,
+        .poolStat = "gaukelei",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkPerception(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "INT", "INT", "perception", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "INT", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "perception",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkPickpocket(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "DEX", "AGI", "pickpocket", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "DEX", "AGI"},
+        .numPoolAttributes = 3,
+        .poolStat = "pickpocket",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkRiding(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "CHA", "AGI", "STR", "riding", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"CHA", "AGI", "STR"},
+        .numPoolAttributes = 3,
+        .poolStat = "riding",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkSelfControl(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "COU", "CON", "self_control", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "COU", "CON"},
+        .numPoolAttributes = 3,
+        .poolStat = "self_control",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkSinging(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "CHA", "CON", "singing", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "CHA", "CON"},
+        .numPoolAttributes = 3,
+        .poolStat = "singing",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkStealth(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "INT", "AGI", "stealth", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "INT", "AGI"},
+        .numPoolAttributes = 3,
+        .poolStat = "stealth",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkSwimming(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "AGI", "CON", "STR", "swimming", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"AGI", "CON", "STR"},
+        .numPoolAttributes = 3,
+        .poolStat = "swimming",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkDisguise(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "INT", "CHA", "AGI", "disguise", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"INT", "CHA", "AGI"},
+        .numPoolAttributes = 3,
+        .poolStat = "disguise",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkEmpathy(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "INT", "CHA", "empathy", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "INT", "CHA"},
+        .numPoolAttributes = 3,
+        .poolStat = "empathy",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkEtiquette(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "INT", "CHA", "etiquette", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "INT", "CHA"},
+        .numPoolAttributes = 3,
+        .poolStat = "etiquette",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkFastTalk(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "INT", "CHA", "fast_talk", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "INT", "CHA"},
+        .numPoolAttributes = 3,
+        .poolStat = "fast_talk",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkIntimidation(const rpg_os::CheckParams &params,
                                                       Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "INT", "CHA", "intimidation", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "INT", "CHA"},
+        .numPoolAttributes = 3,
+        .poolStat = "intimidation",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkPersuasion(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "SGC", "CHA", "persuasion", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "SGC", "CHA"},
+        .numPoolAttributes = 3,
+        .poolStat = "persuasion",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkSeduction(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "CHA", "CHA", "seduction", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "CHA", "CHA"},
+        .numPoolAttributes = 3,
+        .poolStat = "seduction",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkStreetwise(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "INT", "CHA", "streetwise", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "INT", "CHA"},
+        .numPoolAttributes = 3,
+        .poolStat = "streetwise",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkWillpower(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "INT", "CHA", "willpower", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "INT", "CHA"},
+        .numPoolAttributes = 3,
+        .poolStat = "willpower",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkAnimalLore(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "COU", "CHA", "animal_lore", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "COU", "CHA"},
+        .numPoolAttributes = 3,
+        .poolStat = "animal_lore",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkFishing(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "DEX", "AGI", "CON", "fishing", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"DEX", "AGI", "CON"},
+        .numPoolAttributes = 3,
+        .poolStat = "fishing",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkOrienting(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "INT", "INT", "orienting", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "INT", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "orienting",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkPlantLore(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "DEX", "CON", "plant_lore", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "DEX", "CON"},
+        .numPoolAttributes = 3,
+        .poolStat = "plant_lore",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkRopes(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "DEX", "STR", "ropes", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "DEX", "STR"},
+        .numPoolAttributes = 3,
+        .poolStat = "ropes",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkSurvival(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "AGI", "CON", "survival", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "AGI", "CON"},
+        .numPoolAttributes = 3,
+        .poolStat = "survival",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkTracking(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "INT", "AGI", "tracking", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "INT", "AGI"},
+        .numPoolAttributes = 3,
+        .poolStat = "tracking",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkAstronomy(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "SGC", "INT", "astronomy", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "SGC", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "astronomy",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkGambling(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "SGC", "INT", "gambling", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "SGC", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "gambling",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkGeography(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "SGC", "INT", "geography", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "SGC", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "geography",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkHistory(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "SGC", "INT", "history", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "SGC", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "history",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkLaw(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "SGC", "INT", "law", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "SGC", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "law",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkMagicalLore(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "SGC", "INT", "magical_lore", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "SGC", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "magical_lore",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkMath(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "SGC", "INT", "math", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "SGC", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "math",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkMechanics(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "SGC", "DEX", "mechanics", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "SGC", "DEX"},
+        .numPoolAttributes = 3,
+        .poolStat = "mechanics",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkMythsLegends(const rpg_os::CheckParams &params,
                                                       Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "SGC", "INT", "myths_legends", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "SGC", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "myths_legends",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkReligions(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "SGC", "INT", "religions", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "SGC", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "religions",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkSphereLore(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "SGC", "INT", "sphere_lore", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "SGC", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "sphere_lore",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkWarfare(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "SGC", "INT", "warfare", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "SGC", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "warfare",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkAlchemy(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "SGC", "DEX", "alchemy", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "SGC", "DEX"},
+        .numPoolAttributes = 3,
+        .poolStat = "alchemy",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkArtisticAbility(const rpg_os::CheckParams &params,
                                                          Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "INT", "DEX", "DEX", "artistic_ability",
-                                              params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"INT", "DEX", "DEX"},
+        .numPoolAttributes = 3,
+        .poolStat = "artistic_ability",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkClothworking(const rpg_os::CheckParams &params,
                                                       Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "DEX", "DEX", "clothworking", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "DEX", "DEX"},
+        .numPoolAttributes = 3,
+        .poolStat = "clothworking",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkCommerce(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "INT", "CHA", "commerce", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "INT", "CHA"},
+        .numPoolAttributes = 3,
+        .poolStat = "commerce",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkDriving(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "CHA", "DEX", "CON", "driving", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"CHA", "DEX", "CON"},
+        .numPoolAttributes = 3,
+        .poolStat = "driving",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkEarthencraft(const rpg_os::CheckParams &params,
                                                       Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "DEX", "DEX", "STR", "earthencraft", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"DEX", "DEX", "STR"},
+        .numPoolAttributes = 3,
+        .poolStat = "earthencraft",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkLeatherworking(const rpg_os::CheckParams &params,
                                                         Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "DEX", "AGI", "CON", "leatherworking", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"DEX", "AGI", "CON"},
+        .numPoolAttributes = 3,
+        .poolStat = "leatherworking",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkMetalworking(const rpg_os::CheckParams &params,
                                                       Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "DEX", "CON", "STR", "metalworking", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"DEX", "CON", "STR"},
+        .numPoolAttributes = 3,
+        .poolStat = "metalworking",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkMusic(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "CHA", "DEX", "CON", "music", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"CHA", "DEX", "CON"},
+        .numPoolAttributes = 3,
+        .poolStat = "music",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkPickLocks(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "INT", "DEX", "DEX", "pick_locks", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"INT", "DEX", "DEX"},
+        .numPoolAttributes = 3,
+        .poolStat = "pick_locks",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkPrepareFood(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "INT", "DEX", "DEX", "prepare_food", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"INT", "DEX", "DEX"},
+        .numPoolAttributes = 3,
+        .poolStat = "prepare_food",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkSailing(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "DEX", "AGI", "STR", "sailing", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"DEX", "AGI", "STR"},
+        .numPoolAttributes = 3,
+        .poolStat = "sailing",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkTreatDisease(const rpg_os::CheckParams &params,
                                                       Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "INT", "CON", "treat_disease", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "INT", "CON"},
+        .numPoolAttributes = 3,
+        .poolStat = "treat_disease",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkTreatPoison(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "COU", "SGC", "INT", "treat_poison", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"COU", "SGC", "INT"},
+        .numPoolAttributes = 3,
+        .poolStat = "treat_poison",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkTreatSoul(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "INT", "CHA", "CON", "treat_soul", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"INT", "CHA", "CON"},
+        .numPoolAttributes = 3,
+        .poolStat = "treat_soul",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkTreatWounds(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "SGC", "DEX", "DEX", "treat_wounds", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"SGC", "DEX", "DEX"},
+        .numPoolAttributes = 3,
+        .poolStat = "treat_wounds",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult checkWoodworking(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveTripleRollUnderPool(*this, "DEX", "AGI", "STR", "woodworking", params,
-                                              rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Pool,
+        .dice = 3_d20,
+        .poolAttributes = {"DEX", "AGI", "STR"},
+        .numPoolAttributes = 3,
+        .poolStat = "woodworking",
+        .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
+        .grading = rpg_os::Grading::PoolQuality,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
   // ---- cost / progression tables ----
@@ -746,212 +1412,212 @@ public:
     if (record.contains("attributes")) {
       for (const auto &[key, value] : record.at("attributes").items()) {
         if (key == "COU") {
-          courage = rpg_os::readVariantValue(value, variance, rng);
+          courage = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "SGC") {
-          sagacity = rpg_os::readVariantValue(value, variance, rng);
+          sagacity = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "INT") {
-          intuition = rpg_os::readVariantValue(value, variance, rng);
+          intuition = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "CHA") {
-          charisma = rpg_os::readVariantValue(value, variance, rng);
+          charisma = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "DEX") {
-          dexterity = rpg_os::readVariantValue(value, variance, rng);
+          dexterity = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "AGI") {
-          agility = rpg_os::readVariantValue(value, variance, rng);
+          agility = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "CON") {
-          constitution = rpg_os::readVariantValue(value, variance, rng);
+          constitution = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "STR") {
-          strength = rpg_os::readVariantValue(value, variance, rng);
+          strength = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "Armor_Rating") {
-          armorRating = rpg_os::readVariantValue(value, variance, rng);
+          armorRating = static_cast<int32_t>(rpg_os::readVariantValue(value, variance, rng));
         }
       }
     }
     if (record.contains("skills")) {
       for (const auto &[key, value] : record.at("skills").items()) {
         if (key == "body_control") {
-          bodyControl = rpg_os::readVariantValue(value, variance, rng);
+          bodyControl = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "carousing") {
-          carousing = rpg_os::readVariantValue(value, variance, rng);
+          carousing = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "climbing") {
-          climbing = rpg_os::readVariantValue(value, variance, rng);
+          climbing = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "dancing") {
-          dancing = rpg_os::readVariantValue(value, variance, rng);
+          dancing = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "feat_of_strength") {
-          featOfStrength = rpg_os::readVariantValue(value, variance, rng);
+          featOfStrength = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "flying") {
-          flying = rpg_os::readVariantValue(value, variance, rng);
+          flying = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "gaukelei") {
-          gaukelei = rpg_os::readVariantValue(value, variance, rng);
+          gaukelei = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "perception") {
-          perception = rpg_os::readVariantValue(value, variance, rng);
+          perception = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "pickpocket") {
-          pickpocket = rpg_os::readVariantValue(value, variance, rng);
+          pickpocket = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "riding") {
-          riding = rpg_os::readVariantValue(value, variance, rng);
+          riding = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "self_control") {
-          selfControl = rpg_os::readVariantValue(value, variance, rng);
+          selfControl = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "singing") {
-          singing = rpg_os::readVariantValue(value, variance, rng);
+          singing = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "stealth") {
-          stealth = rpg_os::readVariantValue(value, variance, rng);
+          stealth = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "swimming") {
-          swimming = rpg_os::readVariantValue(value, variance, rng);
+          swimming = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "disguise") {
-          disguise = rpg_os::readVariantValue(value, variance, rng);
+          disguise = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "empathy") {
-          empathy = rpg_os::readVariantValue(value, variance, rng);
+          empathy = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "etiquette") {
-          etiquette = rpg_os::readVariantValue(value, variance, rng);
+          etiquette = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "fast_talk") {
-          fastTalk = rpg_os::readVariantValue(value, variance, rng);
+          fastTalk = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "intimidation") {
-          intimidation = rpg_os::readVariantValue(value, variance, rng);
+          intimidation = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "persuasion") {
-          persuasion = rpg_os::readVariantValue(value, variance, rng);
+          persuasion = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "seduction") {
-          seduction = rpg_os::readVariantValue(value, variance, rng);
+          seduction = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "streetwise") {
-          streetwise = rpg_os::readVariantValue(value, variance, rng);
+          streetwise = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "willpower") {
-          willpower = rpg_os::readVariantValue(value, variance, rng);
+          willpower = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "animal_lore") {
-          animalLore = rpg_os::readVariantValue(value, variance, rng);
+          animalLore = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "fishing") {
-          fishing = rpg_os::readVariantValue(value, variance, rng);
+          fishing = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "orienting") {
-          orienting = rpg_os::readVariantValue(value, variance, rng);
+          orienting = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "plant_lore") {
-          plantLore = rpg_os::readVariantValue(value, variance, rng);
+          plantLore = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "ropes") {
-          ropes = rpg_os::readVariantValue(value, variance, rng);
+          ropes = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "survival") {
-          survival = rpg_os::readVariantValue(value, variance, rng);
+          survival = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "tracking") {
-          tracking = rpg_os::readVariantValue(value, variance, rng);
+          tracking = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "astronomy") {
-          astronomy = rpg_os::readVariantValue(value, variance, rng);
+          astronomy = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "gambling") {
-          gambling = rpg_os::readVariantValue(value, variance, rng);
+          gambling = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "geography") {
-          geography = rpg_os::readVariantValue(value, variance, rng);
+          geography = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "history") {
-          history = rpg_os::readVariantValue(value, variance, rng);
+          history = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "law") {
-          law = rpg_os::readVariantValue(value, variance, rng);
+          law = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "magical_lore") {
-          magicalLore = rpg_os::readVariantValue(value, variance, rng);
+          magicalLore = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "math") {
-          math = rpg_os::readVariantValue(value, variance, rng);
+          math = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "mechanics") {
-          mechanics = rpg_os::readVariantValue(value, variance, rng);
+          mechanics = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "myths_legends") {
-          mythsLegends = rpg_os::readVariantValue(value, variance, rng);
+          mythsLegends = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "religions") {
-          religions = rpg_os::readVariantValue(value, variance, rng);
+          religions = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "sphere_lore") {
-          sphereLore = rpg_os::readVariantValue(value, variance, rng);
+          sphereLore = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "warfare") {
-          warfare = rpg_os::readVariantValue(value, variance, rng);
+          warfare = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "alchemy") {
-          alchemy = rpg_os::readVariantValue(value, variance, rng);
+          alchemy = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "artistic_ability") {
-          artisticAbility = rpg_os::readVariantValue(value, variance, rng);
+          artisticAbility = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "clothworking") {
-          clothworking = rpg_os::readVariantValue(value, variance, rng);
+          clothworking = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "commerce") {
-          commerce = rpg_os::readVariantValue(value, variance, rng);
+          commerce = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "driving") {
-          driving = rpg_os::readVariantValue(value, variance, rng);
+          driving = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "earthencraft") {
-          earthencraft = rpg_os::readVariantValue(value, variance, rng);
+          earthencraft = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "leatherworking") {
-          leatherworking = rpg_os::readVariantValue(value, variance, rng);
+          leatherworking = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "metalworking") {
-          metalworking = rpg_os::readVariantValue(value, variance, rng);
+          metalworking = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "music") {
-          music = rpg_os::readVariantValue(value, variance, rng);
+          music = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "pick_locks") {
-          pickLocks = rpg_os::readVariantValue(value, variance, rng);
+          pickLocks = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "prepare_food") {
-          prepareFood = rpg_os::readVariantValue(value, variance, rng);
+          prepareFood = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "sailing") {
-          sailing = rpg_os::readVariantValue(value, variance, rng);
+          sailing = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "treat_disease") {
-          treatDisease = rpg_os::readVariantValue(value, variance, rng);
+          treatDisease = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "treat_poison") {
-          treatPoison = rpg_os::readVariantValue(value, variance, rng);
+          treatPoison = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "treat_soul") {
-          treatSoul = rpg_os::readVariantValue(value, variance, rng);
+          treatSoul = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "treat_wounds") {
-          treatWounds = rpg_os::readVariantValue(value, variance, rng);
+          treatWounds = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "woodworking") {
-          woodworking = rpg_os::readVariantValue(value, variance, rng);
+          woodworking = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
       }
     }
@@ -1050,6 +1716,45 @@ public:
       out.push_back(std::move(character));
     }
     return out;
+  }
+
+  // ---- free-form data section loaders ----
+  /// Loads every record from a named `data` section as raw JSON.
+  static std::vector<rpg_os::Json> loadSection(const rpg_os::Json &rulesetJson,
+                                               std::string_view section) {
+    std::vector<rpg_os::Json> out;
+    const auto &data = rulesetJson.at("data");
+    if (data.contains(section)) {
+      for (const auto &record : data.at(section)) {
+        out.push_back(record);
+      }
+    }
+    return out;
+  }
+
+  /// Loads every spells record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadSpells(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "spells");
+  }
+
+  /// Loads every conditions record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadConditions(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "conditions");
+  }
+
+  /// Loads every poisons record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadPoisons(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "poisons");
+  }
+
+  /// Loads every diseases record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadDiseases(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "diseases");
+  }
+
+  /// Loads every items record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadItems(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "items");
   }
 };
 

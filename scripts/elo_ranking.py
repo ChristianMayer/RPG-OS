@@ -62,7 +62,7 @@ def parse_args():
                         help="starting ELO rating for every combatant")
     parser.add_argument("--seed", type=int, default=None,
                         help="seed for reproducible pairing and fight seeds "
-                             "(default: random OS entropy)")
+                             "(default: fresh entropy)")
     parser.add_argument("--list", action="store_true",
                         help="list all combatants in the ruleset and exit")
     return parser.parse_args()
@@ -193,7 +193,7 @@ def main():
               file=sys.stderr)
         return 1
 
-    # No explicit --seed: draw a genuinely random one and report it, so a run
+    # No explicit --seed: draw a fresh random one and report it, so a run
     # can be reproduced later by passing it back.
     if args.seed is None:
         args.seed = secrets.randbits(32)

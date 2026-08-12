@@ -47,8 +47,9 @@ struct ResourcePool {
 
   /// Applies `delta` and clamps into [min, max]. Returns the amount actually
   /// applied (callers can detect overkill or overheal). The @c noexcept
-  /// reflects that this is pure integer arithmetic with no allocation.
-  [[nodiscard]] int32_t modify(int32_t delta) noexcept {
+  /// reflects that this is pure integer arithmetic with no allocation; the
+  /// @c constexpr lets the compiler fold constant pool arithmetic.
+  [[nodiscard]] constexpr int32_t modify(int32_t delta) noexcept {
     const int32_t clamped = math::clampInt(current + delta, min, max);
     const int32_t applied = clamped - current;
     current = clamped;

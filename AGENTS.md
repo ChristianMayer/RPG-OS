@@ -104,18 +104,24 @@ The engine is one header-only template layer instantiated differently by each
 mode:
 
 - `core/concepts.hpp` defines `template<typename T> concept StatProvider`
-  requiring `t.getStat(std::string_view) -> int32_t`. Universal entities use a
-  hash map; generated characters satisfy it via a `constexpr` string→member
-  switch (no allocations). Named getters are convenience API on top.
-- `core/checks.hpp` implements the check algorithms (`AdditiveD20`,
-  `RollUnderD20`, `TripleRollUnderPool`, `AttackVsDefense`, `RollUnderD100`,
-  `OpposedRollUnderD100`, `ResistanceRoll`) as templates over an
-  actor/target `StatProvider` and a constexpr-friendly config. The three d100
-  kinds are Basic Roleplaying's percentile roll-under (graded
-  Critical/Special/Success/Fumble via `CheckResult::successLevel`), its
-  opposed combat contest (Attack and Defense Matrix), and its single-sided
-  Resistance Table roll. Universal mode dispatches at runtime via a `switch`;
-  specific mode instantiates with compile-time constants.
+  requiring `t.getStat(std::string_view) -> std::integral` — any integral
+  storage width. Universal entities use a hash map of `int32_t`; generated
+  characters store attributes/skills in the narrowest type that fits the
+  ruleset bounds (`uint8_t` for the shipped rulesets) and satisfy the concept
+  via a string→member switch (no allocations). Named getters are convenience
+  API on top.
+- `core/checks.hpp` is **ruleset-agnostic by design**: a check is a generic,
+  data-driven `CheckRecipe` (resolution threshold/pool/opposed/resistance,
+  dice, comparison, reference source, critical style, grading, difficulty
+  handling) resolved by the single `resolveCheck` template. There is no
+  `AdditiveD20`/`RollUnderD20`-style named mechanism anywhere in the core — a
+  new ruleset, including one with a new combination of dice/comparison/
+  grading, is expressed purely as recipe JSON. Universal mode interprets a
+  runtime recipe; generated code builds a recipe from literals and calls the
+  same `resolveCheck`. The three percentile variants are all configurations of
+  the threshold/opposed/resistance resolutions (graded
+  Critical/Special/Success/Fumble via `CheckResult::successLevel`, opposed
+  level matrix, Resistance Table).
 - Shared helpers: `core/dice_engine.hpp` (injectable RNG), `core/math.hpp`
   (floor/ceil/round/clamp used by the AST evaluator *and* generated code),
   `core/modifier.hpp` (base→override→add→multiply→clamp pipeline),
@@ -136,18 +142,25 @@ mode:
   editing any ruleset; CI enforces it.
 - Top level: `schema_version`, `ruleset_id`, `ruleset_name`, `source`,
   `licence` (required), `comment` (optional), `namespace` (used by codegen),
-  then `attributes`, `derived_stats`, `resource_pools`, `skills`,
-  `check_types`, `cost_tables`, `modifier_pipeline`, `equipment_slots`,
-  `event_triggers`, `data`.
+  `spell_resource` (optional: the resource pool spell casting draws its cost
+  from; enables `RulesetEngine::castSpell`), then `attributes`,
+  `derived_stats`, `resource_pools`, `skills`, `check_types`, `cost_tables`,
+  `modifier_pipeline`, `equipment_slots`, `event_triggers`, `data`.
 - Attribute ids are short uppercase codes (`COU`, `STR`); `name` is the human
   name used to derive C++ identifiers (`"Courage"` → `courage`).
 - Derived-stat `formula` strings use the restricted grammar: arithmetic
   (`+ - * / % ^`), comparisons, `&& || !`, functions `min max floor ceil
   round clamp`, and identifiers (attribute ids, `actor.*`, `target.*`,
   `env.*`, parameters). The grammar must be translatable to C++ by codegen.
-- `check_types` entries are named configs (e.g. `dnd5e_standard`,
-  `tde_talent`); the universal resolver interprets them, codegen emits
-  named methods from them.
+- `check_types` entries are named, data-driven `CheckRecipe`s (e.g.
+  `dnd5e_attack_melee`, `tde_attack`) described entirely by generic fields:
+  `resolution` (`threshold`/`pool`/`opposed`/`resistance`), `dice`,
+  `comparison` (`ge`/`le`), `threshold_source`, `bonus_stats`,
+  `pool_attributes`/`pool_stat`, `attack_stat`/`parry_stat`/`compare_levels`,
+  `critical_style`/`critical_face`/`critical_confirm` and `fumble_*`,
+  `grading`, `difficulty_mode`, `difficulty_multiplier`. The universal
+  resolver interprets them; codegen emits named methods that build a
+  `static const rpg_os::CheckRecipe` and call `rpg_os::resolveCheck`.
 - **Ranges:** a numeric data value may be a plain integer, a dice expression
   string (`"2d6+4"`, kept verbatim from the source), or a range object
   `{"min": …, "max": …}`. Never collapse a source range into a single number.
