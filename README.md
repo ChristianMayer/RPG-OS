@@ -141,6 +141,25 @@ value in three forms:
 - a dice expression string: `"2d6+4"` (kept verbatim from the source),
 - an explicit range object: `{ "min": 2, "max": 12 }`.
 
+Once a dice string is parsed it is a plain C++ object, and there are two
+literal forms that build one directly from source text:
+
+```cpp
+using namespace rpg_os::dice_literals; // brings in the die-size suffixes
+
+auto attack = 1_d20;         // one D20
+auto damage = 2_d6 + 2;      // two D6 plus two
+auto heavy  = 3_d6 - 1_d4;   // combined groups and subtraction
+auto weird  = "1d7+1d23"_dice; // unusual sizes (any ruleset dice string)
+```
+
+The `_dN` suffixes (`_d2`, `_d3`, `_d4`, `_d6`, `_d8`, `_d10`, `_d12`,
+`_d20`, `_d30`, `_d100`) make the common cases readable, with `+`/`-`
+overloads on
+`rpg_os::DiceExpression` folding the result into one object; the `_dice`
+suffix parses any dice string — the form the generated ruleset headers use,
+so a check's dice are parsed once at startup rather than on every roll.
+
 When a caller picks such an entry (e.g. an animal as a fight opponent) it can
 request a **variance** via `rpg_os::Variance`:
 
@@ -216,10 +235,12 @@ python3 scripts/elo_ranking.py --jobs 8 --rounds 40 --games 10
 ```
 
 Every random consumer follows the same rule: **explicitly seeded = exactly
-reproducible, unseeded = genuinely random.** `rpg_os::randomSeed()` gathers OS
-entropy (the random device mixed with clock, process id and ASLR stack
-address), and a default-constructed `rpg_os::DefaultRandom` seeds its
-`std::mt19937` from that entropy with a full `std::seed_seq` — so `--seed N`
+reproducible, unseeded = varied on every run.** `rpg_os::randomSeed()` draws
+one word of easily available entropy from the OS random device (falling back
+to the high-resolution clock where no device exists) — plenty for a game,
+where the goal is simply that no two runs are the same. A default-constructed
+`rpg_os::DefaultRandom` seeds its `std::mt19937` from it, so `--seed N`
 replays a fight or ranking exactly, while omitting `--seed` gives a different
 result on every run (the ELO script prints the seed it used so a run can be
-reproduced by re-passing it).
+reproduced by re-passing it). Callers who need stronger randomness can pass an
+explicit seed of their own.

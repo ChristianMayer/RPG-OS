@@ -27,6 +27,7 @@ add_executable(rpg_os_tests
   test_variance.cpp
   test_combat.cpp
   test_codegen_output.cpp
+  test_data_api.cpp
 )
 
 target_link_libraries(rpg_os_tests PRIVATE rpg_os::rpg_os)

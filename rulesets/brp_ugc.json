@@ -4,8 +4,9 @@
   "ruleset_name": "Basic Roleplaying: Universal Game Engine",
   "source": "Basic Roleplaying: Universal Game Engine - Handouts Pack (Chaosium Inc., 2023, ISBN 978-1-56882-470-3)",
   "licence": "Open RPG Creative License (ORC). This product is licensed under the ORC License (Chaosium Inc., 2023) and is available for personal and commercial use. Basic Roleplaying is a trademark of Chaosium Inc.; this is a fan-made reference data file for RPG-OS, not affiliated with or endorsed by Chaosium Inc.",
-  "comment": "Fan transcription of the Basic Roleplaying: Universal Game Engine Handouts Pack (Chaosium, 2023, ORC-licensed) for RPG-OS. Attributes are the eight characteristics (STR CON SIZ INT POW DEX APP EDU, 3-18 scale) plus Luck and Sanity. Derived stats: Max Hit Points = ceil((CON+SIZ)/2), Max Power Points = POW, each characteristic's x5 value (for characteristic rolls, e.g. STR_5 = STR*5), and the combat abstractions Attack (= Brawl), Parry (= Dodge) and Initiative (= DEX) used by the combat simulator. Skills follow the handout's category list; base chances are in the BRP rulebook, so skill defaults are 0 and the required 'attributes' field records a primary characteristic for reference only. Check types use the native percentile mechanics: roll_under_d100 (Critical <= stat/20, Special <= stat/5, Success <= stat, skill-dependent fumble band) for characteristics, Luck, Sanity and every skill; resistance_roll for the Resistance Table (chance = 50 + 5 x (active - passive); the brp_resistance_* checks cover the same-characteristic pairs); and opposed_roll_under_d100 for combat (brp_combat), which models the Attack and Defense Matrix hit rule (the attacker hits only with a strictly higher success level; equal levels mean the defender parries). BRP's Easy/Difficult difficulty levels (double/halve the skill) are modelled via CheckParams::difficultyMode, and flat +/-20% situational modifiers via CheckParams::difficulty. Data transcribes the handout's reference tables: sample poisons, the magic spell summary, the sorcery spell summary (by category), the psychic abilities and superpower summaries, the random mutation table (adverse mutations flagged), the chaotic features table, the combat fumble tables, the major wound table, the damage modifier table, the personality trait pairs, the reputation gains and observer modifiers, and the temporary insanity tables. Items are a representative weapon/armour set and the archetype is an illustrative average human. The weapon/armour tables themselves and the optional hit-location table are not transcribed as data records.",
+  "comment": "Fan transcription of the Basic Roleplaying: Universal Game Engine Handouts Pack (Chaosium, 2023, ORC-licensed) for RPG-OS. Attributes are the eight characteristics (STR CON SIZ INT POW DEX APP EDU, 3-18 scale) plus Luck and Sanity. Derived stats: Max Hit Points = ceil((CON+SIZ)/2), Max Power Points = POW, each characteristic's x5 value (for characteristic rolls, e.g. STR_5 = STR*5), and the combat abstractions Attack (= Brawl), Parry (= Dodge) and Initiative (= DEX) used by the combat simulator. Skills follow the handout's category list; base chances are in the BRP rulebook, so skill defaults are 0 and the required 'attributes' field records a primary characteristic for reference only. Check types use the native percentile mechanics: roll_under_d100 (Critical <= stat/20, Special <= stat/5, Success <= stat, skill-dependent fumble band) for characteristics, Luck, Sanity and every skill; resistance_roll for the Resistance Table (chance = 50 + 5 x (active - passive); the brp_resistance_* checks cover the same-characteristic pairs); and opposed_roll_under_d100 for combat (brp_combat), which models the Attack and Defense Matrix hit rule (the attacker hits only with a strictly higher success level; equal levels mean the defender parries). BRP's Easy/Difficult difficulty levels (double/halve the skill) are modelled via CheckParams::difficultyScale, and flat +/-20% situational modifiers via CheckParams::difficulty. Data transcribes the handout's reference tables: sample poisons, the magic spell summary, the sorcery spell summary (by category), the psychic abilities and superpower summaries, the random mutation table (adverse mutations flagged), the chaotic features table, the combat fumble tables, the major wound table, the damage modifier table, the personality trait pairs, the reputation gains and observer modifiers, and the temporary insanity tables. Items are a representative weapon/armour set and the archetype is an illustrative average human. The weapon/armour tables themselves and the optional hit-location table are not transcribed as data records.",
   "namespace": "rpg_os::generated::brp_ugc",
+  "spell_resource": "PP",
   "attributes": [
     {
       "id": "STR",
@@ -619,469 +620,901 @@
   ],
   "check_types": {
     "brp_check_str": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "STR_5"
-      ],
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "STR_5",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve",
       "description": "BRP characteristic roll vs Strength x5."
     },
     "brp_check_con": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "CON_5"
-      ],
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "CON_5",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve",
       "description": "BRP characteristic roll vs Constitution x5."
     },
     "brp_check_siz": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "SIZ_5"
-      ],
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "SIZ_5",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve",
       "description": "BRP characteristic roll vs Size x5."
     },
     "brp_check_int": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "INT_5"
-      ],
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "INT_5",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve",
       "description": "BRP characteristic roll vs Intelligence x5 (Idea roll)."
     },
     "brp_check_pow": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "POW_5"
-      ],
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "POW_5",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve",
       "description": "BRP characteristic roll vs Power x5."
     },
     "brp_check_dex": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "DEX_5"
-      ],
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "DEX_5",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve",
       "description": "BRP characteristic roll vs Dexterity x5 (Agility roll)."
     },
     "brp_check_app": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "APP_5"
-      ],
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "APP_5",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve",
       "description": "BRP characteristic roll vs Appearance x5."
     },
     "brp_check_edu": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "EDU_5"
-      ],
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "EDU_5",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve",
       "description": "BRP characteristic roll vs Education x5 (Knowledge roll)."
     },
     "brp_check_luck": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "Luck"
-      ],
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "Luck",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve",
       "description": "BRP Luck roll (e.g. the Major Wound table's head-injury Luck rolls)."
     },
     "brp_check_sanity": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "Sanity"
-      ],
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "Sanity",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve",
       "description": "BRP Sanity roll (see the Sanity Losses table)."
     },
     "brp_skill_artillery": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "artillery"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "artillery",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_brawl": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "brawl"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "brawl",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_energy_weapon": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "energy_weapon"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "energy_weapon",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_firearm": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "firearm"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "firearm",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_grapple": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "grapple"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "grapple",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_heavy_weapon": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "heavy_weapon"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "heavy_weapon",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_martial_arts": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "martial_arts"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "martial_arts",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_melee_weapon": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "melee_weapon"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "melee_weapon",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_missile_weapon": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "missile_weapon"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "missile_weapon",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_parry": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "parry"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "parry",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_shield": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "shield"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "shield",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_bargain": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "bargain"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "bargain",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_command": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "command"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "command",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_disguise": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "disguise"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "disguise",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_etiquette": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "etiquette"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "etiquette",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_fast_talk": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "fast_talk"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "fast_talk",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_language": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "language"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "language",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_perform": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "perform"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "perform",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_persuade": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "persuade"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "persuade",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_status": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "status"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "status",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_teach": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "teach"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "teach",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_art": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "art"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "art",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_craft": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "craft"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "craft",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_demolition": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "demolition"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "demolition",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_fine_manipulation": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "fine_manipulation"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "fine_manipulation",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_heavy_machine": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "heavy_machine"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "heavy_machine",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_repair": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "repair"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "repair",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_sleight_of_hand": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "sleight_of_hand"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "sleight_of_hand",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_appraise": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "appraise"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "appraise",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_first_aid": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "first_aid"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "first_aid",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_gaming": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "gaming"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "gaming",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_knowledge": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "knowledge"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "knowledge",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_literacy": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "literacy"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "literacy",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_medicine": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "medicine"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "medicine",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_psychotherapy": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "psychotherapy"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "psychotherapy",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_science": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "science"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "science",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_strategy": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "strategy"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "strategy",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_technical_skill": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "technical_skill"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "technical_skill",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_insight": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "insight"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "insight",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_listen": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "listen"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "listen",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_navigate": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "navigate"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "navigate",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_research": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "research"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "research",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_sense": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "sense"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "sense",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_spot": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "spot"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "spot",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_track": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "track"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "track",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_climb": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "climb"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "climb",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_dodge": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "dodge"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "dodge",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_drive": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "drive"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "drive",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_fly": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "fly"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "fly",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_hide": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "hide"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "hide",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_jump": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "jump"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "jump",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_pilot": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "pilot"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "pilot",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_projection": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "projection"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "projection",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_ride": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "ride"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "ride",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_stealth": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "stealth"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "stealth",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_swim": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "swim"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "swim",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_skill_throw": {
-      "kind": "roll_under_d100",
-      "attributes": [
-        "throw"
-      ]
+      "resolution": "threshold",
+      "dice": "1d100",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "throw",
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
+      "difficulty_multiplier": "double_halve"
     },
     "brp_resistance_str": {
-      "kind": "resistance_roll",
+      "resolution": "resistance",
+      "dice": "1d100",
       "attack_stat": "STR",
       "parry_stat": "STR",
+      "grading": "none",
+      "difficulty_mode": "to_stat",
       "description": "BRP resistance roll, STR vs STR (e.g. shoving someone back)."
     },
     "brp_resistance_con": {
-      "kind": "resistance_roll",
+      "resolution": "resistance",
+      "dice": "1d100",
       "attack_stat": "CON",
       "parry_stat": "CON",
+      "grading": "none",
+      "difficulty_mode": "to_stat",
       "description": "BRP resistance roll, CON vs CON (e.g. enduring poison)."
     },
     "brp_resistance_siz": {
-      "kind": "resistance_roll",
+      "resolution": "resistance",
+      "dice": "1d100",
       "attack_stat": "SIZ",
       "parry_stat": "SIZ",
+      "grading": "none",
+      "difficulty_mode": "to_stat",
       "description": "BRP resistance roll, SIZ vs SIZ."
     },
     "brp_resistance_int": {
-      "kind": "resistance_roll",
+      "resolution": "resistance",
+      "dice": "1d100",
       "attack_stat": "INT",
       "parry_stat": "INT",
+      "grading": "none",
+      "difficulty_mode": "to_stat",
       "description": "BRP resistance roll, INT vs INT."
     },
     "brp_resistance_pow": {
-      "kind": "resistance_roll",
+      "resolution": "resistance",
+      "dice": "1d100",
       "attack_stat": "POW",
       "parry_stat": "POW",
+      "grading": "none",
+      "difficulty_mode": "to_stat",
       "description": "BRP resistance roll, POW vs POW (e.g. resisting magic or psychic attack)."
     },
     "brp_resistance_dex": {
-      "kind": "resistance_roll",
+      "resolution": "resistance",
+      "dice": "1d100",
       "attack_stat": "DEX",
       "parry_stat": "DEX",
+      "grading": "none",
+      "difficulty_mode": "to_stat",
       "description": "BRP resistance roll, DEX vs DEX."
     },
     "brp_resistance_app": {
-      "kind": "resistance_roll",
+      "resolution": "resistance",
+      "dice": "1d100",
       "attack_stat": "APP",
       "parry_stat": "APP",
+      "grading": "none",
+      "difficulty_mode": "to_stat",
       "description": "BRP resistance roll, APP vs APP."
     },
     "brp_resistance_edu": {
-      "kind": "resistance_roll",
+      "resolution": "resistance",
+      "dice": "1d100",
       "attack_stat": "EDU",
       "parry_stat": "EDU",
+      "grading": "none",
+      "difficulty_mode": "to_stat",
       "description": "BRP resistance roll, EDU vs EDU."
     },
     "brp_combat": {
-      "kind": "opposed_roll_under_d100",
+      "resolution": "opposed",
+      "dice": "1d100",
       "attack_stat": "Attack",
       "parry_stat": "Parry",
+      "compare_levels": true,
+      "critical_style": "percentile",
+      "fumble_style": "percentile",
+      "grading": "percentile",
+      "difficulty_mode": "to_stat",
       "description": "BRP close combat: attacker rolls vs the defender's parry or dodge; the Attack and Defense Matrix hit rule is 'strictly higher success level'. Attack/Parry are the combat abstractions of Brawl and Dodge."
     }
   },
@@ -2022,298 +2455,1359 @@
     ],
     "diseases": [],
     "damage_modifier": [
-      { "min": 2, "max": 12, "modifier": "-1D6" },
-      { "min": 13, "max": 16, "modifier": "-1D4" },
-      { "min": 17, "max": 24, "modifier": "None" },
-      { "min": 25, "max": 32, "modifier": "+1D4" },
-      { "min": 33, "max": 40, "modifier": "+1D6" },
-      { "min": 41, "max": 56, "modifier": "+2D6" },
-      { "min": 57, "max": 72, "modifier": "+3D6" },
-      { "min": 73, "max": 1000000, "modifier": "+1D6 per each additional +16 of STR+SIZ" }
+      {
+        "min": 2,
+        "max": 12,
+        "modifier": "-1D6"
+      },
+      {
+        "min": 13,
+        "max": 16,
+        "modifier": "-1D4"
+      },
+      {
+        "min": 17,
+        "max": 24,
+        "modifier": "None"
+      },
+      {
+        "min": 25,
+        "max": 32,
+        "modifier": "+1D4"
+      },
+      {
+        "min": 33,
+        "max": 40,
+        "modifier": "+1D6"
+      },
+      {
+        "min": 41,
+        "max": 56,
+        "modifier": "+2D6"
+      },
+      {
+        "min": 57,
+        "max": 72,
+        "modifier": "+3D6"
+      },
+      {
+        "min": 73,
+        "max": 1000000,
+        "modifier": "+1D6 per each additional +16 of STR+SIZ"
+      }
     ],
     "sorcery_spells": [
-      { "id": "cloak_of_night", "name": "Cloak of Night", "category": "Augmentation", "levels": "1-4", "description": "Adds +20% per level to Hide." },
-      { "id": "leap", "name": "Leap", "category": "Augmentation", "levels": "1-4", "description": "Adds +20% per level to Jump." },
-      { "id": "sureness", "name": "Sureness", "category": "Augmentation", "levels": "1-4", "description": "Adds +20% per level to Stealth." },
-      { "id": "bolster_the_soul", "name": "Bolster the Soul", "category": "Characteristic", "levels": "1-3", "description": "Adds 3 points per level to POW." },
-      { "id": "inhuman_plasticity", "name": "Inhuman Plasticity", "category": "Characteristic", "levels": "1-3", "description": "Adds 3 points per level to SIZ." },
-      { "id": "lightning_speed", "name": "Lightning Speed", "category": "Characteristic", "levels": "1-3", "description": "Adds 3 points per level to MOV." },
-      { "id": "relentless_vitality", "name": "Relentless Vitality", "category": "Characteristic", "levels": "1-3", "description": "Adds 3 points per level to CON." },
-      { "id": "suppleness_of_the_serpent", "name": "Suppleness of the Serpent", "category": "Characteristic", "levels": "1-3", "description": "Adds 3 points per level to DEX." },
-      { "id": "titans_strength", "name": "Titan's Strength", "category": "Characteristic", "levels": "1-3", "description": "Adds 3 points per level to STR." },
-      { "id": "unearthly_beauty", "name": "Unearthly Beauty", "category": "Characteristic", "levels": "1-3", "description": "Adds 3 points per level to APP." },
-      { "id": "wisdom_of_the_sage", "name": "Wisdom of the Sage", "category": "Characteristic", "levels": "1-3", "description": "Adds 3 points per level to INT." },
-      { "id": "hammer_of_the_gods", "name": "Hammer of the Gods", "category": "Combat", "levels": "1-4", "description": "Adds 1 point damage per level to blunt weapons." },
-      { "id": "hells_razor", "name": "Hell's Razor", "category": "Combat", "levels": "1-4", "description": "Adds 1 point damage per level to cutting weapons." },
-      { "id": "sorcerys_sharp_flame", "name": "Sorcery's Sharp Flame", "category": "Combat", "levels": "1-4", "description": "Adds 1 point damage per level to impaling weapons." },
-      { "id": "sorcerous_armor", "name": "Sorcerous Armor", "category": "Combat", "levels": "1-4", "description": "Adds 1 point of armor per level." },
-      { "id": "talons_of_the_beast", "name": "Talons of the Beast", "category": "Combat", "levels": "1-4", "description": "Adds 1 point damage per level to unarmed or brawling weapons." },
-      { "id": "unbreakable_bulwark", "name": "Unbreakable Bulwark", "category": "Combat", "levels": "1-4", "description": "Adds 1 point of armor per level to shields." },
-      { "id": "make_fast", "name": "Make Fast", "category": "Enhancement", "levels": "1", "description": "Glues together two inanimate objects." },
-      { "id": "make_whole", "name": "Make Whole", "category": "Enhancement", "levels": "1", "description": "Repairs a broken item." },
-      { "id": "midnight", "name": "Midnight", "category": "Enhancement", "levels": "1", "description": "Creates an area of darkness." },
-      { "id": "moonrise", "name": "Moonrise", "category": "Enhancement", "levels": "1", "description": "Creates a floating globe of light." },
-      { "id": "bounty_of_the_sea", "name": "Bounty of the Sea", "category": "Elemental", "levels": "4", "description": "Fills an area with water." },
-      { "id": "fires_of_the_sun", "name": "Fires of the Sun", "category": "Elemental", "levels": "4", "description": "Fills an area with flame." },
-      { "id": "gift_of_the_earth", "name": "Gift of the Earth", "category": "Elemental", "levels": "4", "description": "Fills an area with dirt." },
-      { "id": "wings_of_the_sky", "name": "Wings of the Sky", "category": "Elemental", "levels": "4", "description": "Fills an area with wind." },
-      { "id": "curse_of_sorcery", "name": "Curse of Sorcery", "category": "Manipulative", "levels": "4", "description": "Causes target to suffer a disfiguring feature." },
-      { "id": "fury", "name": "Fury", "category": "Manipulative", "levels": "1", "description": "Enrages target, speeding their attacks." },
-      { "id": "inescapable_bonds", "name": "Inescapable Bonds", "category": "Manipulative", "levels": "3", "description": "Immobilizes target, requires a resistance roll." },
-      { "id": "liken_shape", "name": "Liken Shape", "category": "Manipulative", "levels": "4", "description": "Assume the image of another person." },
-      { "id": "muddle", "name": "Muddle", "category": "Manipulative", "levels": "1", "description": "Disorients target." },
-      { "id": "pox", "name": "Pox", "category": "Manipulative", "levels": "1", "description": "Reduces target's power points, requires a resistance roll." },
-      { "id": "brazier_of_power", "name": "Brazier of Power", "category": "Occult", "levels": "4", "description": "Creates a reservoir of power points." },
-      { "id": "chain_of_being", "name": "Chain of Being", "category": "Occult", "levels": "4", "description": "Creates a pool of power points." },
-      { "id": "undo_sorcery", "name": "Undo Sorcery", "category": "Occult", "levels": "1-4", "description": "Cancels various sorcery spells." },
-      { "id": "ward", "name": "Ward", "category": "Occult", "levels": "3", "description": "Creates a magical alarm." },
-      { "id": "summon_demon", "name": "Summon Demon", "category": "Summoning", "levels": "1", "description": "Summons a demon." },
-      { "id": "summon_elemental", "name": "Summon Elemental", "category": "Summoning", "levels": "1", "description": "Summons an elemental." },
-      { "id": "birds_vision", "name": "Bird's Vision", "category": "Utility", "levels": "1", "description": "Controls a bird and sees through its eyes." },
-      { "id": "breath_of_life", "name": "Breath of Life", "category": "Utility", "levels": "1", "description": "Provides breathable air underwater or elsewhere." },
-      { "id": "farsight", "name": "Farsight", "category": "Utility", "levels": "1", "description": "Doubles range at which something can be seen." },
-      { "id": "heal_sorcery", "name": "Heal", "category": "Utility", "levels": "2", "description": "Restores lost hit points." },
-      { "id": "keen_ear", "name": "Keen Ear", "category": "Utility", "levels": "1", "description": "Carries spoken words across great distances." },
-      { "id": "refutation", "name": "Refutation", "category": "Utility", "levels": "1-4", "description": "Protects against Undo Sorcery." },
-      { "id": "vermins_vision", "name": "Vermin's Vision", "category": "Utility", "levels": "1", "description": "Controls vermin and sees through its eyes." },
-      { "id": "witch_sight", "name": "Witch Sight", "category": "Utility", "levels": "3", "description": "Determines target's POW." }
+      {
+        "id": "cloak_of_night",
+        "name": "Cloak of Night",
+        "category": "Augmentation",
+        "levels": "1-4",
+        "description": "Adds +20% per level to Hide."
+      },
+      {
+        "id": "leap",
+        "name": "Leap",
+        "category": "Augmentation",
+        "levels": "1-4",
+        "description": "Adds +20% per level to Jump."
+      },
+      {
+        "id": "sureness",
+        "name": "Sureness",
+        "category": "Augmentation",
+        "levels": "1-4",
+        "description": "Adds +20% per level to Stealth."
+      },
+      {
+        "id": "bolster_the_soul",
+        "name": "Bolster the Soul",
+        "category": "Characteristic",
+        "levels": "1-3",
+        "description": "Adds 3 points per level to POW."
+      },
+      {
+        "id": "inhuman_plasticity",
+        "name": "Inhuman Plasticity",
+        "category": "Characteristic",
+        "levels": "1-3",
+        "description": "Adds 3 points per level to SIZ."
+      },
+      {
+        "id": "lightning_speed",
+        "name": "Lightning Speed",
+        "category": "Characteristic",
+        "levels": "1-3",
+        "description": "Adds 3 points per level to MOV."
+      },
+      {
+        "id": "relentless_vitality",
+        "name": "Relentless Vitality",
+        "category": "Characteristic",
+        "levels": "1-3",
+        "description": "Adds 3 points per level to CON."
+      },
+      {
+        "id": "suppleness_of_the_serpent",
+        "name": "Suppleness of the Serpent",
+        "category": "Characteristic",
+        "levels": "1-3",
+        "description": "Adds 3 points per level to DEX."
+      },
+      {
+        "id": "titans_strength",
+        "name": "Titan's Strength",
+        "category": "Characteristic",
+        "levels": "1-3",
+        "description": "Adds 3 points per level to STR."
+      },
+      {
+        "id": "unearthly_beauty",
+        "name": "Unearthly Beauty",
+        "category": "Characteristic",
+        "levels": "1-3",
+        "description": "Adds 3 points per level to APP."
+      },
+      {
+        "id": "wisdom_of_the_sage",
+        "name": "Wisdom of the Sage",
+        "category": "Characteristic",
+        "levels": "1-3",
+        "description": "Adds 3 points per level to INT."
+      },
+      {
+        "id": "hammer_of_the_gods",
+        "name": "Hammer of the Gods",
+        "category": "Combat",
+        "levels": "1-4",
+        "description": "Adds 1 point damage per level to blunt weapons."
+      },
+      {
+        "id": "hells_razor",
+        "name": "Hell's Razor",
+        "category": "Combat",
+        "levels": "1-4",
+        "description": "Adds 1 point damage per level to cutting weapons."
+      },
+      {
+        "id": "sorcerys_sharp_flame",
+        "name": "Sorcery's Sharp Flame",
+        "category": "Combat",
+        "levels": "1-4",
+        "description": "Adds 1 point damage per level to impaling weapons."
+      },
+      {
+        "id": "sorcerous_armor",
+        "name": "Sorcerous Armor",
+        "category": "Combat",
+        "levels": "1-4",
+        "description": "Adds 1 point of armor per level."
+      },
+      {
+        "id": "talons_of_the_beast",
+        "name": "Talons of the Beast",
+        "category": "Combat",
+        "levels": "1-4",
+        "description": "Adds 1 point damage per level to unarmed or brawling weapons."
+      },
+      {
+        "id": "unbreakable_bulwark",
+        "name": "Unbreakable Bulwark",
+        "category": "Combat",
+        "levels": "1-4",
+        "description": "Adds 1 point of armor per level to shields."
+      },
+      {
+        "id": "make_fast",
+        "name": "Make Fast",
+        "category": "Enhancement",
+        "levels": "1",
+        "description": "Glues together two inanimate objects."
+      },
+      {
+        "id": "make_whole",
+        "name": "Make Whole",
+        "category": "Enhancement",
+        "levels": "1",
+        "description": "Repairs a broken item."
+      },
+      {
+        "id": "midnight",
+        "name": "Midnight",
+        "category": "Enhancement",
+        "levels": "1",
+        "description": "Creates an area of darkness."
+      },
+      {
+        "id": "moonrise",
+        "name": "Moonrise",
+        "category": "Enhancement",
+        "levels": "1",
+        "description": "Creates a floating globe of light."
+      },
+      {
+        "id": "bounty_of_the_sea",
+        "name": "Bounty of the Sea",
+        "category": "Elemental",
+        "levels": "4",
+        "description": "Fills an area with water."
+      },
+      {
+        "id": "fires_of_the_sun",
+        "name": "Fires of the Sun",
+        "category": "Elemental",
+        "levels": "4",
+        "description": "Fills an area with flame."
+      },
+      {
+        "id": "gift_of_the_earth",
+        "name": "Gift of the Earth",
+        "category": "Elemental",
+        "levels": "4",
+        "description": "Fills an area with dirt."
+      },
+      {
+        "id": "wings_of_the_sky",
+        "name": "Wings of the Sky",
+        "category": "Elemental",
+        "levels": "4",
+        "description": "Fills an area with wind."
+      },
+      {
+        "id": "curse_of_sorcery",
+        "name": "Curse of Sorcery",
+        "category": "Manipulative",
+        "levels": "4",
+        "description": "Causes target to suffer a disfiguring feature."
+      },
+      {
+        "id": "fury",
+        "name": "Fury",
+        "category": "Manipulative",
+        "levels": "1",
+        "description": "Enrages target, speeding their attacks."
+      },
+      {
+        "id": "inescapable_bonds",
+        "name": "Inescapable Bonds",
+        "category": "Manipulative",
+        "levels": "3",
+        "description": "Immobilizes target, requires a resistance roll."
+      },
+      {
+        "id": "liken_shape",
+        "name": "Liken Shape",
+        "category": "Manipulative",
+        "levels": "4",
+        "description": "Assume the image of another person."
+      },
+      {
+        "id": "muddle",
+        "name": "Muddle",
+        "category": "Manipulative",
+        "levels": "1",
+        "description": "Disorients target."
+      },
+      {
+        "id": "pox",
+        "name": "Pox",
+        "category": "Manipulative",
+        "levels": "1",
+        "description": "Reduces target's power points, requires a resistance roll."
+      },
+      {
+        "id": "brazier_of_power",
+        "name": "Brazier of Power",
+        "category": "Occult",
+        "levels": "4",
+        "description": "Creates a reservoir of power points."
+      },
+      {
+        "id": "chain_of_being",
+        "name": "Chain of Being",
+        "category": "Occult",
+        "levels": "4",
+        "description": "Creates a pool of power points."
+      },
+      {
+        "id": "undo_sorcery",
+        "name": "Undo Sorcery",
+        "category": "Occult",
+        "levels": "1-4",
+        "description": "Cancels various sorcery spells."
+      },
+      {
+        "id": "ward",
+        "name": "Ward",
+        "category": "Occult",
+        "levels": "3",
+        "description": "Creates a magical alarm."
+      },
+      {
+        "id": "summon_demon",
+        "name": "Summon Demon",
+        "category": "Summoning",
+        "levels": "1",
+        "description": "Summons a demon."
+      },
+      {
+        "id": "summon_elemental",
+        "name": "Summon Elemental",
+        "category": "Summoning",
+        "levels": "1",
+        "description": "Summons an elemental."
+      },
+      {
+        "id": "birds_vision",
+        "name": "Bird's Vision",
+        "category": "Utility",
+        "levels": "1",
+        "description": "Controls a bird and sees through its eyes."
+      },
+      {
+        "id": "breath_of_life",
+        "name": "Breath of Life",
+        "category": "Utility",
+        "levels": "1",
+        "description": "Provides breathable air underwater or elsewhere."
+      },
+      {
+        "id": "farsight",
+        "name": "Farsight",
+        "category": "Utility",
+        "levels": "1",
+        "description": "Doubles range at which something can be seen."
+      },
+      {
+        "id": "heal_sorcery",
+        "name": "Heal",
+        "category": "Utility",
+        "levels": "2",
+        "description": "Restores lost hit points."
+      },
+      {
+        "id": "keen_ear",
+        "name": "Keen Ear",
+        "category": "Utility",
+        "levels": "1",
+        "description": "Carries spoken words across great distances."
+      },
+      {
+        "id": "refutation",
+        "name": "Refutation",
+        "category": "Utility",
+        "levels": "1-4",
+        "description": "Protects against Undo Sorcery."
+      },
+      {
+        "id": "vermins_vision",
+        "name": "Vermin's Vision",
+        "category": "Utility",
+        "levels": "1",
+        "description": "Controls vermin and sees through its eyes."
+      },
+      {
+        "id": "witch_sight",
+        "name": "Witch Sight",
+        "category": "Utility",
+        "levels": "3",
+        "description": "Determines target's POW."
+      }
     ],
     "psychic_abilities": [
-      { "id": "astral_projection", "name": "Astral Projection", "description": "Leave physical body and travel in psychic form." },
-      { "id": "aura_detection", "name": "Aura Detection", "description": "Perceive the aura emanated by a living being." },
-      { "id": "clairvoyance", "name": "Clairvoyance", "description": "Project awareness into another place." },
-      { "id": "cryokinesis", "name": "Cryokinesis", "description": "Create an area of intense cold on an area, object, or target." },
-      { "id": "danger_sense", "name": "Danger Sense", "description": "Detect danger from other characters or situations." },
-      { "id": "dead_calm", "name": "Dead Calm", "description": "Resist mental shock or delay the effects of sanity loss." },
-      { "id": "divination", "name": "Divination", "description": "Ask a higher power for guidance and insight." },
-      { "id": "eidetic_memory", "name": "Eidetic Memory", "description": "Perfect and total recall of previous experiences." },
-      { "id": "emotion_control", "name": "Emotion Control", "description": "Affect the emotional state of a target or targets." },
-      { "id": "empathy", "name": "Empathy", "description": "Detect the inner feelings of a target or targets." },
-      { "id": "intuition", "name": "Intuition", "description": "Detect a certain person or class of item." },
-      { "id": "levitation", "name": "Levitation", "description": "Floating movement above the ground." },
-      { "id": "mind_blast", "name": "Mind Blast", "description": "A psychic attack against a target." },
-      { "id": "mind_control", "name": "Mind Control", "description": "Controlling the physical body and will of a target." },
-      { "id": "mind_shield", "name": "Mind Shield", "description": "A protection against psychic interference and attacks." },
-      { "id": "precognition", "name": "Precognition", "description": "A brief glimpse into the future." },
-      { "id": "psychometry", "name": "Psychometry", "description": "'Read' past emotions associated with an object or place." },
-      { "id": "pyrokinesis", "name": "Pyrokinesis", "description": "Heat an area, object, or target to extreme temperatures." },
-      { "id": "sensitivity", "name": "Sensitivity", "description": "Detect psychic emanations or supernatural beings in an area." },
-      { "id": "telekinesis", "name": "Telekinesis", "description": "Manipulate and move objects mentally." },
-      { "id": "telepathy", "name": "Telepathy", "description": "Read minds or speak mind-to-mind with a target." }
+      {
+        "id": "astral_projection",
+        "name": "Astral Projection",
+        "description": "Leave physical body and travel in psychic form."
+      },
+      {
+        "id": "aura_detection",
+        "name": "Aura Detection",
+        "description": "Perceive the aura emanated by a living being."
+      },
+      {
+        "id": "clairvoyance",
+        "name": "Clairvoyance",
+        "description": "Project awareness into another place."
+      },
+      {
+        "id": "cryokinesis",
+        "name": "Cryokinesis",
+        "description": "Create an area of intense cold on an area, object, or target."
+      },
+      {
+        "id": "danger_sense",
+        "name": "Danger Sense",
+        "description": "Detect danger from other characters or situations."
+      },
+      {
+        "id": "dead_calm",
+        "name": "Dead Calm",
+        "description": "Resist mental shock or delay the effects of sanity loss."
+      },
+      {
+        "id": "divination",
+        "name": "Divination",
+        "description": "Ask a higher power for guidance and insight."
+      },
+      {
+        "id": "eidetic_memory",
+        "name": "Eidetic Memory",
+        "description": "Perfect and total recall of previous experiences."
+      },
+      {
+        "id": "emotion_control",
+        "name": "Emotion Control",
+        "description": "Affect the emotional state of a target or targets."
+      },
+      {
+        "id": "empathy",
+        "name": "Empathy",
+        "description": "Detect the inner feelings of a target or targets."
+      },
+      {
+        "id": "intuition",
+        "name": "Intuition",
+        "description": "Detect a certain person or class of item."
+      },
+      {
+        "id": "levitation",
+        "name": "Levitation",
+        "description": "Floating movement above the ground."
+      },
+      {
+        "id": "mind_blast",
+        "name": "Mind Blast",
+        "description": "A psychic attack against a target."
+      },
+      {
+        "id": "mind_control",
+        "name": "Mind Control",
+        "description": "Controlling the physical body and will of a target."
+      },
+      {
+        "id": "mind_shield",
+        "name": "Mind Shield",
+        "description": "A protection against psychic interference and attacks."
+      },
+      {
+        "id": "precognition",
+        "name": "Precognition",
+        "description": "A brief glimpse into the future."
+      },
+      {
+        "id": "psychometry",
+        "name": "Psychometry",
+        "description": "'Read' past emotions associated with an object or place."
+      },
+      {
+        "id": "pyrokinesis",
+        "name": "Pyrokinesis",
+        "description": "Heat an area, object, or target to extreme temperatures."
+      },
+      {
+        "id": "sensitivity",
+        "name": "Sensitivity",
+        "description": "Detect psychic emanations or supernatural beings in an area."
+      },
+      {
+        "id": "telekinesis",
+        "name": "Telekinesis",
+        "description": "Manipulate and move objects mentally."
+      },
+      {
+        "id": "telepathy",
+        "name": "Telepathy",
+        "description": "Read minds or speak mind-to-mind with a target."
+      }
     ],
     "superpowers": [
-      { "id": "absorption", "name": "Absorption", "description": "Absorb energy from an attack and turn it into power points." },
-      { "id": "adaptation", "name": "Adaptation", "description": "Each level allows survival in one hostile environment." },
-      { "id": "alternate_form", "name": "Alternate Form", "description": "Each level is an alternate body to switch into." },
-      { "id": "armor", "name": "Armor", "description": "Each level provides 1 point of protection against a specific energy type." },
-      { "id": "barrier", "name": "Barrier", "description": "Each level creates a 1-meter-square section of protective wall." },
-      { "id": "defense", "name": "Defense", "description": "Lowers the chance to be hit by -1% per level." },
-      { "id": "density_control", "name": "Density Control", "description": "Each level adds or subtracts 1 point of density (SIZ)." },
-      { "id": "diminish_enhance_characteristic", "name": "Diminish/Enhance Characteristic", "description": "Lowers a characteristic by -1D6 per level." },
-      { "id": "drain", "name": "Drain", "description": "Each level drains 1 hit point, power point, fatigue point, or sanity point from a target." },
-      { "id": "energy_control", "name": "Energy Control", "description": "Allows creation of and control over a specific energy type." },
-      { "id": "energy_projection", "name": "Energy Projection", "description": "Allows projection of a focused beam of damaging energy." },
-      { "id": "extra_energy", "name": "Extra Energy", "description": "Each level provides +10 additional power points." },
-      { "id": "extra_hit_points", "name": "Extra Hit Points", "description": "Each level provides +1 additional hit point." },
-      { "id": "flight", "name": "Flight", "description": "Each level allows self-powered flight for 1 SIZ point." },
-      { "id": "force_field", "name": "Force Field", "description": "Each level offers 1 point of protection against a specific type of energy." },
-      { "id": "intangibility", "name": "Intangibility", "description": "Allows movement through solid objects." },
-      { "id": "invisibility", "name": "Invisibility", "description": "Each level turns 1 SIZ point invisible." },
-      { "id": "leap", "name": "Leap", "description": "Adds to the normal jumping distance, horizontally and vertically." },
-      { "id": "protection", "name": "Protection", "description": "Each level reduces the level of an attacking energy type." },
-      { "id": "resistance", "name": "Resistance", "description": "Each level resists 1 point of damage from a single energy type." },
-      { "id": "sidekick", "name": "Sidekick", "description": "A loyal associated character." },
-      { "id": "size_change", "name": "Size Change", "description": "Each level adds or subtracts 1 point of SIZ." },
-      { "id": "stretching", "name": "Stretching", "description": "Stretch body into different sizes and shapes." },
-      { "id": "snare_projection", "name": "Snare Projection", "description": "Each level is 1 STR and/or SIZ of a net, web, rope, or other confining snare." },
-      { "id": "super_characteristic", "name": "Super Characteristic", "description": "Extra points in STR, CON, SIZ, INT, POW, DEX, APP, or EDU." },
-      { "id": "super_movement", "name": "Super Movement", "description": "Each type involves a unique method of movement." },
-      { "id": "super_sense", "name": "Super Sense", "description": "Each type improves an existing sense or adds an extraordinary aspect to the sense." },
-      { "id": "super_skill", "name": "Super Skill", "description": "Each level adds +20% to a specific skill." },
-      { "id": "super_speed", "name": "Super Speed", "description": "Each level adds an additional action or movement each combat round." },
-      { "id": "teleport", "name": "Teleport", "description": "Each level allows instantaneous teleportation of 1 SIZ point of an object or target." },
-      { "id": "transfer", "name": "Transfer", "description": "Each level allows transfer of 1 hit point, power point, fatigue point, or sanity point to a target." },
-      { "id": "unarmed_combat", "name": "Unarmed Combat", "description": "Increases ability in unarmed combat." },
-      { "id": "weather_control", "name": "Weather Control", "description": "Alters or creates weather in an area." }
+      {
+        "id": "absorption",
+        "name": "Absorption",
+        "description": "Absorb energy from an attack and turn it into power points."
+      },
+      {
+        "id": "adaptation",
+        "name": "Adaptation",
+        "description": "Each level allows survival in one hostile environment."
+      },
+      {
+        "id": "alternate_form",
+        "name": "Alternate Form",
+        "description": "Each level is an alternate body to switch into."
+      },
+      {
+        "id": "armor",
+        "name": "Armor",
+        "description": "Each level provides 1 point of protection against a specific energy type."
+      },
+      {
+        "id": "barrier",
+        "name": "Barrier",
+        "description": "Each level creates a 1-meter-square section of protective wall."
+      },
+      {
+        "id": "defense",
+        "name": "Defense",
+        "description": "Lowers the chance to be hit by -1% per level."
+      },
+      {
+        "id": "density_control",
+        "name": "Density Control",
+        "description": "Each level adds or subtracts 1 point of density (SIZ)."
+      },
+      {
+        "id": "diminish_enhance_characteristic",
+        "name": "Diminish/Enhance Characteristic",
+        "description": "Lowers a characteristic by -1D6 per level."
+      },
+      {
+        "id": "drain",
+        "name": "Drain",
+        "description": "Each level drains 1 hit point, power point, fatigue point, or sanity point from a target."
+      },
+      {
+        "id": "energy_control",
+        "name": "Energy Control",
+        "description": "Allows creation of and control over a specific energy type."
+      },
+      {
+        "id": "energy_projection",
+        "name": "Energy Projection",
+        "description": "Allows projection of a focused beam of damaging energy."
+      },
+      {
+        "id": "extra_energy",
+        "name": "Extra Energy",
+        "description": "Each level provides +10 additional power points."
+      },
+      {
+        "id": "extra_hit_points",
+        "name": "Extra Hit Points",
+        "description": "Each level provides +1 additional hit point."
+      },
+      {
+        "id": "flight",
+        "name": "Flight",
+        "description": "Each level allows self-powered flight for 1 SIZ point."
+      },
+      {
+        "id": "force_field",
+        "name": "Force Field",
+        "description": "Each level offers 1 point of protection against a specific type of energy."
+      },
+      {
+        "id": "intangibility",
+        "name": "Intangibility",
+        "description": "Allows movement through solid objects."
+      },
+      {
+        "id": "invisibility",
+        "name": "Invisibility",
+        "description": "Each level turns 1 SIZ point invisible."
+      },
+      {
+        "id": "leap",
+        "name": "Leap",
+        "description": "Adds to the normal jumping distance, horizontally and vertically."
+      },
+      {
+        "id": "protection",
+        "name": "Protection",
+        "description": "Each level reduces the level of an attacking energy type."
+      },
+      {
+        "id": "resistance",
+        "name": "Resistance",
+        "description": "Each level resists 1 point of damage from a single energy type."
+      },
+      {
+        "id": "sidekick",
+        "name": "Sidekick",
+        "description": "A loyal associated character."
+      },
+      {
+        "id": "size_change",
+        "name": "Size Change",
+        "description": "Each level adds or subtracts 1 point of SIZ."
+      },
+      {
+        "id": "stretching",
+        "name": "Stretching",
+        "description": "Stretch body into different sizes and shapes."
+      },
+      {
+        "id": "snare_projection",
+        "name": "Snare Projection",
+        "description": "Each level is 1 STR and/or SIZ of a net, web, rope, or other confining snare."
+      },
+      {
+        "id": "super_characteristic",
+        "name": "Super Characteristic",
+        "description": "Extra points in STR, CON, SIZ, INT, POW, DEX, APP, or EDU."
+      },
+      {
+        "id": "super_movement",
+        "name": "Super Movement",
+        "description": "Each type involves a unique method of movement."
+      },
+      {
+        "id": "super_sense",
+        "name": "Super Sense",
+        "description": "Each type improves an existing sense or adds an extraordinary aspect to the sense."
+      },
+      {
+        "id": "super_skill",
+        "name": "Super Skill",
+        "description": "Each level adds +20% to a specific skill."
+      },
+      {
+        "id": "super_speed",
+        "name": "Super Speed",
+        "description": "Each level adds an additional action or movement each combat round."
+      },
+      {
+        "id": "teleport",
+        "name": "Teleport",
+        "description": "Each level allows instantaneous teleportation of 1 SIZ point of an object or target."
+      },
+      {
+        "id": "transfer",
+        "name": "Transfer",
+        "description": "Each level allows transfer of 1 hit point, power point, fatigue point, or sanity point to a target."
+      },
+      {
+        "id": "unarmed_combat",
+        "name": "Unarmed Combat",
+        "description": "Increases ability in unarmed combat."
+      },
+      {
+        "id": "weather_control",
+        "name": "Weather Control",
+        "description": "Alters or creates weather in an area."
+      }
     ],
     "mutations": [
-      { "roll": "01-03", "name": "Adaptability", "adverse": false, "description": "Survival in unusual environments." },
-      { "roll": "04-05", "name": "Allergy", "adverse": true, "description": "Skills reduced by contact to an allergen." },
-      { "roll": "06-09", "name": "Biped (Quadruped)", "adverse": true, "description": "If two-legged, forced to walk four-legged." },
-      { "roll": "10-12", "name": "Camouflage", "adverse": false, "description": "Skin has a concealing texture or color." },
-      { "roll": "13-15", "name": "Coloration", "adverse": false, "description": "Unusual coloration (minor only)." },
-      { "roll": "16-19", "name": "Congenital Disease", "adverse": true, "description": "Suffers from a debilitating disease." },
-      { "roll": "20-22", "name": "Decreased Characteristic", "adverse": true, "description": "Characteristic decreased." },
-      { "roll": "23-25", "name": "Disease Carrier", "adverse": true, "description": "Carries (but is immune to) an infectious disease." },
-      { "roll": "26-29", "name": "Group Intelligence", "adverse": false, "description": "Part of a hive mind." },
-      { "roll": "30", "name": "Hands", "adverse": false, "description": "Has extra hands or prehensile limb." },
-      { "roll": "31-33", "name": "Hardy", "adverse": false, "description": "Resistant to damage." },
-      { "roll": "34-35", "name": "Hybrid", "adverse": false, "description": "Has an animalistic trait." },
-      { "roll": "36-37", "name": "Imitation", "adverse": false, "description": "Imitates an animal's natural trait." },
-      { "roll": "38-44", "name": "Increased Characteristic", "adverse": false, "description": "Characteristic increased." },
-      { "roll": "49-50", "name": "Luminescence", "adverse": false, "description": "Emits a light from body." },
-      { "roll": "51-53", "name": "Metabolic Improvement", "adverse": false, "description": "Has a beneficial but unusual metabolism." },
-      { "roll": "54-57", "name": "Metabolic Weakness", "adverse": true, "description": "Has a disadvantageous and unusual metabolism." },
-      { "roll": "58-60", "name": "Natural Armor", "adverse": false, "description": "Has natural armor (scales, horn, hide, etc.)." },
-      { "roll": "61-65", "name": "Natural Weapon", "adverse": false, "description": "Has natural weapon (spine, claw, teeth, etc.)." },
-      { "roll": "66-67", "name": "Pain Sensitivity", "adverse": true, "description": "Low resistance to pain." },
-      { "roll": "68", "name": "Pheromone", "adverse": false, "description": "Emits chemicals that can affect others." },
-      { "roll": "69-70", "name": "Reduced Sense", "adverse": true, "description": "Impaired or missing primary sense." },
-      { "roll": "71-72", "name": "Regeneration", "adverse": false, "description": "Able to heal rapidly." },
-      { "roll": "73-74", "name": "Sensitivity", "adverse": false, "description": "Has an unusual affinity for a substance." },
-      { "roll": "75-76", "name": "Speech (Mimicry)", "adverse": false, "description": "Can imitate animal noises or speak clearly." },
-      { "roll": "77-81", "name": "Structural Improvement", "adverse": false, "description": "Has an unusual and beneficial body form." },
-      { "roll": "82-86", "name": "Structural Weakness", "adverse": true, "description": "Has an unusual and disadvantageous body form." },
-      { "roll": "87-89", "name": "Venom", "adverse": false, "description": "Emits a natural poison." },
-      { "roll": "90", "name": "Wings", "adverse": false, "description": "Has wings and can glide or fly." },
-      { "roll": "91-00", "name": "Gamemaster or Player Choice", "adverse": false, "description": "Pick or roll again." }
+      {
+        "roll": "01-03",
+        "name": "Adaptability",
+        "adverse": false,
+        "description": "Survival in unusual environments."
+      },
+      {
+        "roll": "04-05",
+        "name": "Allergy",
+        "adverse": true,
+        "description": "Skills reduced by contact to an allergen."
+      },
+      {
+        "roll": "06-09",
+        "name": "Biped (Quadruped)",
+        "adverse": true,
+        "description": "If two-legged, forced to walk four-legged."
+      },
+      {
+        "roll": "10-12",
+        "name": "Camouflage",
+        "adverse": false,
+        "description": "Skin has a concealing texture or color."
+      },
+      {
+        "roll": "13-15",
+        "name": "Coloration",
+        "adverse": false,
+        "description": "Unusual coloration (minor only)."
+      },
+      {
+        "roll": "16-19",
+        "name": "Congenital Disease",
+        "adverse": true,
+        "description": "Suffers from a debilitating disease."
+      },
+      {
+        "roll": "20-22",
+        "name": "Decreased Characteristic",
+        "adverse": true,
+        "description": "Characteristic decreased."
+      },
+      {
+        "roll": "23-25",
+        "name": "Disease Carrier",
+        "adverse": true,
+        "description": "Carries (but is immune to) an infectious disease."
+      },
+      {
+        "roll": "26-29",
+        "name": "Group Intelligence",
+        "adverse": false,
+        "description": "Part of a hive mind."
+      },
+      {
+        "roll": "30",
+        "name": "Hands",
+        "adverse": false,
+        "description": "Has extra hands or prehensile limb."
+      },
+      {
+        "roll": "31-33",
+        "name": "Hardy",
+        "adverse": false,
+        "description": "Resistant to damage."
+      },
+      {
+        "roll": "34-35",
+        "name": "Hybrid",
+        "adverse": false,
+        "description": "Has an animalistic trait."
+      },
+      {
+        "roll": "36-37",
+        "name": "Imitation",
+        "adverse": false,
+        "description": "Imitates an animal's natural trait."
+      },
+      {
+        "roll": "38-44",
+        "name": "Increased Characteristic",
+        "adverse": false,
+        "description": "Characteristic increased."
+      },
+      {
+        "roll": "49-50",
+        "name": "Luminescence",
+        "adverse": false,
+        "description": "Emits a light from body."
+      },
+      {
+        "roll": "51-53",
+        "name": "Metabolic Improvement",
+        "adverse": false,
+        "description": "Has a beneficial but unusual metabolism."
+      },
+      {
+        "roll": "54-57",
+        "name": "Metabolic Weakness",
+        "adverse": true,
+        "description": "Has a disadvantageous and unusual metabolism."
+      },
+      {
+        "roll": "58-60",
+        "name": "Natural Armor",
+        "adverse": false,
+        "description": "Has natural armor (scales, horn, hide, etc.)."
+      },
+      {
+        "roll": "61-65",
+        "name": "Natural Weapon",
+        "adverse": false,
+        "description": "Has natural weapon (spine, claw, teeth, etc.)."
+      },
+      {
+        "roll": "66-67",
+        "name": "Pain Sensitivity",
+        "adverse": true,
+        "description": "Low resistance to pain."
+      },
+      {
+        "roll": "68",
+        "name": "Pheromone",
+        "adverse": false,
+        "description": "Emits chemicals that can affect others."
+      },
+      {
+        "roll": "69-70",
+        "name": "Reduced Sense",
+        "adverse": true,
+        "description": "Impaired or missing primary sense."
+      },
+      {
+        "roll": "71-72",
+        "name": "Regeneration",
+        "adverse": false,
+        "description": "Able to heal rapidly."
+      },
+      {
+        "roll": "73-74",
+        "name": "Sensitivity",
+        "adverse": false,
+        "description": "Has an unusual affinity for a substance."
+      },
+      {
+        "roll": "75-76",
+        "name": "Speech (Mimicry)",
+        "adverse": false,
+        "description": "Can imitate animal noises or speak clearly."
+      },
+      {
+        "roll": "77-81",
+        "name": "Structural Improvement",
+        "adverse": false,
+        "description": "Has an unusual and beneficial body form."
+      },
+      {
+        "roll": "82-86",
+        "name": "Structural Weakness",
+        "adverse": true,
+        "description": "Has an unusual and disadvantageous body form."
+      },
+      {
+        "roll": "87-89",
+        "name": "Venom",
+        "adverse": false,
+        "description": "Emits a natural poison."
+      },
+      {
+        "roll": "90",
+        "name": "Wings",
+        "adverse": false,
+        "description": "Has wings and can glide or fly."
+      },
+      {
+        "roll": "91-00",
+        "name": "Gamemaster or Player Choice",
+        "adverse": false,
+        "description": "Pick or roll again."
+      }
     ],
     "chaotic_features": [
-      { "roll": "01-03", "description": "POW+1D6" },
-      { "roll": "04-05", "description": "POW+2D6" },
-      { "roll": "06", "description": "POW+3D6" },
-      { "roll": "07-09", "description": "DEX+1D6" },
-      { "roll": "10-11", "description": "DEX+2D6" },
-      { "roll": "12", "description": "DEX+3D6" },
-      { "roll": "13-14", "description": "STR+1D6" },
-      { "roll": "15", "description": "STR+2D6" },
-      { "roll": "16-17", "description": "CON+1D6" },
-      { "roll": "18", "description": "CON+2D6" },
-      { "roll": "19-20", "description": "Never surprised." },
-      { "roll": "21-22", "description": "Absorbs 1 point of any magic or sorcery cast against it, adding +1 power point per spell." },
-      { "roll": "23-24", "description": "Spits acid of 2D10 POT 1D6 times per day, six-meter range." },
-      { "roll": "25-26", "description": "Breathes 3D6 fire 1D6 times per day; single target, three-meter range." },
-      { "roll": "27-28", "description": "Reflects 1-pt. magic or sorcery back at user." },
-      { "roll": "29-30", "description": "Highly flammable; if ignited burns all within three-meter radius for 2D6 points damage until extinguished." },
-      { "roll": "31-32", "description": "Hypnotic pattern on skin; viewers must succeed in an Idea roll or be stunned for 1D3 rounds." },
-      { "roll": "33-35", "description": "Appearance is confusing; all attacks against it are at -20%." },
-      { "roll": "36-37", "description": "Large and valuable gem clearly visible on body." },
-      { "roll": "38-40", "description": "Regenerates 1 hit point per combat round until dead." },
-      { "roll": "41-42", "description": "Can attempt to befuddle a target each round in addition to any combat, with a POW vs. POW resistance roll. Failure puts the target into a confused and highly suggestive state. To perform any actions, the target must make a Difficult Idea roll, and may be ordered by the creature to act contrary to their normal wishes. Resisting these commands also requires a successful Difficult Idea roll." },
-      { "roll": "43-45", "description": "Creature seemingly invincible; appears to take no damage until it reaches 0 hit points, then falls over dead." },
-      { "roll": "46", "description": "Invisible until it attacks." },
-      { "roll": "47-48", "description": "Appearance is extremely confusing; all attacks against it are at -30%." },
-      { "roll": "49-50", "description": "Poison touch of 2D10 POT; natural attack must do 1 hit point of damage for poison to work." },
-      { "roll": "51-52", "description": "CON is -2D6, but regenerates 3 hit points per round until dead." },
-      { "roll": "53-54", "description": "6-pt. armored skin. If already has armored skin, +6 to its current armor value." },
-      { "roll": "55-56", "description": "MOV 12" },
-      { "roll": "57-58", "description": "Absorbs 1 or 2 points of any magic or sorcery cast against it, adding the amount to current power points." },
-      { "roll": "59-60", "description": "Can launch a POW vs. POW attack each round; if successful, target loses 1D6 power points." },
-      { "roll": "61-62", "description": "Explodes upon reaching 0 hit points, causing 3D6 damage to all within three meters. Armor, shields, etc. will protect against this, though weapon parries cannot." },
-      { "roll": "63-65", "description": "Appears far more dangerous than really is." },
-      { "roll": "66-67", "description": "Can turn invisible at will when not in combat." },
-      { "roll": "68-70", "description": "Reflects 1- or 2-pt. magic or sorcery back at user." },
-      { "roll": "71-72", "description": "8-pt. armored skin. If already has armored skin, +8 to current armor value." },
-      { "roll": "73-74", "description": "10-pt. armored skin. If already has armored skin, +10 to current armor value." },
-      { "roll": "75-76", "description": "12-pt. armored skin. If already has armored skin, +12 to current armor value." },
-      { "roll": "77", "description": "Appears utterly harmless until it enters combat." },
-      { "roll": "78-80", "description": "Regenerates 1D6 hit points per combat round until dead." },
-      { "roll": "81-82", "description": "Can leap vertically or horizontally ten meters from a standstill." },
-      { "roll": "83-84", "description": "Undetectable through magic or sorcery." },
-      { "roll": "85", "description": "Appearance extremely disorienting; all attacks against it are at -40%." },
-      { "roll": "86-87", "description": "Extremely valuable gem (or gems) inside creature, discovered if creature is cut open." },
-      { "roll": "88-90", "description": "Makes agonizing screams continually." },
-      { "roll": "91-92", "description": "Overpowering stench causes nausea in any who breathe near it. If target fails a Stamina roll, all actions against this creature are Difficult for 1D6+2 rounds." },
-      { "roll": "93-94", "description": "Reflects 1D6+2-pt. magic or sorcery back at user. Roll randomly each turn a spell is cast against the creature to determine how much is reflected." },
-      { "roll": "95-96", "description": "The hideous appearance of the creature demoralizes those who it beats in a POW vs. POW resistance roll. If target fails, all actions against this creature are Difficult for 1D6+2 rounds." },
-      { "roll": "97-98", "description": "SIZ +2D6" },
-      { "roll": "99", "description": "Roll twice again on this table. If this is rolled again, add another two chaotic features, and roll again, etc." },
-      { "roll": "00", "description": "This creature has CHA 5D6 and is particularly endearing. It attacks with a CHA vs. INT resistance roll. Failure causes the victim to befriend the creature, perhaps even offering to serve it. The creature may have up to 1D6 current companions of this nature, at the gamemaster's discretion. The charmed character may even fight friends to defend the creature." }
+      {
+        "roll": "01-03",
+        "description": "POW+1D6"
+      },
+      {
+        "roll": "04-05",
+        "description": "POW+2D6"
+      },
+      {
+        "roll": "06",
+        "description": "POW+3D6"
+      },
+      {
+        "roll": "07-09",
+        "description": "DEX+1D6"
+      },
+      {
+        "roll": "10-11",
+        "description": "DEX+2D6"
+      },
+      {
+        "roll": "12",
+        "description": "DEX+3D6"
+      },
+      {
+        "roll": "13-14",
+        "description": "STR+1D6"
+      },
+      {
+        "roll": "15",
+        "description": "STR+2D6"
+      },
+      {
+        "roll": "16-17",
+        "description": "CON+1D6"
+      },
+      {
+        "roll": "18",
+        "description": "CON+2D6"
+      },
+      {
+        "roll": "19-20",
+        "description": "Never surprised."
+      },
+      {
+        "roll": "21-22",
+        "description": "Absorbs 1 point of any magic or sorcery cast against it, adding +1 power point per spell."
+      },
+      {
+        "roll": "23-24",
+        "description": "Spits acid of 2D10 POT 1D6 times per day, six-meter range."
+      },
+      {
+        "roll": "25-26",
+        "description": "Breathes 3D6 fire 1D6 times per day; single target, three-meter range."
+      },
+      {
+        "roll": "27-28",
+        "description": "Reflects 1-pt. magic or sorcery back at user."
+      },
+      {
+        "roll": "29-30",
+        "description": "Highly flammable; if ignited burns all within three-meter radius for 2D6 points damage until extinguished."
+      },
+      {
+        "roll": "31-32",
+        "description": "Hypnotic pattern on skin; viewers must succeed in an Idea roll or be stunned for 1D3 rounds."
+      },
+      {
+        "roll": "33-35",
+        "description": "Appearance is confusing; all attacks against it are at -20%."
+      },
+      {
+        "roll": "36-37",
+        "description": "Large and valuable gem clearly visible on body."
+      },
+      {
+        "roll": "38-40",
+        "description": "Regenerates 1 hit point per combat round until dead."
+      },
+      {
+        "roll": "41-42",
+        "description": "Can attempt to befuddle a target each round in addition to any combat, with a POW vs. POW resistance roll. Failure puts the target into a confused and highly suggestive state. To perform any actions, the target must make a Difficult Idea roll, and may be ordered by the creature to act contrary to their normal wishes. Resisting these commands also requires a successful Difficult Idea roll."
+      },
+      {
+        "roll": "43-45",
+        "description": "Creature seemingly invincible; appears to take no damage until it reaches 0 hit points, then falls over dead."
+      },
+      {
+        "roll": "46",
+        "description": "Invisible until it attacks."
+      },
+      {
+        "roll": "47-48",
+        "description": "Appearance is extremely confusing; all attacks against it are at -30%."
+      },
+      {
+        "roll": "49-50",
+        "description": "Poison touch of 2D10 POT; natural attack must do 1 hit point of damage for poison to work."
+      },
+      {
+        "roll": "51-52",
+        "description": "CON is -2D6, but regenerates 3 hit points per round until dead."
+      },
+      {
+        "roll": "53-54",
+        "description": "6-pt. armored skin. If already has armored skin, +6 to its current armor value."
+      },
+      {
+        "roll": "55-56",
+        "description": "MOV 12"
+      },
+      {
+        "roll": "57-58",
+        "description": "Absorbs 1 or 2 points of any magic or sorcery cast against it, adding the amount to current power points."
+      },
+      {
+        "roll": "59-60",
+        "description": "Can launch a POW vs. POW attack each round; if successful, target loses 1D6 power points."
+      },
+      {
+        "roll": "61-62",
+        "description": "Explodes upon reaching 0 hit points, causing 3D6 damage to all within three meters. Armor, shields, etc. will protect against this, though weapon parries cannot."
+      },
+      {
+        "roll": "63-65",
+        "description": "Appears far more dangerous than really is."
+      },
+      {
+        "roll": "66-67",
+        "description": "Can turn invisible at will when not in combat."
+      },
+      {
+        "roll": "68-70",
+        "description": "Reflects 1- or 2-pt. magic or sorcery back at user."
+      },
+      {
+        "roll": "71-72",
+        "description": "8-pt. armored skin. If already has armored skin, +8 to current armor value."
+      },
+      {
+        "roll": "73-74",
+        "description": "10-pt. armored skin. If already has armored skin, +10 to current armor value."
+      },
+      {
+        "roll": "75-76",
+        "description": "12-pt. armored skin. If already has armored skin, +12 to current armor value."
+      },
+      {
+        "roll": "77",
+        "description": "Appears utterly harmless until it enters combat."
+      },
+      {
+        "roll": "78-80",
+        "description": "Regenerates 1D6 hit points per combat round until dead."
+      },
+      {
+        "roll": "81-82",
+        "description": "Can leap vertically or horizontally ten meters from a standstill."
+      },
+      {
+        "roll": "83-84",
+        "description": "Undetectable through magic or sorcery."
+      },
+      {
+        "roll": "85",
+        "description": "Appearance extremely disorienting; all attacks against it are at -40%."
+      },
+      {
+        "roll": "86-87",
+        "description": "Extremely valuable gem (or gems) inside creature, discovered if creature is cut open."
+      },
+      {
+        "roll": "88-90",
+        "description": "Makes agonizing screams continually."
+      },
+      {
+        "roll": "91-92",
+        "description": "Overpowering stench causes nausea in any who breathe near it. If target fails a Stamina roll, all actions against this creature are Difficult for 1D6+2 rounds."
+      },
+      {
+        "roll": "93-94",
+        "description": "Reflects 1D6+2-pt. magic or sorcery back at user. Roll randomly each turn a spell is cast against the creature to determine how much is reflected."
+      },
+      {
+        "roll": "95-96",
+        "description": "The hideous appearance of the creature demoralizes those who it beats in a POW vs. POW resistance roll. If target fails, all actions against this creature are Difficult for 1D6+2 rounds."
+      },
+      {
+        "roll": "97-98",
+        "description": "SIZ +2D6"
+      },
+      {
+        "roll": "99",
+        "description": "Roll twice again on this table. If this is rolled again, add another two chaotic features, and roll again, etc."
+      },
+      {
+        "roll": "00",
+        "description": "This creature has CHA 5D6 and is particularly endearing. It attacks with a CHA vs. INT resistance roll. Failure causes the victim to befriend the creature, perhaps even offering to serve it. The creature may have up to 1D6 current companions of this nature, at the gamemaster's discretion. The charmed character may even fight friends to defend the creature."
+      }
     ],
     "fumble_tables": {
       "natural_weapon_attack_parry": [
-        { "roll": "01-25", "result": "Lose the next combat round (or this one if no action has yet been taken)." },
-        { "roll": "26-30", "result": "Lose the next 1D3 combat rounds (this includes this one if no action has yet been taken)." },
-        { "roll": "31-50", "result": "Fall prone." },
-        { "roll": "51-60", "result": "Fall prone and twist ankle; modify MOV by -1 MOV for 1D10 full turns (and all combat turns within them)." },
-        { "roll": "61-75", "result": "Vision obscured; modify all appropriate skills by -30% for 1D3 combat rounds." },
-        { "roll": "76-85", "result": "Miss and strain something; lose 1 hit point (in the attacking limb if hit locations are being used)." },
-        { "roll": "86-90", "result": "Hit nearest ally for normal damage or use result 76-85 if no ally nearby." },
-        { "roll": "91-94", "result": "Hit nearest ally for special damage or use result 76-85 if no ally nearby." },
-        { "roll": "95-98", "result": "Hit hard surface; do normal damage to self (in the attacking limb if hit locations are being used)." },
-        { "roll": "99", "result": "Blow it; roll twice more on this table (cumulative if this result is rolled again)." },
-        { "roll": "00", "result": "Blow it badly; roll three times more on this table (cumulative if this result is rolled again)." }
+        {
+          "roll": "01-25",
+          "result": "Lose the next combat round (or this one if no action has yet been taken)."
+        },
+        {
+          "roll": "26-30",
+          "result": "Lose the next 1D3 combat rounds (this includes this one if no action has yet been taken)."
+        },
+        {
+          "roll": "31-50",
+          "result": "Fall prone."
+        },
+        {
+          "roll": "51-60",
+          "result": "Fall prone and twist ankle; modify MOV by -1 MOV for 1D10 full turns (and all combat turns within them)."
+        },
+        {
+          "roll": "61-75",
+          "result": "Vision obscured; modify all appropriate skills by -30% for 1D3 combat rounds."
+        },
+        {
+          "roll": "76-85",
+          "result": "Miss and strain something; lose 1 hit point (in the attacking limb if hit locations are being used)."
+        },
+        {
+          "roll": "86-90",
+          "result": "Hit nearest ally for normal damage or use result 76-85 if no ally nearby."
+        },
+        {
+          "roll": "91-94",
+          "result": "Hit nearest ally for special damage or use result 76-85 if no ally nearby."
+        },
+        {
+          "roll": "95-98",
+          "result": "Hit hard surface; do normal damage to self (in the attacking limb if hit locations are being used)."
+        },
+        {
+          "roll": "99",
+          "result": "Blow it; roll twice more on this table (cumulative if this result is rolled again)."
+        },
+        {
+          "roll": "00",
+          "result": "Blow it badly; roll three times more on this table (cumulative if this result is rolled again)."
+        }
       ],
       "melee_weapon_attack": [
-        { "roll": "01-15", "result": "Lose the next combat round and are effectively helpless." },
-        { "roll": "16-25", "result": "Lose the next 1D3 combat rounds and are effectively helpless." },
-        { "roll": "26-40", "result": "Fall prone." },
-        { "roll": "41-50", "result": "Drop the weapon being used." },
-        { "roll": "51-60", "result": "Throw weapon 1D10 meters away." },
-        { "roll": "61-65", "result": "Lose 1D10 points of weapon's hit points." },
-        { "roll": "66-75", "result": "Vision obscured, modify all appropriate skills by -30% for 1D3 combat rounds." },
-        { "roll": "76-85", "result": "Hit nearest ally for normal damage or use result 41-50 if no ally nearby." },
-        { "roll": "86-90", "result": "Hit nearest ally for special damage or use result 51-60 if no ally nearby." },
-        { "roll": "91-98", "result": "Hit nearest ally for critical damage or use result 61-65 if no ally nearby." },
-        { "roll": "99", "result": "Blow it; roll twice more on this table (cumulative if this result is rolled again)." },
-        { "roll": "00", "result": "Blow it badly; roll three times more on this table (cumulative if this result is rolled again)." }
+        {
+          "roll": "01-15",
+          "result": "Lose the next combat round and are effectively helpless."
+        },
+        {
+          "roll": "16-25",
+          "result": "Lose the next 1D3 combat rounds and are effectively helpless."
+        },
+        {
+          "roll": "26-40",
+          "result": "Fall prone."
+        },
+        {
+          "roll": "41-50",
+          "result": "Drop the weapon being used."
+        },
+        {
+          "roll": "51-60",
+          "result": "Throw weapon 1D10 meters away."
+        },
+        {
+          "roll": "61-65",
+          "result": "Lose 1D10 points of weapon's hit points."
+        },
+        {
+          "roll": "66-75",
+          "result": "Vision obscured, modify all appropriate skills by -30% for 1D3 combat rounds."
+        },
+        {
+          "roll": "76-85",
+          "result": "Hit nearest ally for normal damage or use result 41-50 if no ally nearby."
+        },
+        {
+          "roll": "86-90",
+          "result": "Hit nearest ally for special damage or use result 51-60 if no ally nearby."
+        },
+        {
+          "roll": "91-98",
+          "result": "Hit nearest ally for critical damage or use result 61-65 if no ally nearby."
+        },
+        {
+          "roll": "99",
+          "result": "Blow it; roll twice more on this table (cumulative if this result is rolled again)."
+        },
+        {
+          "roll": "00",
+          "result": "Blow it badly; roll three times more on this table (cumulative if this result is rolled again)."
+        }
       ],
       "melee_weapon_parry": [
-        { "roll": "01-20", "result": "Lose the next combat round (or this one if no action has yet been taken), and are effectively helpless." },
-        { "roll": "21-40", "result": "Fall prone." },
-        { "roll": "41-50", "result": "Drop weapon being used." },
-        { "roll": "51-60", "result": "Throw weapon 1D10 meters away." },
-        { "roll": "61-75", "result": "Vision obscured; modify all appropriate skills by -30% for 1D3 combat rounds." },
-        { "roll": "76-85", "result": "Wide open; foe automatically hits with normal hit." },
-        { "roll": "86-90", "result": "Wide open; foe automatically hits with special hit." },
-        { "roll": "91-93", "result": "Wide open; foe automatically hits with critical hit." },
-        { "roll": "94-98", "result": "Blow it; roll twice more on this table (cumulative if this result is rolled again)." },
-        { "roll": "99-00", "result": "Blow it badly; roll three times more on this table (cumulative if this result is rolled again)." }
+        {
+          "roll": "01-20",
+          "result": "Lose the next combat round (or this one if no action has yet been taken), and are effectively helpless."
+        },
+        {
+          "roll": "21-40",
+          "result": "Fall prone."
+        },
+        {
+          "roll": "41-50",
+          "result": "Drop weapon being used."
+        },
+        {
+          "roll": "51-60",
+          "result": "Throw weapon 1D10 meters away."
+        },
+        {
+          "roll": "61-75",
+          "result": "Vision obscured; modify all appropriate skills by -30% for 1D3 combat rounds."
+        },
+        {
+          "roll": "76-85",
+          "result": "Wide open; foe automatically hits with normal hit."
+        },
+        {
+          "roll": "86-90",
+          "result": "Wide open; foe automatically hits with special hit."
+        },
+        {
+          "roll": "91-93",
+          "result": "Wide open; foe automatically hits with critical hit."
+        },
+        {
+          "roll": "94-98",
+          "result": "Blow it; roll twice more on this table (cumulative if this result is rolled again)."
+        },
+        {
+          "roll": "99-00",
+          "result": "Blow it badly; roll three times more on this table (cumulative if this result is rolled again)."
+        }
       ],
       "missile_weapon_attack": [
-        { "roll": "01-15", "result": "Lose the next attack or other activity." },
-        { "roll": "16-25", "result": "Lose the next 1D3 combat rounds or other activity." },
-        { "roll": "26-40", "result": "Fall prone." },
-        { "roll": "41-55", "result": "Vision obscured; modify all appropriate skills by -30% for 1D3 combat rounds." },
-        { "roll": "56-65", "result": "Drop weapon; which slides or bounces 1D6-1 meters away." },
-        { "roll": "66-80", "result": "Do 1D6 damage to weapon's hit points (or use result 81-85 if the weapon has no hit points)." },
-        { "roll": "81-85", "result": "Break weapon; regardless of weapon's current hit points." },
-        { "roll": "86-90", "result": "Hit nearest ally for normal damage or use result 56-65 if no ally nearby." },
-        { "roll": "91-95", "result": "Hit nearest ally for special damage or use result 66-80 if no ally nearby." },
-        { "roll": "96-98", "result": "Hit nearest ally for critical damage or use result 81-85 if no ally nearby." },
-        { "roll": "99", "result": "Blow it; roll twice more on this table (cumulative if this result is rolled again)." },
-        { "roll": "00", "result": "Blow it badly; roll three times more on this table (cumulative if this result is rolled again)." }
+        {
+          "roll": "01-15",
+          "result": "Lose the next attack or other activity."
+        },
+        {
+          "roll": "16-25",
+          "result": "Lose the next 1D3 combat rounds or other activity."
+        },
+        {
+          "roll": "26-40",
+          "result": "Fall prone."
+        },
+        {
+          "roll": "41-55",
+          "result": "Vision obscured; modify all appropriate skills by -30% for 1D3 combat rounds."
+        },
+        {
+          "roll": "56-65",
+          "result": "Drop weapon; which slides or bounces 1D6-1 meters away."
+        },
+        {
+          "roll": "66-80",
+          "result": "Do 1D6 damage to weapon's hit points (or use result 81-85 if the weapon has no hit points)."
+        },
+        {
+          "roll": "81-85",
+          "result": "Break weapon; regardless of weapon's current hit points."
+        },
+        {
+          "roll": "86-90",
+          "result": "Hit nearest ally for normal damage or use result 56-65 if no ally nearby."
+        },
+        {
+          "roll": "91-95",
+          "result": "Hit nearest ally for special damage or use result 66-80 if no ally nearby."
+        },
+        {
+          "roll": "96-98",
+          "result": "Hit nearest ally for critical damage or use result 81-85 if no ally nearby."
+        },
+        {
+          "roll": "99",
+          "result": "Blow it; roll twice more on this table (cumulative if this result is rolled again)."
+        },
+        {
+          "roll": "00",
+          "result": "Blow it badly; roll three times more on this table (cumulative if this result is rolled again)."
+        }
       ]
     },
     "major_wounds": [
-      { "roll": "01-10", "result": "Severed leg tendons cause limping; fused ankle bones cause limping; back muscles or spinal nerve damage bend the torso to the left or right; a shattered knee cannot bend; or make up a new wound effect. Lose 1D3 DEX and reduce MOV by the same amount. The character is still able to fight." },
-      { "roll": "11-20", "result": "Much of the nose has been sliced away; multiple scars deface both hands; an ear has been cut off; a livid scar lends an evil cast to appearance; or make up a new wound effect. Lose 1D3 CHA. The visible and unappealing deformity cannot be disguised. The character is still able to fight." },
-      { "roll": "21-30", "result": "Wrist or hand damage; a slab of arm or shoulder muscle has been cut away; a chunk was hewn from thigh or calf muscles; spinal nerves are damaged; several fingers or toes are severed; or make up a new wound effect. Lose 1D3 STR; this loss may change what weapons can be used. The character is still able to fight with a weapon, but not a shield." },
-      { "roll": "31-40", "result": "A punctured lung leads to a weakened respiratory system; deep stomach wounds become chronically reinfected, or belly wounds weaken digestion and general health; kidneys and liver are damaged; or make up a new wound effect. Lose 1D3 CON; reduce MOV by the same amount, and hit points may be lowered. The character is still able to fight." },
-      { "roll": "41-50", "result": "Concussion damages hearing and limits Listen and Insight to maximums of 65%; injury to the head thereafter require Luck rolls each time to use any Mental skills; blows or cuts which affect depth perception leave missile weapon skill ratings at a maximum of 65%; multiple wounds to the face and neck limit the skills of any Communication skills to a maximum of 65%; or make up a new wound effect. Lose 1D3 INT; this loss may affect the character's ability to use any powers, such as sorcery. The character is still able to fight." },
-      { "roll": "51-60", "result": "Refer to 01-10, but expanded to the loss of one or both arms or legs. Lose 1D6 DEX and reduce maximum MOV by that same amount. The character is unable to fight." },
-      { "roll": "61-70", "result": "Refer to 11-20, but the major wound now includes worse mutilations. Lose 1D6 CHA; it creates one or more visible deformities that cannot be disguised. The character is still able to fight." },
-      { "roll": "71-80", "result": "Refer to 21-30 for examples of mutilating cuts and losses. Lose 1D6 STR, perhaps adjusting damage modifier. The character is still able to fight." },
-      { "roll": "81-90", "result": "Refer to 31-40 for various wounds to the vitals. Lose 1D6 CON; may affect hit points and damage modifier and reduces MOV equal to the CON loss. The character is unable to fight." },
-      { "roll": "91-92", "result": "Bad facial and vocal cord injuries. Lose 1D6 CHA. The character is still able to fight." },
-      { "roll": "93-94", "result": "Broken bones and severed ganglia. Lose 1D6 DEX; from now on the character can only use one-handed melee weapons. The character is still able to fight using their remaining arm." },
-      { "roll": "95-96", "result": "Nerve damage to left or right arm. Lose 1D6 DEX; hereafter your character can only wield weapons or equipment in their undamaged arm. The character is still able to fight using their remaining arm." },
-      { "roll": "97-98", "result": "Nerve damage to both arms. Lose 1D6 DEX; though the legs are fine, neither arms nor hands can wield anything. The character is unable to fight, unless using their legs or head butts." },
-      { "roll": "99", "result": "Mutilated with vicious wounds. Lose 1D3 points each from CHA, DEX, and CON. The character is unable to fight." },
-      { "roll": "00", "result": "Deliberately mutilated after collapsing. Remove 1D4 points each from four characteristics (gamemaster's discretion). The character is unable to fight." }
+      {
+        "roll": "01-10",
+        "result": "Severed leg tendons cause limping; fused ankle bones cause limping; back muscles or spinal nerve damage bend the torso to the left or right; a shattered knee cannot bend; or make up a new wound effect. Lose 1D3 DEX and reduce MOV by the same amount. The character is still able to fight."
+      },
+      {
+        "roll": "11-20",
+        "result": "Much of the nose has been sliced away; multiple scars deface both hands; an ear has been cut off; a livid scar lends an evil cast to appearance; or make up a new wound effect. Lose 1D3 CHA. The visible and unappealing deformity cannot be disguised. The character is still able to fight."
+      },
+      {
+        "roll": "21-30",
+        "result": "Wrist or hand damage; a slab of arm or shoulder muscle has been cut away; a chunk was hewn from thigh or calf muscles; spinal nerves are damaged; several fingers or toes are severed; or make up a new wound effect. Lose 1D3 STR; this loss may change what weapons can be used. The character is still able to fight with a weapon, but not a shield."
+      },
+      {
+        "roll": "31-40",
+        "result": "A punctured lung leads to a weakened respiratory system; deep stomach wounds become chronically reinfected, or belly wounds weaken digestion and general health; kidneys and liver are damaged; or make up a new wound effect. Lose 1D3 CON; reduce MOV by the same amount, and hit points may be lowered. The character is still able to fight."
+      },
+      {
+        "roll": "41-50",
+        "result": "Concussion damages hearing and limits Listen and Insight to maximums of 65%; injury to the head thereafter require Luck rolls each time to use any Mental skills; blows or cuts which affect depth perception leave missile weapon skill ratings at a maximum of 65%; multiple wounds to the face and neck limit the skills of any Communication skills to a maximum of 65%; or make up a new wound effect. Lose 1D3 INT; this loss may affect the character's ability to use any powers, such as sorcery. The character is still able to fight."
+      },
+      {
+        "roll": "51-60",
+        "result": "Refer to 01-10, but expanded to the loss of one or both arms or legs. Lose 1D6 DEX and reduce maximum MOV by that same amount. The character is unable to fight."
+      },
+      {
+        "roll": "61-70",
+        "result": "Refer to 11-20, but the major wound now includes worse mutilations. Lose 1D6 CHA; it creates one or more visible deformities that cannot be disguised. The character is still able to fight."
+      },
+      {
+        "roll": "71-80",
+        "result": "Refer to 21-30 for examples of mutilating cuts and losses. Lose 1D6 STR, perhaps adjusting damage modifier. The character is still able to fight."
+      },
+      {
+        "roll": "81-90",
+        "result": "Refer to 31-40 for various wounds to the vitals. Lose 1D6 CON; may affect hit points and damage modifier and reduces MOV equal to the CON loss. The character is unable to fight."
+      },
+      {
+        "roll": "91-92",
+        "result": "Bad facial and vocal cord injuries. Lose 1D6 CHA. The character is still able to fight."
+      },
+      {
+        "roll": "93-94",
+        "result": "Broken bones and severed ganglia. Lose 1D6 DEX; from now on the character can only use one-handed melee weapons. The character is still able to fight using their remaining arm."
+      },
+      {
+        "roll": "95-96",
+        "result": "Nerve damage to left or right arm. Lose 1D6 DEX; hereafter your character can only wield weapons or equipment in their undamaged arm. The character is still able to fight using their remaining arm."
+      },
+      {
+        "roll": "97-98",
+        "result": "Nerve damage to both arms. Lose 1D6 DEX; though the legs are fine, neither arms nor hands can wield anything. The character is unable to fight, unless using their legs or head butts."
+      },
+      {
+        "roll": "99",
+        "result": "Mutilated with vicious wounds. Lose 1D3 points each from CHA, DEX, and CON. The character is unable to fight."
+      },
+      {
+        "roll": "00",
+        "result": "Deliberately mutilated after collapsing. Remove 1D4 points each from four characteristics (gamemaster's discretion). The character is unable to fight."
+      }
     ],
     "personality_traits": [
-      { "trait": "Aggressive", "opposite": "Passive" },
-      { "trait": "Impulsive", "opposite": "Cautious" },
-      { "trait": "Extrovert", "opposite": "Introvert" },
-      { "trait": "Optimistic", "opposite": "Pessimistic" },
-      { "trait": "Stubborn", "opposite": "Receptive" },
-      { "trait": "Physical", "opposite": "Mental" },
-      { "trait": "Patient", "opposite": "Nervous" },
-      { "trait": "Emotional", "opposite": "Calm" },
-      { "trait": "Trusting", "opposite": "Suspicious" },
-      { "trait": "Leader", "opposite": "Follower" },
-      { "trait": "Greedy", "opposite": "Generous" },
-      { "trait": "Energetic", "opposite": "Lazy" },
-      { "trait": "Honorable", "opposite": "Dishonorable" },
-      { "trait": "Brave", "opposite": "Cowardly" },
-      { "trait": "Curious", "opposite": "Incurious" },
-      { "trait": "Dependable", "opposite": "Unreliable" },
-      { "trait": "Pious", "opposite": "Irreligious" },
-      { "trait": "Honest", "opposite": "Dishonest" },
-      { "trait": "Clever", "opposite": "Dull" },
-      { "trait": "Humorous", "opposite": "Dour" },
-      { "trait": "Conservative", "opposite": "Innovative" }
+      {
+        "trait": "Aggressive",
+        "opposite": "Passive"
+      },
+      {
+        "trait": "Impulsive",
+        "opposite": "Cautious"
+      },
+      {
+        "trait": "Extrovert",
+        "opposite": "Introvert"
+      },
+      {
+        "trait": "Optimistic",
+        "opposite": "Pessimistic"
+      },
+      {
+        "trait": "Stubborn",
+        "opposite": "Receptive"
+      },
+      {
+        "trait": "Physical",
+        "opposite": "Mental"
+      },
+      {
+        "trait": "Patient",
+        "opposite": "Nervous"
+      },
+      {
+        "trait": "Emotional",
+        "opposite": "Calm"
+      },
+      {
+        "trait": "Trusting",
+        "opposite": "Suspicious"
+      },
+      {
+        "trait": "Leader",
+        "opposite": "Follower"
+      },
+      {
+        "trait": "Greedy",
+        "opposite": "Generous"
+      },
+      {
+        "trait": "Energetic",
+        "opposite": "Lazy"
+      },
+      {
+        "trait": "Honorable",
+        "opposite": "Dishonorable"
+      },
+      {
+        "trait": "Brave",
+        "opposite": "Cowardly"
+      },
+      {
+        "trait": "Curious",
+        "opposite": "Incurious"
+      },
+      {
+        "trait": "Dependable",
+        "opposite": "Unreliable"
+      },
+      {
+        "trait": "Pious",
+        "opposite": "Irreligious"
+      },
+      {
+        "trait": "Honest",
+        "opposite": "Dishonest"
+      },
+      {
+        "trait": "Clever",
+        "opposite": "Dull"
+      },
+      {
+        "trait": "Humorous",
+        "opposite": "Dour"
+      },
+      {
+        "trait": "Conservative",
+        "opposite": "Innovative"
+      }
     ],
     "reputation": {
       "gains": [
@@ -2364,32 +3858,92 @@
         "An act of the darkest treachery or infamy."
       ],
       "modifiers": [
-        { "observer": "from the same family, company, or locality, or has mutual acquaintances", "modifier": "+25%" },
-        { "observer": "well-traveled, follows gossip/news, is well-connected", "modifier": "+10-25%" },
-        { "observer": "from the same culture or region", "modifier": "no modifier" },
-        { "observer": "from outside the character's social network or cultural group, or out of touch with recent news", "modifier": "-25%" },
-        { "observer": "from outside the area where the character earned their Reputation, but within the same geographical region, or of a different generation", "modifier": "-50%" },
-        { "observer": "from outside of the geographical region where the character earned their Reputation, or many years removed from the character", "modifier": "-75%" }
+        {
+          "observer": "from the same family, company, or locality, or has mutual acquaintances",
+          "modifier": "+25%"
+        },
+        {
+          "observer": "well-traveled, follows gossip/news, is well-connected",
+          "modifier": "+10-25%"
+        },
+        {
+          "observer": "from the same culture or region",
+          "modifier": "no modifier"
+        },
+        {
+          "observer": "from outside the character's social network or cultural group, or out of touch with recent news",
+          "modifier": "-25%"
+        },
+        {
+          "observer": "from outside the area where the character earned their Reputation, but within the same geographical region, or of a different generation",
+          "modifier": "-50%"
+        },
+        {
+          "observer": "from outside of the geographical region where the character earned their Reputation, or many years removed from the character",
+          "modifier": "-75%"
+        }
       ]
     },
     "sanity": {
       "temporary_insanity": [
-        { "roll": "1", "description": "Catatonia; the character assumes a fetal position." },
-        { "roll": "2", "description": "Stupefaction; the character babbles incessantly or stares into space without seeing anything." },
-        { "roll": "3", "description": "Paranoia; the character is lucid but convinced of unreasonable suspicions about almost anything." },
-        { "roll": "4", "description": "Phobia; the character stricken by great fear of something related to the source of the insanity." },
-        { "roll": "5", "description": "Amnesia; the character cannot remember who they are or what happened to them during or around the time of the SAN loss." },
-        { "roll": "6", "description": "Suicidal despondency or a death-wish; the character is convinced that their own death is their only means of escaping the mental torment. The character can never be forced to perform a suicidal act, and the gamemaster should use this result carefully, paying attention to the sensitivity of the player(s) involved." }
+        {
+          "roll": "1",
+          "description": "Catatonia; the character assumes a fetal position."
+        },
+        {
+          "roll": "2",
+          "description": "Stupefaction; the character babbles incessantly or stares into space without seeing anything."
+        },
+        {
+          "roll": "3",
+          "description": "Paranoia; the character is lucid but convinced of unreasonable suspicions about almost anything."
+        },
+        {
+          "roll": "4",
+          "description": "Phobia; the character stricken by great fear of something related to the source of the insanity."
+        },
+        {
+          "roll": "5",
+          "description": "Amnesia; the character cannot remember who they are or what happened to them during or around the time of the SAN loss."
+        },
+        {
+          "roll": "6",
+          "description": "Suicidal despondency or a death-wish; the character is convinced that their own death is their only means of escaping the mental torment. The character can never be forced to perform a suicidal act, and the gamemaster should use this result carefully, paying attention to the sensitivity of the player(s) involved."
+        }
       ],
       "temporary_insanity_duration": [
-        { "roll": "1", "duration": "Five minutes (one turn)" },
-        { "roll": "2", "duration": "One hour" },
-        { "roll": "3", "duration": "Two hours" },
-        { "roll": "4", "duration": "Twelve hours" },
-        { "roll": "5", "duration": "One day" },
-        { "roll": "6", "duration": "Two days" },
-        { "roll": "7", "duration": "One week" },
-        { "roll": "8", "duration": "Two weeks" }
+        {
+          "roll": "1",
+          "duration": "Five minutes (one turn)"
+        },
+        {
+          "roll": "2",
+          "duration": "One hour"
+        },
+        {
+          "roll": "3",
+          "duration": "Two hours"
+        },
+        {
+          "roll": "4",
+          "duration": "Twelve hours"
+        },
+        {
+          "roll": "5",
+          "duration": "One day"
+        },
+        {
+          "roll": "6",
+          "duration": "Two days"
+        },
+        {
+          "roll": "7",
+          "duration": "One week"
+        },
+        {
+          "roll": "8",
+          "duration": "Two weeks"
+        }
       ]
     }
   }

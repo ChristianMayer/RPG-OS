@@ -269,106 +269,218 @@
   ],
   "check_types": {
     "dnd5e_attack_melee": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "target_stat",
+      "threshold_stat": "AC",
       "bonus_stats": [
         "STR_mod",
         "proficiency_bonus"
       ],
-      "target_stat": "AC"
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     },
     "dnd5e_attack_ranged": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "target_stat",
+      "threshold_stat": "AC",
       "bonus_stats": [
         "DEX_mod",
         "proficiency_bonus"
       ],
-      "target_stat": "AC"
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     },
     "dnd5e_check_str": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "difficulty",
       "bonus_stats": [
         "STR_mod"
-      ]
+      ],
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     },
     "dnd5e_check_dex": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "difficulty",
       "bonus_stats": [
         "DEX_mod"
-      ]
+      ],
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     },
     "dnd5e_check_con": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "difficulty",
       "bonus_stats": [
         "CON_mod"
-      ]
+      ],
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     },
     "dnd5e_check_int": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "difficulty",
       "bonus_stats": [
         "INT_mod"
-      ]
+      ],
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     },
     "dnd5e_check_wis": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "difficulty",
       "bonus_stats": [
         "WIS_mod"
-      ]
+      ],
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     },
     "dnd5e_check_cha": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "difficulty",
       "bonus_stats": [
         "CHA_mod"
-      ]
+      ],
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     },
     "dnd5e_save_str": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "difficulty",
       "bonus_stats": [
         "STR_mod"
-      ]
+      ],
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     },
     "dnd5e_save_dex": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "difficulty",
       "bonus_stats": [
         "DEX_mod"
-      ]
+      ],
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     },
     "dnd5e_save_con": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "difficulty",
       "bonus_stats": [
         "CON_mod"
-      ]
+      ],
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     },
     "dnd5e_save_int": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "difficulty",
       "bonus_stats": [
         "INT_mod"
-      ]
+      ],
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     },
     "dnd5e_save_wis": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "difficulty",
       "bonus_stats": [
         "WIS_mod"
-      ]
+      ],
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     },
     "dnd5e_save_cha": {
-      "kind": "additive_d20",
-      "dice_expression": "1d20",
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "difficulty",
       "bonus_stats": [
         "CHA_mod"
-      ]
+      ],
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
     }
   },
   "cost_tables": {

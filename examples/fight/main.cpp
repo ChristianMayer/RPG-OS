@@ -16,9 +16,9 @@
  *
  * @par Why a seedable demo?
  * The library's randomness contract — "explicitly seeded = exactly
- * reproducible, unseeded = genuinely random" — is demonstrated here: @c --seed
- * replays a fight bit-for-bit, while omitting it draws fresh OS entropy each
- * run (see @c rpg_os::DefaultRandom).
+ * reproducible, unseeded = varied every run" — is demonstrated here:
+ * @c --seed replays a fight bit-for-bit, while omitting it draws fresh
+ * entropy each run (see @c rpg_os::DefaultRandom).
  *
  * Usage: @c rpg_os_example_fight [options] [combatant_a] [combatant_b]
  */
@@ -46,7 +46,7 @@ struct Options {
   bool rootExplicit{false};
   bool listOnly{false};
   bool csv{false};
-  std::optional<uint32_t> seed; // nullopt = random OS entropy
+  std::optional<uint32_t> seed; // nullopt = unseeded (fresh entropy)
   int maxRounds{1000};
   int batch{1};
   std::string weapon{"1d6+4"};
@@ -66,7 +66,7 @@ void printHelp(std::ostream &os) {
      << "  --list          list all combatants in the ruleset and exit\n"
      << "  --root <dir>    project root containing rulesets/ (default: \".\")\n"
      << "  --ruleset <f>   ruleset file (default: <root>/rulesets/tde5e_core.json)\n"
-     << "  --seed <n>      RNG seed for reproducible fights (default: random OS entropy)\n"
+     << "  --seed <n>      RNG seed for reproducible fights (default: fresh entropy)\n"
      << "  --rounds <n>    max rounds before a fight counts as a draw (default: 1000)\n"
      << "  --batch <n>     run n fights between the same pair (default: 1)\n"
      << "  --weapon <dice> weapon damage for archetypes (default: \"1d6+4\")\n"
@@ -276,7 +276,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  // Without --seed the engine is seeded from real OS entropy, so every run
+  // Without --seed the engine is seeded from fresh entropy, so every run
   // differs; with --seed the run is exactly reproducible.
   rpg_os::DefaultRandom rng =
       opts.seed ? rpg_os::DefaultRandom(*opts.seed) : rpg_os::DefaultRandom{};

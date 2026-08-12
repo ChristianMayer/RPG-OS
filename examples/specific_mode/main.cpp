@@ -58,9 +58,10 @@ int main(int argc, char **argv) {
   std::cout << "=== The Dark Eye 5e (specific mode) ===\n";
   const rpg_os::Json tde = loadRuleset(root, "tde5e_core.json");
   const auto geron = rpg_os::generated::tde5e::Character::fromArchetype(tde, "geron");
-  std::cout << "Geron: COU " << geron.courage << ", Life Points " << geron.lifePoints << '/'
-            << geron.maxLifePoints() << ", Attack " << geron.attackSwordsSr6() << ", Dodge "
-            << geron.dodge() << '\n';
+  // Byte-sized members stream as characters; cast to int for display.
+  std::cout << "Geron: COU " << static_cast<int>(geron.courage) << ", Life Points "
+            << geron.lifePoints << '/' << geron.maxLifePoints() << ", Attack "
+            << geron.attackSwordsSr6() << ", Dodge " << geron.dodge() << '\n';
 
   rpg_os::CheckParams params;
   rpg_os::DefaultRandom rng;
@@ -75,8 +76,9 @@ int main(int argc, char **argv) {
   // The SRD ruleset stores text descriptions (classes/species/backgrounds/feats)
   // rather than PC archetype blocks, so load a bestiary entry instead.
   const auto fighter = rpg_os::generated::dnd5e::Character::fromCreature(dnd, "goblin_warrior");
-  std::cout << "Goblin: STR " << fighter.strength << " (mod " << fighter.strengthModifier()
-            << "), AC " << fighter.armorClass() << ", HP " << fighter.hitPoints << '\n';
+  std::cout << "Goblin: STR " << static_cast<int>(fighter.strength) << " (mod "
+            << fighter.strengthModifier() << "), AC " << fighter.armorClass() << ", HP "
+            << fighter.hitPoints << '\n';
 
   rpg_os::CheckParams attackParams;
   rpg_os::DefaultRandom attackRng;

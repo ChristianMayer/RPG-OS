@@ -51,14 +51,29 @@ constexpr std::string_view kValidRuleset = R"json(
   ],
   "check_types": {
     "dsa4_talent": {
-      "kind": "triple_roll_under_pool",
-      "attributes": ["COU", "AGI", "STR"],
-      "pool_stat": "climbing"
+      "resolution": "pool",
+      "dice": "3d20",
+      "pool_attributes": ["COU", "AGI", "STR"],
+      "pool_stat": "climbing",
+      "critical_style": "double",
+      "fumble_style": "double",
+      "grading": "pool_quality",
+      "difficulty_mode": "to_stat"
     },
     "dsa4_attribute": {
-      "kind": "roll_under_d20",
-      "attributes": ["COU"],
-      "confirmation_roll": true
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "le",
+      "threshold_source": "actor_stat",
+      "threshold_stat": "COU",
+      "critical_style": "face",
+      "critical_face": 1,
+      "critical_confirm": true,
+      "fumble_style": "face",
+      "fumble_face": 20,
+      "fumble_confirm": true,
+      "grading": "none",
+      "difficulty_mode": "to_stat"
     }
   },
   "cost_tables": {
@@ -141,17 +156,20 @@ TEST_CASE("RulesetLoader: derived stat formula is parsed and evaluable") {
   CHECK(baseAt->expression.evaluate(context) == doctest::Approx(7.0));
 }
 
-TEST_CASE("RulesetLoader: check type config is populated") {
+TEST_CASE("RulesetLoader: check type recipe is populated") {
   const Ruleset ruleset = loadValid();
   const rpg_os::CheckTypeDef *talent = ruleset.findCheckType("dsa4_talent");
   REQUIRE(talent != nullptr);
-  CHECK(talent->config.kind == rpg_os::CheckKind::TripleRollUnderPool);
-  CHECK(talent->config.numAttributes == 3);
-  CHECK(talent->config.attributes[0] == "COU");
-  CHECK(talent->config.poolStat == "climbing");
+  CHECK(talent->recipe.resolution == rpg_os::Resolution::Pool);
+  CHECK(talent->recipe.numPoolAttributes == 3);
+  CHECK(talent->recipe.poolAttributes[0] == "COU");
+  CHECK(talent->recipe.poolStat == "climbing");
+  CHECK(talent->recipe.criticalStyle == rpg_os::CriticalStyle::DoubleRoll);
+  CHECK(talent->recipe.grading == rpg_os::Grading::PoolQuality);
   const rpg_os::CheckTypeDef *attr = ruleset.findCheckType("dsa4_attribute");
   REQUIRE(attr != nullptr);
-  CHECK(attr->config.useConfirmationRoll);
+  CHECK(attr->recipe.criticalConfirm);
+  CHECK(attr->recipe.fumbleConfirm);
   CHECK(ruleset.findCheckType("missing") == nullptr);
 }
 
@@ -164,29 +182,31 @@ TEST_CASE("RulesetLoader: percentile d100 check kinds are parsed") {
       "attributes": [ { "id": "POW", "name": "Power" } ],
       "skills": [ { "id": "spot", "name": "Spot", "attributes": ["POW"], "default": 25 } ],
       "check_types": {
-        "brp_check_pow": { "kind": "roll_under_d100", "attributes": ["POW"] },
-        "brp_combat": { "kind": "opposed_roll_under_d100", "attack_stat": "spot", "parry_stat": "POW" },
-        "brp_resistance": { "kind": "resistance_roll", "attack_stat": "POW", "parry_stat": "POW" }
+        "brp_check_pow": { "resolution": "threshold", "dice": "1d100", "comparison": "le", "threshold_source": "actor_stat", "threshold_stat": "POW", "critical_style": "percentile", "fumble_style": "percentile", "grading": "percentile", "difficulty_mode": "to_stat", "difficulty_multiplier": "double_halve" },
+        "brp_combat": { "resolution": "opposed", "dice": "1d100", "attack_stat": "spot", "parry_stat": "POW", "compare_levels": true, "critical_style": "percentile", "fumble_style": "percentile", "grading": "percentile", "difficulty_mode": "to_stat" },
+        "brp_resistance": { "resolution": "resistance", "dice": "1d100", "attack_stat": "POW", "parry_stat": "POW", "grading": "none", "difficulty_mode": "to_stat" }
       }
     }
   )json");
   const rpg_os::CheckTypeDef *pow = ruleset.findCheckType("brp_check_pow");
   REQUIRE(pow != nullptr);
-  CHECK(pow->config.kind == rpg_os::CheckKind::RollUnderD100);
-  CHECK(pow->config.numAttributes == 1);
-  CHECK(pow->config.attributes[0] == "POW");
+  CHECK(pow->recipe.resolution == rpg_os::Resolution::Threshold);
+  CHECK(pow->recipe.comparison == rpg_os::Comparison::LessEqual);
+  CHECK(pow->recipe.thresholdStat == "POW");
+  CHECK(pow->recipe.grading == rpg_os::Grading::Percentile);
 
   const rpg_os::CheckTypeDef *combat = ruleset.findCheckType("brp_combat");
   REQUIRE(combat != nullptr);
-  CHECK(combat->config.kind == rpg_os::CheckKind::OpposedRollUnderD100);
-  CHECK(combat->config.attackStat == "spot");
-  CHECK(combat->config.parryStat == "POW");
+  CHECK(combat->recipe.resolution == rpg_os::Resolution::Opposed);
+  CHECK(combat->recipe.compareLevels);
+  CHECK(combat->recipe.attackStat == "spot");
+  CHECK(combat->recipe.parryStat == "POW");
 
   const rpg_os::CheckTypeDef *resistance = ruleset.findCheckType("brp_resistance");
   REQUIRE(resistance != nullptr);
-  CHECK(resistance->config.kind == rpg_os::CheckKind::ResistanceRoll);
-  CHECK(resistance->config.attackStat == "POW");
-  CHECK(resistance->config.parryStat == "POW");
+  CHECK(resistance->recipe.resolution == rpg_os::Resolution::Resistance);
+  CHECK(resistance->recipe.attackStat == "POW");
+  CHECK(resistance->recipe.parryStat == "POW");
 }
 
 TEST_CASE("RulesetLoader: cost tables are loaded") {
@@ -314,10 +334,10 @@ TEST_CASE("RulesetLoader: skill with unknown attribute throws") {
                   std::invalid_argument);
 }
 
-TEST_CASE("RulesetLoader: check type with unknown kind throws") {
+TEST_CASE("RulesetLoader: check type with unknown resolution throws") {
   CHECK_THROWS_AS(RulesetLoader::loadFromString(R"json(
     { "schema_version": 1, "ruleset_id": "x",
-      "check_types": { "c": { "kind": "mystery_roll" } } }
+      "check_types": { "c": { "resolution": "mystery_roll" } } }
   )json"),
                   std::invalid_argument);
 }
@@ -325,7 +345,7 @@ TEST_CASE("RulesetLoader: check type with unknown kind throws") {
 TEST_CASE("RulesetLoader: check type referencing an unknown stat throws") {
   CHECK_THROWS_AS(RulesetLoader::loadFromString(R"json(
     { "schema_version": 1, "ruleset_id": "x",
-      "check_types": { "c": { "kind": "additive_d20", "target_stat": "AC" } } }
+      "check_types": { "c": { "resolution": "threshold", "threshold_source": "actor_stat", "threshold_stat": "AC" } } }
   )json"),
                   std::invalid_argument);
 }

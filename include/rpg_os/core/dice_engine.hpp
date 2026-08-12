@@ -19,6 +19,15 @@
  * header turns that text into a structure that can be rolled, bounded (see
  * @c variance.hpp), and validated.
  *
+ * @par Dice as literals
+ * Once a dice string is parsed it is a plain C++ object. Two literal forms
+ * build one directly from source text: the common die-size suffixes
+ * (@c 3_d20, and with the arithmetic operators @c 2_d6 + 2) for everyday
+ * use, and the @c "2d6+4"_dice suffix for arbitrary expressions — the form
+ * the generated ruleset headers use, since a ruleset JSON may contain any
+ * dice string. Either way the dice are parsed once at startup instead of
+ * re-interpreting a string on every roll.
+ *
  * @par Why injectable randomness?
  * Dice are consumed by check algorithms, damage rolls, and entity creation.
  * Injecting an RNG (rather than having @c DiceExpression own one) keeps the
@@ -28,7 +37,6 @@
  */
 #pragma once
 
-#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -36,82 +44,31 @@
 #include <rpg_os/core/concepts.hpp>
 #include <stdexcept>
 #include <string_view>
+#include <utility>
 #include <vector>
-
-#if defined(_WIN32)
-#include <process.h>
-#elif defined(__unix__) || defined(__APPLE__)
-#include <unistd.h>
-#endif
 
 namespace rpg_os {
 
-namespace detail {
-
-/// The process id, used as one entropy source (0 when unavailable). Kept
-/// behind platform guards so the entropy mix below works on Windows, POSIX,
-/// and exotic targets alike — a missing process id just weakens entropy
-/// slightly, it never breaks the build.
-[[nodiscard]] inline uint32_t processId() noexcept {
-#if defined(_WIN32)
-  return static_cast<uint32_t>(_getpid());
-#elif defined(__unix__) || defined(__APPLE__)
-  return static_cast<uint32_t>(getpid());
-#else
-  return 0u;
-#endif
-}
-
-/// Collects 8 entropy words from the OS random device (when available), mixed
-/// with the high-resolution clock, the process id and an ASLR-random stack
-/// address.
+/// Returns a 32-bit seed drawn from easily available entropy: the OS random
+/// device when present, falling back to the high-resolution clock.
 ///
-/// @par Why mix several sources?
-/// `std::random_device` is *not* guaranteed to be truly random — on some
-/// implementations (notably MinGW) it is a deterministic PRNG. Mixing in the
-/// clock, the stack address (randomised by ASLR) and the process id keeps the
-/// seed genuinely unpredictable even where the random device is weak, while
-/// the try/catch means a missing device degrades to "still varied" instead of
-/// aborting.
-[[nodiscard]] inline std::array<uint32_t, 8> entropyWords() noexcept {
-  std::array<uint32_t, 8> words{};
+/// @par Why such a simple seed?
+/// This is a game engine, not a cryptographic library. An unseeded run only
+/// needs to *differ from other runs*, which a single word from the OS random
+/// device guarantees; if no device exists the clock still changes every run.
+/// Callers who want stronger or exactly reproducible randomness pass an
+/// explicit seed to `DefaultRandom` — and `randomSeed()` is the capture point
+/// for replaying a run later (`--seed N`).
+[[nodiscard]] inline uint32_t randomSeed() noexcept {
   try {
     std::random_device rd;
-    for (std::size_t i = 0; i < words.size(); ++i) {
-      words[i] = rd();
-    }
+    return rd();
   } catch (...) {
-    // No OS entropy source available: the other sources mixed in below still
-    // provide enough variety between processes / runs.
+    // No OS entropy device: the high-resolution clock still differs between
+    // runs, which is all an unseeded game run needs.
+    return static_cast<uint32_t>(
+        std::chrono::high_resolution_clock::now().time_since_epoch().count());
   }
-  const std::uint64_t now = static_cast<std::uint64_t>(
-      std::chrono::high_resolution_clock::now().time_since_epoch().count());
-  const std::uintptr_t stack = reinterpret_cast<std::uintptr_t>(&now);
-  words[0] ^= static_cast<uint32_t>(now);
-  words[1] ^= static_cast<uint32_t>(now >> 32);
-  words[2] ^= static_cast<uint32_t>(stack);
-  words[3] ^= processId();
-  return words;
-}
-
-} // namespace detail
-
-/// Returns a 32-bit seed gathered from genuine entropy: the OS random device
-/// (when available) mixed with the high-resolution clock, the process id and
-/// an ASLR-random stack address.
-///
-/// @par Why a public seed function?
-/// Unseeded runs must differ every time (the combat demo and the ELO ranking
-/// rely on this), but users also need a way to *capture* the seed a run used
-/// so it can be replayed. `randomSeed()` is that capture point: an explicit
-/// seed passed to `DefaultRandom` keeps runs exactly reproducible.
-[[nodiscard]] inline uint32_t randomSeed() noexcept {
-  const std::array<uint32_t, 8> words = detail::entropyWords();
-  uint32_t result = 0;
-  for (const uint32_t word : words) {
-    result ^= word;
-  }
-  return result;
 }
 
 /**
@@ -122,24 +79,19 @@ namespace detail {
  * The Mersenne Twister is the standard "good enough" engine: fast, portable,
  * and deterministic for a fixed seed, which is exactly the split this library
  * needs — seeded instances replay a run bit-for-bit, unseeded instances draw
- * from OS entropy.
+ * from easily available entropy.
  *
  * @par Seeding strategy
- * Default-constructed instances seed from genuine OS entropy (see
- * @ref randomSeed), so unseeded runs differ every time. Constructing with an
- * explicit seed is deterministic and reproducible (tests, Monte Carlo
- * simulations). The default constructor uses a full @c std::seed_seq over 8
- * words rather than a single 32-bit value to avoid the known poor seeding of
- * mt19937 from one word.
+ * Default-constructed instances seed from @ref randomSeed (the OS random
+ * device, falling back to the clock), so unseeded runs differ every time —
+ * good enough for a game, and trivially upgraded by passing an explicit seed
+ * for reproducible simulations or tests.
  */
 class DefaultRandom {
 public:
-  /// Truly random: seeds the engine from OS entropy (see @ref randomSeed).
-  DefaultRandom() {
-    const std::array<uint32_t, 8> words = detail::entropyWords();
-    std::seed_seq seq(words.begin(), words.end());
-    m_engine.seed(seq);
-  }
+  /// Unseeded: seeds the engine from easily available entropy (see
+  /// @ref randomSeed), so every run differs.
+  DefaultRandom() : m_engine(randomSeed()) {}
 
   /// Deterministic and reproducible for a fixed `seed`.
   explicit DefaultRandom(uint32_t seed) : m_engine(seed) {}
@@ -185,21 +137,47 @@ struct DieSpec {
 class DiceExpression {
 public:
   /// Parses `expression`; throws std::invalid_argument on malformed input.
-  explicit DiceExpression(std::string_view expression);
+  constexpr explicit DiceExpression(std::string_view expression);
+
+  /// Builds a constant-only expression (no dice, a flat value), equivalent to
+  /// @c DiceExpression("7"). Used by the @c 7_dice integer literal.
+  constexpr explicit DiceExpression(int constant) : m_constant(constant) {}
+
+  /// Builds a single group of `count` dice with `sides` faces (e.g.
+  /// @c DiceExpression(3, 20) == @c DiceExpression("3d20")). Used by the
+  /// @c 3_d20 die-size literals; throws std::invalid_argument if either value
+  /// is less than one.
+  constexpr explicit DiceExpression(int count, int sides) {
+    if (count < 1) {
+      throw std::invalid_argument("die count must be positive");
+    }
+    if (sides < 1) {
+      throw std::invalid_argument("die sides must be positive");
+    }
+    m_dice.push_back(DieSpec{count, sides});
+  }
 
   /// The die groups in order of appearance.
-  [[nodiscard]] const std::vector<DieSpec> &dice() const noexcept {
+  [[nodiscard]] constexpr const std::vector<DieSpec> &dice() const noexcept {
     return m_dice;
   }
 
+  /// The total number of individual dice rolled by the expression (the sum
+  /// of every group's count). Used by the ruleset loader to validate that a
+  /// pool check has exactly one die per attribute.
+  [[nodiscard]] constexpr std::size_t dieCount() const noexcept {
+    return totalDieCount();
+  }
+
   /// The flat additive constant (already includes its sign).
-  [[nodiscard]] int constant() const noexcept {
+  [[nodiscard]] constexpr int constant() const noexcept {
     return m_constant;
   }
 
   /// Rolls every die with `rng`. The raw results are always positive and
   /// appear in roll order (checks that need individual dice use this).
-  template <RandomNumberGenerator Rng> [[nodiscard]] std::vector<int> roll(Rng &rng) const {
+  template <RandomNumberGenerator Rng>
+  [[nodiscard]] constexpr std::vector<int> roll(Rng &rng) const {
     std::vector<int> results;
     results.reserve(totalDieCount());
     for (const DieSpec &die : m_dice) {
@@ -213,7 +191,7 @@ public:
   /// Rolls every die and returns the signed total (constant + signed dice).
   /// This is the common "how much damage / how high did I roll" entry point;
   /// use @ref roll instead when individual dice matter.
-  template <RandomNumberGenerator Rng> [[nodiscard]] int rollSum(Rng &rng) const {
+  template <RandomNumberGenerator Rng> [[nodiscard]] constexpr int rollSum(Rng &rng) const {
     int sum = m_constant;
     for (const DieSpec &die : m_dice) {
       for (int i = 0; i < die.count; ++i) {
@@ -223,8 +201,48 @@ public:
     return sum;
   }
 
+  /// Unary minus: negates the constant and every die group's sign, so
+  /// @c -(2_d6) is the same expression as the "-2d6" term of a parsed string
+  /// (raw rolls stay positive; only the sum is negated).
+  [[nodiscard]] constexpr DiceExpression operator-() const {
+    std::vector<DieSpec> negated = m_dice;
+    for (DieSpec &die : negated) {
+      die.sign = -die.sign;
+    }
+    return DiceExpression(std::move(negated), -m_constant);
+  }
+
+  /// Combines two expressions: their die groups are concatenated and their
+  /// constants added, so @c 2_d6 + 1_d4 is one two-group expression.
+  [[nodiscard]] constexpr DiceExpression operator+(const DiceExpression &rhs) const {
+    std::vector<DieSpec> combined = m_dice;
+    combined.insert(combined.end(), rhs.m_dice.begin(), rhs.m_dice.end());
+    return DiceExpression(std::move(combined), m_constant + rhs.m_constant);
+  }
+
+  /// Subtracts `rhs`: its die groups and constant are negated first, e.g.
+  /// @c 3_d6 - 1_d4.
+  [[nodiscard]] constexpr DiceExpression operator-(const DiceExpression &rhs) const {
+    return *this + (-rhs);
+  }
+
+  /// Adds a flat constant, e.g. @c 2_d6 + 2.
+  [[nodiscard]] constexpr DiceExpression operator+(int rhs) const {
+    return DiceExpression(m_dice, m_constant + rhs);
+  }
+
+  /// Subtracts a flat constant, e.g. @c 1_d20 - 2.
+  [[nodiscard]] constexpr DiceExpression operator-(int rhs) const {
+    return *this + (-rhs);
+  }
+
 private:
-  [[nodiscard]] std::size_t totalDieCount() const noexcept {
+  /// Raw construction used by the arithmetic operators; takes ownership of
+  /// `dice` and the combined constant.
+  constexpr DiceExpression(std::vector<DieSpec> dice, int constant)
+      : m_dice(std::move(dice)), m_constant(constant) {}
+
+  [[nodiscard]] constexpr std::size_t totalDieCount() const noexcept {
     std::size_t n = 0;
     for (const DieSpec &die : m_dice) {
       n += static_cast<std::size_t>(die.count);
@@ -232,7 +250,7 @@ private:
     return n;
   }
 
-  void parse(std::string_view expression) {
+  constexpr void parse(std::string_view expression) {
     if (expression.empty()) {
       throw std::invalid_argument("empty dice expression");
     }
@@ -287,8 +305,97 @@ private:
   int m_constant{0};
 };
 
-inline DiceExpression::DiceExpression(std::string_view expression) {
+constexpr DiceExpression::DiceExpression(std::string_view expression) {
   parse(expression);
 }
+
+/// @name arithmetic with a leading integer
+/// Allow @c 2 + 2_d6 and @c 2 - 2_d6; found by ADL on @c DiceExpression.
+/// @{
+
+/// Adds a flat constant on the left: @c 2 + 2_d6 == @c 2_d6 + 2.
+[[nodiscard]] constexpr DiceExpression operator+(int lhs, const DiceExpression &rhs) {
+  return rhs + lhs;
+}
+
+/// Subtracts an expression from a constant: @c 2 - 2_d6 keeps the constant 2
+/// and rolls the dice subtracted.
+[[nodiscard]] constexpr DiceExpression operator-(int lhs, const DiceExpression &rhs) {
+  return (-rhs) + lhs;
+}
+
+/// @}
+
+/// User-defined literal operators for dice expressions.
+///
+/// Two families are provided:
+/// - the @c "2d6+4"_dice suffix for arbitrary expressions — the form the
+///   generated ruleset headers use, since a ruleset JSON may contain any
+///   dice string;
+/// - the common die-size suffixes @c _d2, @c _d3, @c _d4, @c _d6, @c _d8,
+///   @c _d10, @c _d12, @c _d20, @c _d30 and @c _d100, where the integer part
+///   is the number of dice: @c 3_d20 is three D20, and with the arithmetic
+///   operators on @c DiceExpression, @c 2_d6 + 2 builds one expression that
+///   rolls two D6 plus two.
+///
+/// @par Why an underscore before the die size?
+/// All suffixes begin with an underscore (like @c _d20), the fully conforming
+/// form every compiler accepts. A bare suffix such as @c 3d20 is rejected by
+/// Clang's lexer ("invalid digit 'd' in decimal constant") and reserved by
+/// the standard, so the underscore is the portable way to write "3 d20".
+///
+/// @par Methods on a bare literal
+/// A die-size literal like @c 1_d20 is a numeric literal, so a method call
+/// written directly after it — @c 1_d20.rollSum(rng) — would be swallowed
+/// into the literal token ('.' continues a preprocessing number). Bind it to
+/// a variable or parenthesise: @c auto d = 1_d20; d.rollSum(rng) or
+/// @c (1_d20).rollSum(rng).
+inline namespace dice_literals {
+
+/// Parses an arbitrary dice expression string, e.g. @c "2d6+4"_dice.
+[[nodiscard]] constexpr DiceExpression operator""_dice(const char *str, std::size_t len) {
+  return DiceExpression(std::string_view(str, len));
+}
+
+/// Constant-only integer literal: @c 7_dice is a flat 7.
+[[nodiscard]] constexpr DiceExpression operator""_dice(unsigned long long value) {
+  return DiceExpression(static_cast<int>(value));
+}
+
+/// @name common die sizes — the integer part is the number of dice
+/// @{
+[[nodiscard]] constexpr DiceExpression operator""_d2(unsigned long long count) {
+  return DiceExpression(static_cast<int>(count), 2);
+}
+[[nodiscard]] constexpr DiceExpression operator""_d3(unsigned long long count) {
+  return DiceExpression(static_cast<int>(count), 3);
+}
+[[nodiscard]] constexpr DiceExpression operator""_d4(unsigned long long count) {
+  return DiceExpression(static_cast<int>(count), 4);
+}
+[[nodiscard]] constexpr DiceExpression operator""_d6(unsigned long long count) {
+  return DiceExpression(static_cast<int>(count), 6);
+}
+[[nodiscard]] constexpr DiceExpression operator""_d8(unsigned long long count) {
+  return DiceExpression(static_cast<int>(count), 8);
+}
+[[nodiscard]] constexpr DiceExpression operator""_d10(unsigned long long count) {
+  return DiceExpression(static_cast<int>(count), 10);
+}
+[[nodiscard]] constexpr DiceExpression operator""_d12(unsigned long long count) {
+  return DiceExpression(static_cast<int>(count), 12);
+}
+[[nodiscard]] constexpr DiceExpression operator""_d20(unsigned long long count) {
+  return DiceExpression(static_cast<int>(count), 20);
+}
+[[nodiscard]] constexpr DiceExpression operator""_d30(unsigned long long count) {
+  return DiceExpression(static_cast<int>(count), 30);
+}
+[[nodiscard]] constexpr DiceExpression operator""_d100(unsigned long long count) {
+  return DiceExpression(static_cast<int>(count), 100);
+}
+/// @}
+
+} // namespace dice_literals
 
 } // namespace rpg_os

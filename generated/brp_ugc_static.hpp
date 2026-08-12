@@ -23,7 +23,7 @@
 // opposed_roll_under_d100 for combat (brp_combat), which models the Attack and Defense Matrix hit
 // rule (the attacker hits only with a strictly higher success level; equal levels mean the defender
 // parries). BRP's Easy/Difficult difficulty levels (double/halve the skill) are modelled via
-// CheckParams::difficultyMode, and flat +/-20% situational modifiers via CheckParams::difficulty.
+// CheckParams::difficultyScale, and flat +/-20% situational modifiers via CheckParams::difficulty.
 // Data transcribes the handout's reference tables: sample poisons, the magic spell summary, the
 // sorcery spell summary (by category), the psychic abilities and superpower summaries, the random
 // mutation table (adverse mutations flagged), the chaotic features table, the combat fumble tables,
@@ -62,76 +62,76 @@ public:
   /// Default-constructs a character; resources start at their maximum.
   Character() : hitPoints(maxHitPoints()), powerPoints(maxPowerPoints()) {}
 
-  // ---- core attributes ----
-  int32_t strength{10};     // STR Strength
-  int32_t constitution{10}; // CON Constitution
-  int32_t size{10};         // SIZ Size
-  int32_t intelligence{10}; // INT Intelligence
-  int32_t power{10};        // POW Power
-  int32_t dexterity{10};    // DEX Dexterity
-  int32_t appearance{10};   // APP Appearance
-  int32_t education{10};    // EDU Education
-  int32_t luck{50};         // Luck Luck
-  int32_t sanity{50};       // Sanity Sanity
+  // ---- core attributes (narrow storage where the ruleset allows) ----
+  uint8_t strength{10};     // STR Strength
+  uint8_t constitution{10}; // CON Constitution
+  uint8_t size{10};         // SIZ Size
+  uint8_t intelligence{10}; // INT Intelligence
+  uint8_t power{10};        // POW Power
+  uint8_t dexterity{10};    // DEX Dexterity
+  uint8_t appearance{10};   // APP Appearance
+  uint8_t education{10};    // EDU Education
+  uint8_t luck{50};         // Luck Luck
+  uint8_t sanity{50};       // Sanity Sanity
 
-  // ---- skill ratings ----
-  int32_t artillery{0};        // artillery (Artillery)
-  int32_t brawl{0};            // brawl (Brawl)
-  int32_t energyWeapon{0};     // energy_weapon (Energy Weapon)
-  int32_t firearm{0};          // firearm (Firearm)
-  int32_t grapple{0};          // grapple (Grapple)
-  int32_t heavyWeapon{0};      // heavy_weapon (Heavy Weapon)
-  int32_t martialArts{0};      // martial_arts (Martial Arts)
-  int32_t meleeWeapon{0};      // melee_weapon (Melee Weapon)
-  int32_t missileWeapon{0};    // missile_weapon (Missile Weapon)
-  int32_t parry{0};            // parry (Parry)
-  int32_t shield{0};           // shield (Shield)
-  int32_t bargain{0};          // bargain (Bargain)
-  int32_t command{0};          // command (Command)
-  int32_t disguise{0};         // disguise (Disguise)
-  int32_t etiquette{0};        // etiquette (Etiquette)
-  int32_t fastTalk{0};         // fast_talk (Fast Talk)
-  int32_t language{0};         // language (Language)
-  int32_t perform{0};          // perform (Perform)
-  int32_t persuade{0};         // persuade (Persuade)
-  int32_t status{0};           // status (Status)
-  int32_t teach{0};            // teach (Teach)
-  int32_t art{0};              // art (Art)
-  int32_t craft{0};            // craft (Craft)
-  int32_t demolition{0};       // demolition (Demolition)
-  int32_t fineManipulation{0}; // fine_manipulation (Fine Manipulation)
-  int32_t heavyMachine{0};     // heavy_machine (Heavy Machine)
-  int32_t repair{0};           // repair (Repair)
-  int32_t sleightOfHand{0};    // sleight_of_hand (Sleight of Hand)
-  int32_t appraise{0};         // appraise (Appraise)
-  int32_t firstAid{0};         // first_aid (First Aid)
-  int32_t gaming{0};           // gaming (Gaming)
-  int32_t knowledge{0};        // knowledge (Knowledge)
-  int32_t literacy{0};         // literacy (Literacy)
-  int32_t medicine{0};         // medicine (Medicine)
-  int32_t psychotherapy{0};    // psychotherapy (Psychotherapy)
-  int32_t science{0};          // science (Science)
-  int32_t strategy{0};         // strategy (Strategy)
-  int32_t technicalSkill{0};   // technical_skill (Technical Skill)
-  int32_t insight{0};          // insight (Insight)
-  int32_t listen{0};           // listen (Listen)
-  int32_t navigate{0};         // navigate (Navigate)
-  int32_t research{0};         // research (Research)
-  int32_t sense{0};            // sense (Sense)
-  int32_t spot{0};             // spot (Spot)
-  int32_t track{0};            // track (Track)
-  int32_t climb{0};            // climb (Climb)
-  int32_t dodge{0};            // dodge (Dodge)
-  int32_t drive{0};            // drive (Drive)
-  int32_t fly{0};              // fly (Fly)
-  int32_t hide{0};             // hide (Hide)
-  int32_t jump{0};             // jump (Jump)
-  int32_t pilot{0};            // pilot (Pilot)
-  int32_t projection{0};       // projection (Projection)
-  int32_t ride{0};             // ride (Ride)
-  int32_t stealth{0};          // stealth (Stealth)
-  int32_t swim{0};             // swim (Swim)
-  int32_t throw_{0};           // throw (Throw)
+  // ---- skill ratings (narrow storage where the ruleset allows) ----
+  uint8_t artillery{0};        // artillery (Artillery)
+  uint8_t brawl{0};            // brawl (Brawl)
+  uint8_t energyWeapon{0};     // energy_weapon (Energy Weapon)
+  uint8_t firearm{0};          // firearm (Firearm)
+  uint8_t grapple{0};          // grapple (Grapple)
+  uint8_t heavyWeapon{0};      // heavy_weapon (Heavy Weapon)
+  uint8_t martialArts{0};      // martial_arts (Martial Arts)
+  uint8_t meleeWeapon{0};      // melee_weapon (Melee Weapon)
+  uint8_t missileWeapon{0};    // missile_weapon (Missile Weapon)
+  uint8_t parry{0};            // parry (Parry)
+  uint8_t shield{0};           // shield (Shield)
+  uint8_t bargain{0};          // bargain (Bargain)
+  uint8_t command{0};          // command (Command)
+  uint8_t disguise{0};         // disguise (Disguise)
+  uint8_t etiquette{0};        // etiquette (Etiquette)
+  uint8_t fastTalk{0};         // fast_talk (Fast Talk)
+  uint8_t language{0};         // language (Language)
+  uint8_t perform{0};          // perform (Perform)
+  uint8_t persuade{0};         // persuade (Persuade)
+  uint8_t status{0};           // status (Status)
+  uint8_t teach{0};            // teach (Teach)
+  uint8_t art{0};              // art (Art)
+  uint8_t craft{0};            // craft (Craft)
+  uint8_t demolition{0};       // demolition (Demolition)
+  uint8_t fineManipulation{0}; // fine_manipulation (Fine Manipulation)
+  uint8_t heavyMachine{0};     // heavy_machine (Heavy Machine)
+  uint8_t repair{0};           // repair (Repair)
+  uint8_t sleightOfHand{0};    // sleight_of_hand (Sleight of Hand)
+  uint8_t appraise{0};         // appraise (Appraise)
+  uint8_t firstAid{0};         // first_aid (First Aid)
+  uint8_t gaming{0};           // gaming (Gaming)
+  uint8_t knowledge{0};        // knowledge (Knowledge)
+  uint8_t literacy{0};         // literacy (Literacy)
+  uint8_t medicine{0};         // medicine (Medicine)
+  uint8_t psychotherapy{0};    // psychotherapy (Psychotherapy)
+  uint8_t science{0};          // science (Science)
+  uint8_t strategy{0};         // strategy (Strategy)
+  uint8_t technicalSkill{0};   // technical_skill (Technical Skill)
+  uint8_t insight{0};          // insight (Insight)
+  uint8_t listen{0};           // listen (Listen)
+  uint8_t navigate{0};         // navigate (Navigate)
+  uint8_t research{0};         // research (Research)
+  uint8_t sense{0};            // sense (Sense)
+  uint8_t spot{0};             // spot (Spot)
+  uint8_t track{0};            // track (Track)
+  uint8_t climb{0};            // climb (Climb)
+  uint8_t dodge{0};            // dodge (Dodge)
+  uint8_t drive{0};            // drive (Drive)
+  uint8_t fly{0};              // fly (Fly)
+  uint8_t hide{0};             // hide (Hide)
+  uint8_t jump{0};             // jump (Jump)
+  uint8_t pilot{0};            // pilot (Pilot)
+  uint8_t projection{0};       // projection (Projection)
+  uint8_t ride{0};             // ride (Ride)
+  uint8_t stealth{0};          // stealth (Stealth)
+  uint8_t swim{0};             // swim (Swim)
+  uint8_t throw_{0};           // throw (Throw)
 
   // ---- resources ----
   int32_t hitPoints{0};   // HP (max: HitPoints_Max)
@@ -139,44 +139,44 @@ public:
 
   // ---- derived stats (compiled formulas) ----
   [[nodiscard]] int32_t maxHitPoints() const noexcept {
-    return static_cast<int32_t>(rpg_os::math::ceil(
-        ((static_cast<double>(constitution) + static_cast<double>(size)) / 2.0)));
+    return static_cast<int32_t>(
+        rpg_os::math::ceilDivN((static_cast<int>(constitution) + static_cast<int>(size)), 2));
   } // HitPoints_Max: ceil((CON + SIZ) / 2)
   [[nodiscard]] int32_t maxPowerPoints() const noexcept {
-    return static_cast<int32_t>(static_cast<double>(power));
+    return static_cast<int32_t>(static_cast<int>(power));
   } // PowerPoints_Max: POW
   [[nodiscard]] int32_t strengthX5() const noexcept {
-    return static_cast<int32_t>((static_cast<double>(strength) * 5.0));
+    return static_cast<int32_t>((static_cast<int>(strength) * 5));
   } // STR_5: STR * 5
   [[nodiscard]] int32_t constitutionX5() const noexcept {
-    return static_cast<int32_t>((static_cast<double>(constitution) * 5.0));
+    return static_cast<int32_t>((static_cast<int>(constitution) * 5));
   } // CON_5: CON * 5
   [[nodiscard]] int32_t sizeX5() const noexcept {
-    return static_cast<int32_t>((static_cast<double>(size) * 5.0));
+    return static_cast<int32_t>((static_cast<int>(size) * 5));
   } // SIZ_5: SIZ * 5
   [[nodiscard]] int32_t intelligenceX5() const noexcept {
-    return static_cast<int32_t>((static_cast<double>(intelligence) * 5.0));
+    return static_cast<int32_t>((static_cast<int>(intelligence) * 5));
   } // INT_5: INT * 5
   [[nodiscard]] int32_t powerX5() const noexcept {
-    return static_cast<int32_t>((static_cast<double>(power) * 5.0));
+    return static_cast<int32_t>((static_cast<int>(power) * 5));
   } // POW_5: POW * 5
   [[nodiscard]] int32_t dexterityX5() const noexcept {
-    return static_cast<int32_t>((static_cast<double>(dexterity) * 5.0));
+    return static_cast<int32_t>((static_cast<int>(dexterity) * 5));
   } // DEX_5: DEX * 5
   [[nodiscard]] int32_t appearanceX5() const noexcept {
-    return static_cast<int32_t>((static_cast<double>(appearance) * 5.0));
+    return static_cast<int32_t>((static_cast<int>(appearance) * 5));
   } // APP_5: APP * 5
   [[nodiscard]] int32_t educationX5() const noexcept {
-    return static_cast<int32_t>((static_cast<double>(education) * 5.0));
+    return static_cast<int32_t>((static_cast<int>(education) * 5));
   } // EDU_5: EDU * 5
   [[nodiscard]] int32_t attack() const noexcept {
-    return static_cast<int32_t>(static_cast<double>(brawl));
+    return static_cast<int32_t>(static_cast<int>(brawl));
   } // Attack: brawl
   [[nodiscard]] int32_t parryDefense() const noexcept {
-    return static_cast<int32_t>(static_cast<double>(dodge));
+    return static_cast<int32_t>(static_cast<int>(dodge));
   } // Parry: dodge
   [[nodiscard]] int32_t initiative() const noexcept {
-    return static_cast<int32_t>(static_cast<double>(dexterity));
+    return static_cast<int32_t>(static_cast<int>(dexterity));
   } // Initiative: DEX
 
   // ---- StatProvider (string -> member switch, no allocations) ----
@@ -345,529 +345,1451 @@ public:
   }
 
   // ---- named checks (from check_types) ----
-  /// Percentile roll-under check 'brp_check_str' (BRP).
+  /// Named check 'brp_check_str' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpCheckStr(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "STR_5", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "STR_5",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_check_con' (BRP).
+  /// Named check 'brp_check_con' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpCheckCon(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "CON_5", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "CON_5",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_check_siz' (BRP).
+  /// Named check 'brp_check_siz' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpCheckSiz(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "SIZ_5", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "SIZ_5",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_check_int' (BRP).
+  /// Named check 'brp_check_int' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpCheckInt(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "INT_5", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "INT_5",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_check_pow' (BRP).
+  /// Named check 'brp_check_pow' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpCheckPow(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "POW_5", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "POW_5",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_check_dex' (BRP).
+  /// Named check 'brp_check_dex' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpCheckDex(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "DEX_5", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "DEX_5",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_check_app' (BRP).
+  /// Named check 'brp_check_app' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpCheckApp(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "APP_5", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "APP_5",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_check_edu' (BRP).
+  /// Named check 'brp_check_edu' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpCheckEdu(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "EDU_5", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "EDU_5",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_check_luck' (BRP).
+  /// Named check 'brp_check_luck' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpCheckLuck(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "Luck", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "Luck",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_check_sanity' (BRP).
+  /// Named check 'brp_check_sanity' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpCheckSanity(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "Sanity", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "Sanity",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_artillery' (BRP).
+  /// Named check 'brp_skill_artillery' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillArtillery(const rpg_os::CheckParams &params,
                                                       Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "artillery", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "artillery",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_brawl' (BRP).
+  /// Named check 'brp_skill_brawl' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillBrawl(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "brawl", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "brawl",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_energy_weapon' (BRP).
+  /// Named check 'brp_skill_energy_weapon' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillEnergyWeapon(const rpg_os::CheckParams &params,
                                                          Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "energy_weapon", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "energy_weapon",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_firearm' (BRP).
+  /// Named check 'brp_skill_firearm' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillFirearm(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "firearm", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "firearm",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_grapple' (BRP).
+  /// Named check 'brp_skill_grapple' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillGrapple(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "grapple", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "grapple",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_heavy_weapon' (BRP).
+  /// Named check 'brp_skill_heavy_weapon' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillHeavyWeapon(const rpg_os::CheckParams &params,
                                                         Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "heavy_weapon", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "heavy_weapon",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_martial_arts' (BRP).
+  /// Named check 'brp_skill_martial_arts' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillMartialArts(const rpg_os::CheckParams &params,
                                                         Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "martial_arts", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "martial_arts",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_melee_weapon' (BRP).
+  /// Named check 'brp_skill_melee_weapon' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillMeleeWeapon(const rpg_os::CheckParams &params,
                                                         Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "melee_weapon", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "melee_weapon",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_missile_weapon' (BRP).
+  /// Named check 'brp_skill_missile_weapon' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillMissileWeapon(const rpg_os::CheckParams &params,
                                                           Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "missile_weapon", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "missile_weapon",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_parry' (BRP).
+  /// Named check 'brp_skill_parry' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillParry(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "parry", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "parry",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_shield' (BRP).
+  /// Named check 'brp_skill_shield' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillShield(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "shield", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "shield",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_bargain' (BRP).
+  /// Named check 'brp_skill_bargain' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillBargain(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "bargain", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "bargain",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_command' (BRP).
+  /// Named check 'brp_skill_command' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillCommand(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "command", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "command",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_disguise' (BRP).
+  /// Named check 'brp_skill_disguise' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillDisguise(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "disguise", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "disguise",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_etiquette' (BRP).
+  /// Named check 'brp_skill_etiquette' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillEtiquette(const rpg_os::CheckParams &params,
                                                       Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "etiquette", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "etiquette",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_fast_talk' (BRP).
+  /// Named check 'brp_skill_fast_talk' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillFastTalk(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "fast_talk", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "fast_talk",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_language' (BRP).
+  /// Named check 'brp_skill_language' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillLanguage(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "language", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "language",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_perform' (BRP).
+  /// Named check 'brp_skill_perform' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillPerform(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "perform", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "perform",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_persuade' (BRP).
+  /// Named check 'brp_skill_persuade' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillPersuade(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "persuade", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "persuade",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_status' (BRP).
+  /// Named check 'brp_skill_status' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillStatus(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "status", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "status",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_teach' (BRP).
+  /// Named check 'brp_skill_teach' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillTeach(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "teach", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "teach",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_art' (BRP).
+  /// Named check 'brp_skill_art' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillArt(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "art", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "art",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_craft' (BRP).
+  /// Named check 'brp_skill_craft' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillCraft(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "craft", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "craft",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_demolition' (BRP).
+  /// Named check 'brp_skill_demolition' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillDemolition(const rpg_os::CheckParams &params,
                                                        Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "demolition", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "demolition",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_fine_manipulation' (BRP).
+  /// Named check 'brp_skill_fine_manipulation' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillFineManipulation(const rpg_os::CheckParams &params,
                                                              Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "fine_manipulation", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "fine_manipulation",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_heavy_machine' (BRP).
+  /// Named check 'brp_skill_heavy_machine' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillHeavyMachine(const rpg_os::CheckParams &params,
                                                          Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "heavy_machine", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "heavy_machine",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_repair' (BRP).
+  /// Named check 'brp_skill_repair' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillRepair(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "repair", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "repair",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_sleight_of_hand' (BRP).
+  /// Named check 'brp_skill_sleight_of_hand' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillSleightOfHand(const rpg_os::CheckParams &params,
                                                           Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "sleight_of_hand", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "sleight_of_hand",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_appraise' (BRP).
+  /// Named check 'brp_skill_appraise' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillAppraise(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "appraise", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "appraise",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_first_aid' (BRP).
+  /// Named check 'brp_skill_first_aid' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillFirstAid(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "first_aid", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "first_aid",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_gaming' (BRP).
+  /// Named check 'brp_skill_gaming' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillGaming(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "gaming", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "gaming",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_knowledge' (BRP).
+  /// Named check 'brp_skill_knowledge' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillKnowledge(const rpg_os::CheckParams &params,
                                                       Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "knowledge", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "knowledge",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_literacy' (BRP).
+  /// Named check 'brp_skill_literacy' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillLiteracy(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "literacy", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "literacy",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_medicine' (BRP).
+  /// Named check 'brp_skill_medicine' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillMedicine(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "medicine", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "medicine",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_psychotherapy' (BRP).
+  /// Named check 'brp_skill_psychotherapy' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillPsychotherapy(const rpg_os::CheckParams &params,
                                                           Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "psychotherapy", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "psychotherapy",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_science' (BRP).
+  /// Named check 'brp_skill_science' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillScience(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "science", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "science",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_strategy' (BRP).
+  /// Named check 'brp_skill_strategy' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillStrategy(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "strategy", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "strategy",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_technical_skill' (BRP).
+  /// Named check 'brp_skill_technical_skill' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillTechnicalSkill(const rpg_os::CheckParams &params,
                                                            Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "technical_skill", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "technical_skill",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_insight' (BRP).
+  /// Named check 'brp_skill_insight' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillInsight(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "insight", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "insight",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_listen' (BRP).
+  /// Named check 'brp_skill_listen' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillListen(const rpg_os::CheckParams &params,
                                                    Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "listen", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "listen",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_navigate' (BRP).
+  /// Named check 'brp_skill_navigate' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillNavigate(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "navigate", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "navigate",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_research' (BRP).
+  /// Named check 'brp_skill_research' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillResearch(const rpg_os::CheckParams &params,
                                                      Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "research", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "research",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_sense' (BRP).
+  /// Named check 'brp_skill_sense' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillSense(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "sense", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "sense",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_spot' (BRP).
+  /// Named check 'brp_skill_spot' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillSpot(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "spot", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "spot",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_track' (BRP).
+  /// Named check 'brp_skill_track' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillTrack(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "track", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "track",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_climb' (BRP).
+  /// Named check 'brp_skill_climb' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillClimb(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "climb", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "climb",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_dodge' (BRP).
+  /// Named check 'brp_skill_dodge' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillDodge(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "dodge", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "dodge",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_drive' (BRP).
+  /// Named check 'brp_skill_drive' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillDrive(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "drive", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "drive",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_fly' (BRP).
+  /// Named check 'brp_skill_fly' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillFly(const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "fly", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "fly",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_hide' (BRP).
+  /// Named check 'brp_skill_hide' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillHide(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "hide", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "hide",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_jump' (BRP).
+  /// Named check 'brp_skill_jump' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillJump(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "jump", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "jump",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_pilot' (BRP).
+  /// Named check 'brp_skill_pilot' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillPilot(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "pilot", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "pilot",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_projection' (BRP).
+  /// Named check 'brp_skill_projection' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillProjection(const rpg_os::CheckParams &params,
                                                        Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "projection", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "projection",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_ride' (BRP).
+  /// Named check 'brp_skill_ride' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillRide(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "ride", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "ride",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_stealth' (BRP).
+  /// Named check 'brp_skill_stealth' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillStealth(const rpg_os::CheckParams &params,
                                                     Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "stealth", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "stealth",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_swim' (BRP).
+  /// Named check 'brp_skill_swim' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillSwim(const rpg_os::CheckParams &params,
                                                  Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "swim", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "swim",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// Percentile roll-under check 'brp_skill_throw' (BRP).
+  /// Named check 'brp_skill_throw' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpSkillThrow(const rpg_os::CheckParams &params,
                                                   Rng &rng) const {
-    return rpg_os::resolveRollUnderD100(*this, "throw", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::LessEqual,
+        .thresholdSource = rpg_os::ThresholdSource::ActorStat,
+        .thresholdStat = "throw",
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::DoubleHalve,
+    };
+    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
 
-  /// BRP resistance roll 'brp_resistance_str'.
+  /// Named check 'brp_resistance_str' (see the ruleset's check_types).
   template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult
   brpResistanceStr(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveResistanceRoll(*this, target, "STR", "STR", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Resistance,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .attackStat = "STR",
+        .parryStat = "STR",
+        .criticalStyle = rpg_os::CriticalStyle::None,
+        .fumbleStyle = rpg_os::CriticalStyle::None,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, target, recipe, params, rng);
   }
 
-  /// BRP resistance roll 'brp_resistance_con'.
+  /// Named check 'brp_resistance_con' (see the ruleset's check_types).
   template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult
   brpResistanceCon(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveResistanceRoll(*this, target, "CON", "CON", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Resistance,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .attackStat = "CON",
+        .parryStat = "CON",
+        .criticalStyle = rpg_os::CriticalStyle::None,
+        .fumbleStyle = rpg_os::CriticalStyle::None,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, target, recipe, params, rng);
   }
 
-  /// BRP resistance roll 'brp_resistance_siz'.
+  /// Named check 'brp_resistance_siz' (see the ruleset's check_types).
   template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult
   brpResistanceSiz(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveResistanceRoll(*this, target, "SIZ", "SIZ", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Resistance,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .attackStat = "SIZ",
+        .parryStat = "SIZ",
+        .criticalStyle = rpg_os::CriticalStyle::None,
+        .fumbleStyle = rpg_os::CriticalStyle::None,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, target, recipe, params, rng);
   }
 
-  /// BRP resistance roll 'brp_resistance_int'.
+  /// Named check 'brp_resistance_int' (see the ruleset's check_types).
   template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult
   brpResistanceInt(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveResistanceRoll(*this, target, "INT", "INT", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Resistance,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .attackStat = "INT",
+        .parryStat = "INT",
+        .criticalStyle = rpg_os::CriticalStyle::None,
+        .fumbleStyle = rpg_os::CriticalStyle::None,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, target, recipe, params, rng);
   }
 
-  /// BRP resistance roll 'brp_resistance_pow'.
+  /// Named check 'brp_resistance_pow' (see the ruleset's check_types).
   template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult
   brpResistancePow(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveResistanceRoll(*this, target, "POW", "POW", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Resistance,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .attackStat = "POW",
+        .parryStat = "POW",
+        .criticalStyle = rpg_os::CriticalStyle::None,
+        .fumbleStyle = rpg_os::CriticalStyle::None,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, target, recipe, params, rng);
   }
 
-  /// BRP resistance roll 'brp_resistance_dex'.
+  /// Named check 'brp_resistance_dex' (see the ruleset's check_types).
   template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult
   brpResistanceDex(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveResistanceRoll(*this, target, "DEX", "DEX", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Resistance,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .attackStat = "DEX",
+        .parryStat = "DEX",
+        .criticalStyle = rpg_os::CriticalStyle::None,
+        .fumbleStyle = rpg_os::CriticalStyle::None,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, target, recipe, params, rng);
   }
 
-  /// BRP resistance roll 'brp_resistance_app'.
+  /// Named check 'brp_resistance_app' (see the ruleset's check_types).
   template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult
   brpResistanceApp(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveResistanceRoll(*this, target, "APP", "APP", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Resistance,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .attackStat = "APP",
+        .parryStat = "APP",
+        .criticalStyle = rpg_os::CriticalStyle::None,
+        .fumbleStyle = rpg_os::CriticalStyle::None,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, target, recipe, params, rng);
   }
 
-  /// BRP resistance roll 'brp_resistance_edu'.
+  /// Named check 'brp_resistance_edu' (see the ruleset's check_types).
   template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult
   brpResistanceEdu(const Target &target, const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveResistanceRoll(*this, target, "EDU", "EDU", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Resistance,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .attackStat = "EDU",
+        .parryStat = "EDU",
+        .criticalStyle = rpg_os::CriticalStyle::None,
+        .fumbleStyle = rpg_os::CriticalStyle::None,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, target, recipe, params, rng);
   }
 
-  /// Opposed percentile contest check 'brp_combat' (BRP).
+  /// Named check 'brp_combat' (see the ruleset's check_types).
   template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult brpCombat(const Target &target,
                                               const rpg_os::CheckParams &params, Rng &rng) const {
-    return rpg_os::resolveOpposedRollUnderD100(*this, target, "Attack", "Parry", params, rng);
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Opposed,
+        .dice = 1_d100,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
+        .attackStat = "Attack",
+        .parryStat = "Parry",
+        .compareLevels = true,
+        .criticalStyle = rpg_os::CriticalStyle::PercentileBand,
+        .fumbleStyle = rpg_os::CriticalStyle::PercentileBand,
+        .grading = rpg_os::Grading::Percentile,
+        .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, target, recipe, params, rng);
   }
 
-  // ---- per-skill talent checks (TDE: each skill has its own attributes) ----
+  // ---- per-skill checks (each skill's own linked attributes as a pool) ----
 
   // ---- cost / progression tables ----
 
@@ -886,209 +1808,209 @@ public:
     if (record.contains("attributes")) {
       for (const auto &[key, value] : record.at("attributes").items()) {
         if (key == "STR") {
-          strength = rpg_os::readVariantValue(value, variance, rng);
+          strength = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "CON") {
-          constitution = rpg_os::readVariantValue(value, variance, rng);
+          constitution = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "SIZ") {
-          size = rpg_os::readVariantValue(value, variance, rng);
+          size = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "INT") {
-          intelligence = rpg_os::readVariantValue(value, variance, rng);
+          intelligence = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "POW") {
-          power = rpg_os::readVariantValue(value, variance, rng);
+          power = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "DEX") {
-          dexterity = rpg_os::readVariantValue(value, variance, rng);
+          dexterity = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "APP") {
-          appearance = rpg_os::readVariantValue(value, variance, rng);
+          appearance = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "EDU") {
-          education = rpg_os::readVariantValue(value, variance, rng);
+          education = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "Luck") {
-          luck = rpg_os::readVariantValue(value, variance, rng);
+          luck = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "Sanity") {
-          sanity = rpg_os::readVariantValue(value, variance, rng);
+          sanity = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
       }
     }
     if (record.contains("skills")) {
       for (const auto &[key, value] : record.at("skills").items()) {
         if (key == "artillery") {
-          artillery = rpg_os::readVariantValue(value, variance, rng);
+          artillery = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "brawl") {
-          brawl = rpg_os::readVariantValue(value, variance, rng);
+          brawl = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "energy_weapon") {
-          energyWeapon = rpg_os::readVariantValue(value, variance, rng);
+          energyWeapon = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "firearm") {
-          firearm = rpg_os::readVariantValue(value, variance, rng);
+          firearm = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "grapple") {
-          grapple = rpg_os::readVariantValue(value, variance, rng);
+          grapple = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "heavy_weapon") {
-          heavyWeapon = rpg_os::readVariantValue(value, variance, rng);
+          heavyWeapon = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "martial_arts") {
-          martialArts = rpg_os::readVariantValue(value, variance, rng);
+          martialArts = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "melee_weapon") {
-          meleeWeapon = rpg_os::readVariantValue(value, variance, rng);
+          meleeWeapon = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "missile_weapon") {
-          missileWeapon = rpg_os::readVariantValue(value, variance, rng);
+          missileWeapon = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "parry") {
-          parry = rpg_os::readVariantValue(value, variance, rng);
+          parry = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "shield") {
-          shield = rpg_os::readVariantValue(value, variance, rng);
+          shield = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "bargain") {
-          bargain = rpg_os::readVariantValue(value, variance, rng);
+          bargain = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "command") {
-          command = rpg_os::readVariantValue(value, variance, rng);
+          command = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "disguise") {
-          disguise = rpg_os::readVariantValue(value, variance, rng);
+          disguise = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "etiquette") {
-          etiquette = rpg_os::readVariantValue(value, variance, rng);
+          etiquette = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "fast_talk") {
-          fastTalk = rpg_os::readVariantValue(value, variance, rng);
+          fastTalk = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "language") {
-          language = rpg_os::readVariantValue(value, variance, rng);
+          language = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "perform") {
-          perform = rpg_os::readVariantValue(value, variance, rng);
+          perform = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "persuade") {
-          persuade = rpg_os::readVariantValue(value, variance, rng);
+          persuade = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "status") {
-          status = rpg_os::readVariantValue(value, variance, rng);
+          status = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "teach") {
-          teach = rpg_os::readVariantValue(value, variance, rng);
+          teach = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "art") {
-          art = rpg_os::readVariantValue(value, variance, rng);
+          art = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "craft") {
-          craft = rpg_os::readVariantValue(value, variance, rng);
+          craft = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "demolition") {
-          demolition = rpg_os::readVariantValue(value, variance, rng);
+          demolition = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "fine_manipulation") {
-          fineManipulation = rpg_os::readVariantValue(value, variance, rng);
+          fineManipulation = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "heavy_machine") {
-          heavyMachine = rpg_os::readVariantValue(value, variance, rng);
+          heavyMachine = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "repair") {
-          repair = rpg_os::readVariantValue(value, variance, rng);
+          repair = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "sleight_of_hand") {
-          sleightOfHand = rpg_os::readVariantValue(value, variance, rng);
+          sleightOfHand = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "appraise") {
-          appraise = rpg_os::readVariantValue(value, variance, rng);
+          appraise = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "first_aid") {
-          firstAid = rpg_os::readVariantValue(value, variance, rng);
+          firstAid = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "gaming") {
-          gaming = rpg_os::readVariantValue(value, variance, rng);
+          gaming = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "knowledge") {
-          knowledge = rpg_os::readVariantValue(value, variance, rng);
+          knowledge = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "literacy") {
-          literacy = rpg_os::readVariantValue(value, variance, rng);
+          literacy = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "medicine") {
-          medicine = rpg_os::readVariantValue(value, variance, rng);
+          medicine = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "psychotherapy") {
-          psychotherapy = rpg_os::readVariantValue(value, variance, rng);
+          psychotherapy = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "science") {
-          science = rpg_os::readVariantValue(value, variance, rng);
+          science = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "strategy") {
-          strategy = rpg_os::readVariantValue(value, variance, rng);
+          strategy = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "technical_skill") {
-          technicalSkill = rpg_os::readVariantValue(value, variance, rng);
+          technicalSkill = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "insight") {
-          insight = rpg_os::readVariantValue(value, variance, rng);
+          insight = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "listen") {
-          listen = rpg_os::readVariantValue(value, variance, rng);
+          listen = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "navigate") {
-          navigate = rpg_os::readVariantValue(value, variance, rng);
+          navigate = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "research") {
-          research = rpg_os::readVariantValue(value, variance, rng);
+          research = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "sense") {
-          sense = rpg_os::readVariantValue(value, variance, rng);
+          sense = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "spot") {
-          spot = rpg_os::readVariantValue(value, variance, rng);
+          spot = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "track") {
-          track = rpg_os::readVariantValue(value, variance, rng);
+          track = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "climb") {
-          climb = rpg_os::readVariantValue(value, variance, rng);
+          climb = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "dodge") {
-          dodge = rpg_os::readVariantValue(value, variance, rng);
+          dodge = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "drive") {
-          drive = rpg_os::readVariantValue(value, variance, rng);
+          drive = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "fly") {
-          fly = rpg_os::readVariantValue(value, variance, rng);
+          fly = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "hide") {
-          hide = rpg_os::readVariantValue(value, variance, rng);
+          hide = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "jump") {
-          jump = rpg_os::readVariantValue(value, variance, rng);
+          jump = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "pilot") {
-          pilot = rpg_os::readVariantValue(value, variance, rng);
+          pilot = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "projection") {
-          projection = rpg_os::readVariantValue(value, variance, rng);
+          projection = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "ride") {
-          ride = rpg_os::readVariantValue(value, variance, rng);
+          ride = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "stealth") {
-          stealth = rpg_os::readVariantValue(value, variance, rng);
+          stealth = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "swim") {
-          swim = rpg_os::readVariantValue(value, variance, rng);
+          swim = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
         if (key == "throw") {
-          throw_ = rpg_os::readVariantValue(value, variance, rng);
+          throw_ = static_cast<uint8_t>(rpg_os::readVariantValue(value, variance, rng));
         }
       }
     }
@@ -1183,6 +2105,45 @@ public:
       out.push_back(std::move(character));
     }
     return out;
+  }
+
+  // ---- free-form data section loaders ----
+  /// Loads every record from a named `data` section as raw JSON.
+  static std::vector<rpg_os::Json> loadSection(const rpg_os::Json &rulesetJson,
+                                               std::string_view section) {
+    std::vector<rpg_os::Json> out;
+    const auto &data = rulesetJson.at("data");
+    if (data.contains(section)) {
+      for (const auto &record : data.at(section)) {
+        out.push_back(record);
+      }
+    }
+    return out;
+  }
+
+  /// Loads every spells record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadSpells(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "spells");
+  }
+
+  /// Loads every conditions record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadConditions(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "conditions");
+  }
+
+  /// Loads every poisons record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadPoisons(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "poisons");
+  }
+
+  /// Loads every diseases record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadDiseases(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "diseases");
+  }
+
+  /// Loads every items record from the ruleset JSON.
+  static std::vector<rpg_os::Json> loadItems(const rpg_os::Json &rulesetJson) {
+    return loadSection(rulesetJson, "items");
   }
 };
 

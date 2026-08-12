@@ -105,16 +105,16 @@ struct SkillDef {
   int32_t defaultValue{0};
 };
 
-/// A named check type: an id plus the configuration for the shared resolver.
+/// A named check type: an id plus the recipe for the generic resolver.
 ///
 /// @par Why name-check-types at all?
 /// Rulesets reference checks by name (e.g. "dnd5e_attack_melee",
-/// "tde_attack"). Mapping a name to a @ref CheckConfig lets the universal
+/// "tde_attack"). Mapping a name to a @ref CheckRecipe lets the universal
 /// engine resolve checks without hard-coding any game — and gives the code
-/// generator the exact config it needs to emit named, compiled check methods.
+/// generator the exact recipe it needs to emit named, compiled check methods.
 struct CheckTypeDef {
   std::string id;
-  CheckConfig config;
+  CheckRecipe recipe;
 };
 
 /// A named cost / progression table.
@@ -179,6 +179,8 @@ public:
   std::string licence; ///< licence governing the ruleset content (required)
   std::string comment; ///< optional free-form note for the ruleset author
   std::string ns;      ///< namespace used by the code generator
+  std::string
+      spellResource; ///< resource pool that spell casting draws its cost from (empty = none)
   int32_t schemaVersion{0};
 
   std::vector<AttributeDef> attributes;
@@ -212,6 +214,12 @@ public:
   /// Skills are counted here because the pool of a talent check is a stat the
   /// resolver must be able to read.
   [[nodiscard]] bool hasStat(std::string_view statId) const;
+
+  /// Whether `poolId` names one of the ruleset's resource pools.
+  [[nodiscard]] bool isResourcePool(std::string_view poolId) const;
+
+  /// Whether `conditionId` names a condition in the ruleset's `data.conditions`.
+  [[nodiscard]] bool isCondition(std::string_view conditionId) const;
 };
 
 inline const AttributeDef *Ruleset::findAttribute(std::string_view statId) const {
@@ -274,6 +282,27 @@ inline bool Ruleset::hasStat(std::string_view statId) const {
   return false;
 }
 
+inline bool Ruleset::isResourcePool(std::string_view poolId) const {
+  for (const ResourcePoolDef &def : resourcePools) {
+    if (def.id == poolId) {
+      return true;
+    }
+  }
+  return false;
+}
+
+inline bool Ruleset::isCondition(std::string_view conditionId) const {
+  if (!data.is_object() || !data.contains("conditions") || !data.at("conditions").is_array()) {
+    return false;
+  }
+  for (const Json &condition : data.at("conditions")) {
+    if (condition.value("id", "") == conditionId) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Loads and validates a ruleset JSON document.
  *
@@ -316,7 +345,7 @@ private:
   static void parseCostTables(const Json &obj, Ruleset &out);
   static void parseEquipmentSlots(const Json &obj, Ruleset &out);
   static void parseEventTriggers(const Json &obj, Ruleset &out);
-  static CheckKind parseKind(std::string_view kind);
+  static CheckRecipe parseRecipe(const Json &obj, std::string_view checkId);
   static EventType parseTrigger(std::string_view trigger);
 
   static std::string error(std::string_view message);
@@ -333,29 +362,125 @@ inline void RulesetLoader::require(bool condition, std::string_view message) {
   }
 }
 
-inline CheckKind RulesetLoader::parseKind(std::string_view kind) {
-  if (kind == "additive_d20") {
-    return CheckKind::AdditiveD20;
+inline CheckRecipe RulesetLoader::parseRecipe(const Json &item, std::string_view checkId) {
+  const auto requireField = [&](bool condition, const std::string &message) {
+    if (!condition) {
+      throw std::invalid_argument(error("check_type '" + std::string(checkId) + "' " + message));
+    }
+  };
+
+  CheckRecipe recipe;
+  const std::string resolution = item.value("resolution", "threshold");
+  if (resolution == "threshold") {
+    recipe.resolution = Resolution::Threshold;
+  } else if (resolution == "pool") {
+    recipe.resolution = Resolution::Pool;
+  } else if (resolution == "opposed") {
+    recipe.resolution = Resolution::Opposed;
+  } else if (resolution == "resistance") {
+    recipe.resolution = Resolution::Resistance;
+  } else {
+    requireField(false, "has unknown resolution '" + resolution + "'");
   }
-  if (kind == "roll_under_d20") {
-    return CheckKind::RollUnderD20;
+  recipe.dice = DiceExpression(item.value("dice", "1d20"));
+
+  const std::string comparison = item.value("comparison", "ge");
+  if (comparison == "ge") {
+    recipe.comparison = Comparison::GreaterEqual;
+  } else if (comparison == "le") {
+    recipe.comparison = Comparison::LessEqual;
+  } else {
+    requireField(false, "has unknown comparison '" + comparison + "'");
   }
-  if (kind == "triple_roll_under_pool") {
-    return CheckKind::TripleRollUnderPool;
+
+  const std::string source = item.value("threshold_source", "difficulty");
+  if (source == "difficulty") {
+    recipe.thresholdSource = ThresholdSource::Difficulty;
+  } else if (source == "actor_stat") {
+    recipe.thresholdSource = ThresholdSource::ActorStat;
+  } else if (source == "target_stat") {
+    recipe.thresholdSource = ThresholdSource::TargetStat;
+  } else {
+    requireField(false, "has unknown threshold_source '" + source + "'");
   }
-  if (kind == "attack_vs_defense") {
-    return CheckKind::AttackVsDefense;
+  recipe.thresholdStat = item.value("threshold_stat", "");
+
+  if (item.contains("bonus_stats")) {
+    for (const Json &stat : item.at("bonus_stats")) {
+      recipe.bonusStats.push_back(stat.get<std::string>());
+    }
   }
-  if (kind == "roll_under_d100") {
-    return CheckKind::RollUnderD100;
+  if (item.contains("pool_attributes")) {
+    recipe.numPoolAttributes = 0;
+    for (const Json &attr : item.at("pool_attributes")) {
+      requireField(recipe.numPoolAttributes < 3, "has more than 3 pool_attributes");
+      recipe.poolAttributes[recipe.numPoolAttributes++] = attr.get<std::string>();
+    }
   }
-  if (kind == "opposed_roll_under_d100") {
-    return CheckKind::OpposedRollUnderD100;
+  recipe.poolStat = item.value("pool_stat", "");
+  recipe.attackStat = item.value("attack_stat", "");
+  recipe.parryStat = item.value("parry_stat", "");
+  recipe.compareLevels = item.value("compare_levels", false);
+
+  const std::string critical = item.value("critical_style", "none");
+  if (critical == "none") {
+    recipe.criticalStyle = CriticalStyle::None;
+  } else if (critical == "face") {
+    recipe.criticalStyle = CriticalStyle::Face;
+  } else if (critical == "double") {
+    recipe.criticalStyle = CriticalStyle::DoubleRoll;
+  } else if (critical == "percentile") {
+    recipe.criticalStyle = CriticalStyle::PercentileBand;
+  } else {
+    requireField(false, "has unknown critical_style '" + critical + "'");
   }
-  if (kind == "resistance_roll") {
-    return CheckKind::ResistanceRoll;
+  recipe.criticalFace = item.value("critical_face", 0);
+  recipe.criticalConfirm = item.value("critical_confirm", false);
+
+  const std::string fumble = item.value("fumble_style", "none");
+  if (fumble == "none") {
+    recipe.fumbleStyle = CriticalStyle::None;
+  } else if (fumble == "face") {
+    recipe.fumbleStyle = CriticalStyle::Face;
+  } else if (fumble == "double") {
+    recipe.fumbleStyle = CriticalStyle::DoubleRoll;
+  } else if (fumble == "percentile") {
+    recipe.fumbleStyle = CriticalStyle::PercentileBand;
+  } else {
+    requireField(false, "has unknown fumble_style '" + fumble + "'");
   }
-  throw std::invalid_argument(error("unknown check kind '" + std::string(kind) + "'"));
+  recipe.fumbleFace = item.value("fumble_face", 0);
+  recipe.fumbleConfirm = item.value("fumble_confirm", false);
+
+  const std::string grading = item.value("grading", "none");
+  if (grading == "none") {
+    recipe.grading = Grading::None;
+  } else if (grading == "percentile") {
+    recipe.grading = Grading::Percentile;
+  } else if (grading == "pool_quality") {
+    recipe.grading = Grading::PoolQuality;
+  } else {
+    requireField(false, "has unknown grading '" + grading + "'");
+  }
+
+  const std::string difficulty = item.value("difficulty_mode", "to_threshold");
+  if (difficulty == "to_threshold") {
+    recipe.difficultyMode = DifficultyMode::ToThreshold;
+  } else if (difficulty == "to_stat") {
+    recipe.difficultyMode = DifficultyMode::ToStat;
+  } else {
+    requireField(false, "has unknown difficulty_mode '" + difficulty + "'");
+  }
+
+  const std::string multiplier = item.value("difficulty_multiplier", "none");
+  if (multiplier == "none") {
+    recipe.difficultyMultiplier = DifficultyMultiplier::None;
+  } else if (multiplier == "double_halve") {
+    recipe.difficultyMultiplier = DifficultyMultiplier::DoubleHalve;
+  } else {
+    requireField(false, "has unknown difficulty_multiplier '" + multiplier + "'");
+  }
+  return recipe;
 }
 
 inline EventType RulesetLoader::parseTrigger(std::string_view trigger) {
@@ -456,29 +581,9 @@ inline void RulesetLoader::parseCheckTypes(const Json &obj, Ruleset &out) {
     return;
   }
   for (const auto &[key, item] : obj.at("check_types").items()) {
-    require(item.contains("kind"), "check_type '" + key + "' missing 'kind'");
     CheckTypeDef def;
     def.id = key;
-    def.config.kind = parseKind(item.at("kind").get<std::string>());
-    def.config.diceExpression = item.value("dice_expression", "1d20");
-    def.config.useConfirmationRoll = item.value("confirmation_roll", false);
-    def.config.targetStat = item.value("target_stat", "");
-    def.config.poolStat = item.value("pool_stat", "");
-    def.config.attackStat = item.value("attack_stat", "");
-    def.config.parryStat = item.value("parry_stat", "");
-    if (item.contains("bonus_stats")) {
-      for (const Json &stat : item.at("bonus_stats")) {
-        def.config.bonusStats.push_back(stat.get<std::string>());
-      }
-    }
-    if (item.contains("attributes")) {
-      def.config.numAttributes = 0;
-      for (const Json &attr : item.at("attributes")) {
-        require(def.config.numAttributes < 3,
-                "check_type '" + key + "' has more than 3 attributes");
-        def.config.attributes[def.config.numAttributes++] = attr.get<std::string>();
-      }
-    }
+    def.recipe = parseRecipe(item, key);
     out.checkTypes.push_back(std::move(def));
   }
 }
@@ -578,6 +683,7 @@ inline Ruleset RulesetLoader::load(const Json &root) {
   out.licence = root.value("licence", "");
   out.comment = root.value("comment", "");
   out.ns = root.value("namespace", "rpg_os::generated::" + out.id);
+  out.spellResource = root.value("spell_resource", "");
 
   parseAttributes(root, out);
   parseDerivedStats(root, out);
@@ -677,35 +783,42 @@ inline void RulesetLoader::validate(const Ruleset &ruleset) {
     }
   }
 
-  // Check type references must exist.
+  // Check type recipe references must exist.
   for (const CheckTypeDef &def : ruleset.checkTypes) {
-    const CheckConfig &cfg = def.config;
-    for (const std::string &stat : cfg.bonusStats) {
+    const CheckRecipe &recipe = def.recipe;
+    for (const std::string &stat : recipe.bonusStats) {
       require(ruleset.hasStat(stat),
               "check type '" + def.id + "' references unknown bonus stat '" + stat + "'");
     }
-    if (!cfg.targetStat.empty()) {
-      require(ruleset.hasStat(cfg.targetStat), "check type '" + def.id +
-                                                   "' references unknown target stat '" +
-                                                   cfg.targetStat + "'");
+    if (recipe.thresholdSource == ThresholdSource::TargetStat ||
+        recipe.thresholdSource == ThresholdSource::ActorStat) {
+      require(ruleset.hasStat(recipe.thresholdStat), "check type '" + def.id +
+                                                         "' references unknown threshold stat '" +
+                                                         recipe.thresholdStat + "'");
     }
-    if (!cfg.poolStat.empty()) {
-      require(ruleset.hasStat(cfg.poolStat),
-              "check type '" + def.id + "' references unknown pool stat '" + cfg.poolStat + "'");
+    if (!recipe.poolStat.empty()) {
+      require(ruleset.hasStat(recipe.poolStat),
+              "check type '" + def.id + "' references unknown pool stat '" + recipe.poolStat + "'");
     }
-    if (!cfg.attackStat.empty()) {
-      require(ruleset.hasStat(cfg.attackStat), "check type '" + def.id +
-                                                   "' references unknown attack stat '" +
-                                                   cfg.attackStat + "'");
+    if (!recipe.attackStat.empty()) {
+      require(ruleset.hasStat(recipe.attackStat), "check type '" + def.id +
+                                                      "' references unknown attack stat '" +
+                                                      recipe.attackStat + "'");
     }
-    if (!cfg.parryStat.empty()) {
-      require(ruleset.hasStat(cfg.parryStat),
-              "check type '" + def.id + "' references unknown parry stat '" + cfg.parryStat + "'");
+    if (!recipe.parryStat.empty()) {
+      require(ruleset.hasStat(recipe.parryStat), "check type '" + def.id +
+                                                     "' references unknown parry stat '" +
+                                                     recipe.parryStat + "'");
     }
-    for (std::size_t i = 0; i < cfg.numAttributes; ++i) {
-      require(ruleset.hasStat(cfg.attributes[i]), "check type '" + def.id +
-                                                      "' references unknown attribute '" +
-                                                      cfg.attributes[i] + "'");
+    for (std::size_t i = 0; i < recipe.numPoolAttributes; ++i) {
+      require(ruleset.hasStat(recipe.poolAttributes[i]),
+              "check type '" + def.id + "' references unknown pool attribute '" +
+                  recipe.poolAttributes[i] + "'");
+    }
+    // A pool check needs as many dice as attributes.
+    if (recipe.resolution == Resolution::Pool) {
+      require(recipe.dice.dieCount() == recipe.numPoolAttributes,
+              "check type '" + def.id + "' pool resolution dice count must match pool_attributes");
     }
   }
 

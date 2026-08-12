@@ -164,7 +164,8 @@ TEST_CASE("tde5e_core: full core-rule bestiary and spell list are present") {
   const rpg_os::Json &data = engine.ruleset().data;
   CHECK(data.at("creatures").size() == 11); // 10 bestiary + staff_serpent
   CHECK(data.at("spells").size() >= 50);
-  CHECK(data.at("poisons").size() == 6); // toad_poison + Arax/Kelmon/Tulmadron/Wurara + staff_serpent_venom
+  CHECK(data.at("poisons").size() ==
+        6); // toad_poison + Arax/Kelmon/Tulmadron/Wurara + staff_serpent_venom
 
   // A fixed-LP creature (Kosh Toad) is unaffected by variance.
   auto toad = engine.createCreature("toad", rpg_os::Variance::Weakest);
@@ -247,7 +248,7 @@ TEST_CASE("brp_ugc: Easy and Difficult shift the skill rating (BRP)") {
 
   // Easy: Brawl 25 is doubled to 50, so a roll of 40 succeeds.
   rpg_os::CheckParams easy;
-  easy.difficultyMode = rpg_os::DifficultyMode::Easy;
+  easy.difficultyScale = rpg_os::DifficultyScale::Easy;
   auto rEasy = script({40});
   const rpg_os::CheckResult ok =
       engine.executeCheck("brp_skill_brawl", *human, nullptr, easy, rEasy);
@@ -255,7 +256,7 @@ TEST_CASE("brp_ugc: Easy and Difficult shift the skill rating (BRP)") {
 
   // Difficult: Brawl 25 is halved to 12, so a roll of 15 fails.
   rpg_os::CheckParams difficult;
-  difficult.difficultyMode = rpg_os::DifficultyMode::Difficult;
+  difficult.difficultyScale = rpg_os::DifficultyScale::Difficult;
   auto rDifficult = script({15});
   const rpg_os::CheckResult fail =
       engine.executeCheck("brp_skill_brawl", *human, nullptr, difficult, rDifficult);

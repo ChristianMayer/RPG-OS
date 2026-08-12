@@ -62,7 +62,7 @@ enum class Variance {
 /// out-of-contract RNG call. This mirrors how a ruleset's plain-integer values
 /// behave: no range, no variance.
 template <RandomNumberGenerator Rng>
-[[nodiscard]] inline int32_t pickVariant(int32_t min, int32_t max, Variance variance, Rng &rng) {
+[[nodiscard]] constexpr int32_t pickVariant(int32_t min, int32_t max, Variance variance, Rng &rng) {
   if (min >= max) {
     return min;
   }
@@ -99,7 +99,7 @@ template <RandomNumberGenerator Rng>
 /// or the reversed interval when subtracted), so the same expression always
 /// reports the same range and the third-band selection is deterministic
 /// across modes.
-[[nodiscard]] inline std::pair<int32_t, int32_t> diceBounds(const DiceExpression &expression) {
+[[nodiscard]] constexpr std::pair<int32_t, int32_t> diceBounds(const DiceExpression &expression) {
   int32_t lo = expression.constant();
   int32_t hi = expression.constant();
   for (const DieSpec &die : expression.dice()) {
@@ -128,7 +128,7 @@ template <RandomNumberGenerator Rng>
 /// not a number", and 0 is the same neutral default @ref NullStatProvider
 /// uses for missing stats.
 template <RandomNumberGenerator Rng>
-[[nodiscard]] inline int32_t readVariantValue(const Json &entry, Variance variance, Rng &rng) {
+[[nodiscard]] constexpr int32_t readVariantValue(const Json &entry, Variance variance, Rng &rng) {
   if (entry.is_number_integer()) {
     return entry.get<int32_t>();
   }

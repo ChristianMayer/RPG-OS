@@ -3,34 +3,22 @@
 
 /**
  * @file checks.hpp
- * @brief Shared check resolution algorithms.
+ * @brief Generic, data-driven check resolution.
  *
- * The check algorithms — additive d20, roll-under d20, the DSA (The Dark Eye)
- * 3d20 pool check, attack-vs-defense, and the Basic Roleplaying percentile
- * (d100 roll-under, opposed combat, and resistance) — live here as templates
- * over a @c StatProvider and an @c RandomNumberGenerator. Both modes call the
- * very same functions:
- *   - generated specific-mode code calls them directly with string literals
- *     for every parameter, so the whole computation is inlined and dead
- *     branches fold away (zero dynamic allocation in the hot path);
- *   - the universal engine feeds them through @c CheckConfig (owning
- *     @c std::string) via the @c resolveCheck dispatcher.
+ * A "check" is the heart of a tabletop ruleset: the engine must roll some
+ * dice and decide success, margins, and criticals. The engine deliberately
+ * knows **no ruleset-specific mechanisms** — there is no "D&D roll" or
+ * "The Dark Eye talent check" anywhere in this header. Instead a check is
+ * described entirely by a @c CheckRecipe: which dice to roll, how to derive
+ * the reference value the roll is compared against, which way to compare,
+ * how to grade criticals, and how difficulty parameters are applied.
  *
- * @par Why share the algorithms between modes at all?
- * A "check" is the heart of a tabletop ruleset, and the two modes must agree
- * on its outcome — the parity test exists precisely to prove that the
- * universal engine and the generated code roll the same dice, apply the same
- * criticals, and report the same margins. Writing the algorithms once, as
- * templates, is the only way to get that agreement without duplicating the
- * rules logic (and the risk of a copy drifting).
- *
- * @par Why templates with @c std::string_view parameters?
- * The universal mode passes owning @c std::string data (from the ruleset) and
- * the specific mode passes compile-time string literals. Templating on the
- * @c StatProvider and taking @c std::string_view for every parameter means the
- * same source serves both: for the specific mode the compiler can see the
- * exact stat ids at compile time and fold the whole check into a few
- * instructions.
+ * The universal engine interprets the recipe at runtime (loaded from the
+ * ruleset JSON), and the generated specific-mode code calls the very same
+ * @c resolveCheck with a `constexpr` recipe, so the compiler folds the whole
+ * check into a few instructions. Adding a new game system — including one
+ * with a new combination of dice, comparison, and grading — requires only a
+ * new JSON recipe, never a change to this (or any other universal) code.
  */
 #pragma once
 
@@ -40,107 +28,169 @@
 #include <rpg_os/common/types.hpp>
 #include <rpg_os/core/concepts.hpp>
 #include <rpg_os/core/dice_engine.hpp>
-#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
 namespace rpg_os {
 
-/// The supported check mechanisms.
-///
-/// @par Why exactly these seven?
-/// These are the dice mechanisms the shipped rulesets actually use: D&D 5e
-/// resolves attacks and ability checks as "1d20 + bonuses vs. a difficulty",
-/// The Dark Eye uses roll-under attributes, 3d20 talent checks, and an
-/// attack-vs-defense contest, and Basic Roleplaying resolves percentile rolls
-/// with a d100 roll-under (graded Critical / Special / Success / Fumble), an
-/// opposed d100 combat contest, and a single-sided resistance roll against the
-/// Resistance Table. Keeping the set closed means the universal dispatcher (a
-/// @c switch) and the code generator (which emits named methods) both map onto
-/// a fixed vocabulary — a new game system with a fundamentally new roll
-/// mechanism would extend this enum, but that is a rare, deliberate change
-/// rather than a per-ruleset concern.
-enum class CheckKind {
-  AdditiveD20,          ///< 1d20 + bonuses >= threshold (D&D attack / ability check)
-  RollUnderD20,         ///< 1d20 <= effective attribute (DSA attribute check)
-  TripleRollUnderPool,  ///< 3d20 vs three attributes, pool compensates (DSA talent)
-  AttackVsDefense,      ///< attacker vs. defender roll-under contest (DSA combat)
-  RollUnderD100,        ///< 1d100 <= stat with Critical/Special/Success levels (BRP)
-  OpposedRollUnderD100, ///< opposed 1d100 combat contest (BRP Attack/Defense Matrix)
-  ResistanceRoll        ///< single D100 vs the BRP Resistance Table chance
+/// Which way a rolled value is compared against the reference.
+enum class Comparison : int8_t {
+  GreaterEqual, ///< the (bonus-adjusted) roll must be >= the reference
+  LessEqual     ///< the roll must be <= the reference
 };
 
-/**
- * Describes HOW a check is resolved, as loaded from a ruleset's `check_types`.
- *
- * @par Why own its strings?
- * @c CheckConfig is built from ruleset JSON and must outlive the parse, so it
- * owns its @c std::string members. That makes it a self-contained value the
- * universal engine can hand to the dispatcher without any lifetime dependency
- * on the @ref Ruleset that produced it — and a stable thing for generated code
- * to mirror with `constexpr` configs.
- */
-struct CheckConfig {
-  CheckKind kind{CheckKind::AdditiveD20};
-
-  /// AdditiveD20: the dice expression (e.g. "1d20").
-  std::string diceExpression{"1d20"};
-
-  /// AdditiveD20: actor stats summed into the total (e.g. STR_mod, proficiency).
-  std::vector<std::string> bonusStats;
-  /// AdditiveD20: stat on the target used as the threshold; empty => the DC is
-  /// taken from CheckParams::difficulty.
-  std::string targetStat{};
-
-  /// RollUnderD20 / TripleRollUnderPool: the attribute ids to check against.
-  /// A fixed-size array keeps the struct trivially copyable and lets the
-  /// generated code emit it as a `constexpr` aggregate; @ref numAttributes
-  /// records how many of the three slots are actually used.
-  std::array<std::string, 3> attributes{};
-  std::size_t numAttributes{0};
-  /// TripleRollUnderPool: the pool stat id (e.g. the skill rating).
-  std::string poolStat{};
-  /// RollUnderD20: roll again on a natural 1 / 20 to confirm criticals and
-  /// botches (The Dark Eye default); when false, nat 1 / nat 20 are direct.
-  bool useConfirmationRoll{false};
-
-  /// AttackVsDefense: stat ids for the attack (actor) and parry/dodge (target).
-  std::string attackStat{};
-  std::string parryStat{};
+/// Where the reference value of a check comes from.
+enum class ThresholdSource : int8_t {
+  Difficulty, ///< the value in @c CheckParams::difficulty
+  ActorStat,  ///< one of the acting entity's stats
+  TargetStat  ///< one of the target entity's stats
 };
 
-/// BRP difficulty level applied to a percentile roll-under check.
+/// The fundamental shape of a check.
 ///
-/// @par Why a mode rather than a flat modifier?
-/// BRP grades difficulty by multiplying the skill rating — Easy doubles it,
-/// Difficult halves it — rather than adding a constant. A mode lets the
-/// resolver apply that multiplication faithfully, while @c CheckParams::
-/// difficulty still carries the flat ±20% situational modifiers.
+/// @par Why four resolutions?
+/// These are the generic building blocks every ruleset's checks are built
+/// from: a single roll against a reference (threshold), several independent
+/// rolls that draw on a shared pool (pool), a two-sided contest (opposed),
+/// and a single roll against a chance derived from two characteristics
+/// (resistance). They are not named after any game; a ruleset composes them
+/// with the other recipe fields to express exactly its own rules.
+enum class Resolution : int8_t {
+  Threshold, ///< roll against a single reference value
+  Pool,      ///< independent rolls, overshoot drawn from a pool
+  Opposed,   ///< attacker rolls vs. defender rolls
+  Resistance ///< single roll against a table-derived chance
+};
+
+/// How critical successes / failures are detected.
+enum class CriticalStyle : int8_t {
+  None,          ///< no natural criticals
+  Face,          ///< a specific die face (optionally confirmed by a re-roll)
+  DoubleRoll,    ///< two equal dice among a set (e.g. double-1 / double-20)
+  PercentileBand ///< graded percentile bands (see @ref successLevelFor)
+};
+
+/// How much information the check result carries.
+enum class Grading : int8_t {
+  None,       ///< plain pass / fail
+  Percentile, ///< graded success levels (Critical / Special / Success / ...)
+  PoolQuality ///< a quality level derived from the remaining pool
+};
+
+/// How @c CheckParams::difficulty is applied to the reference value.
 enum class DifficultyMode : int8_t {
-  Average = 0,   ///< no change to the stat
-  Easy = 1,      ///< double the effective stat
-  Difficult = -1 ///< halve the effective stat
+  ToThreshold, ///< difficulty *is* the reference (a fixed DC)
+  ToStat       ///< difficulty is added to the stat that forms the reference
+};
+
+/// Whether a situational difficulty scale (Easy / Difficult) scales the
+/// reference multiplicatively.
+enum class DifficultyMultiplier : int8_t {
+  None,       ///< no multiplicative difficulty
+  DoubleHalve ///< Easy doubles the reference, Difficult halves it
+};
+
+/// A complete, self-contained description of how one check is resolved.
+///
+/// @par Why one struct with every field?
+/// A recipe is the union of everything a ruleset may declare for a check; only
+/// the fields relevant to the chosen @ref Resolution are read, so rulesets
+/// never write more than they need. The struct owns its strings so a recipe
+/// parsed from JSON outlives the parse, and generated code builds the
+/// equivalent recipe from the @c "1d20"_dice literals — the dice are parsed
+/// once when the recipe is constructed, never on each roll. This is the one
+/// piece of "ruleset specific" wiring that lives in the *generated* header,
+/// never in the core.
+struct CheckRecipe {
+  /// The fundamental shape (see @ref Resolution).
+  Resolution resolution{Resolution::Threshold};
+  /// The dice expression rolled by the check (e.g. "1d20", "1d100", "3d20").
+  /// Held as a parsed @c DiceExpression so the dice are interpreted once when
+  /// the recipe is built, not on every resolution.
+  DiceExpression dice{"1d20"};
+
+  /// Threshold resolution: the comparison direction.
+  Comparison comparison{Comparison::GreaterEqual};
+  /// Threshold resolution: where the reference value comes from.
+  ThresholdSource thresholdSource{ThresholdSource::Difficulty};
+  /// Threshold resolution: the stat used when @ref thresholdSource is
+  /// @c ActorStat or @c TargetStat.
+  std::string thresholdStat{};
+  /// Threshold resolution: actor stats added to the rolled total (additive
+  /// checks, e.g. D&D's attribute bonuses on top of the d20).
+  std::vector<std::string> bonusStats{};
+
+  /// Pool resolution: the attributes each independent roll is checked against.
+  /// @ref numPoolAttributes records how many of the three slots are used.
+  std::array<std::string, 3> poolAttributes{};
+  std::size_t numPoolAttributes{0};
+  /// Pool resolution: the stat that provides the pool (e.g. a skill rating).
+  std::string poolStat{};
+
+  /// Opposed / resistance resolution: the attacker's (active) stat.
+  std::string attackStat{};
+  /// Opposed / resistance resolution: the defender's (passive) stat.
+  std::string parryStat{};
+  /// Opposed resolution: true compares graded success levels (a hit needs a
+  /// strictly higher level); false resolves a staged roll-under contest
+  /// (parry only after a successful attack).
+  bool compareLevels{false};
+
+  /// Critical success detection (see @ref CriticalStyle).
+  CriticalStyle criticalStyle{CriticalStyle::None};
+  /// Critical success: the die face that is a critical (@c Face).
+  int criticalFace{0};
+  /// Critical success: re-roll to confirm (@c Face).
+  bool criticalConfirm{false};
+  /// Critical failure detection (see @ref CriticalStyle).
+  CriticalStyle fumbleStyle{CriticalStyle::None};
+  /// Critical failure: the die face that is a fumble (@c Face).
+  int fumbleFace{0};
+  /// Critical failure: re-roll to confirm (@c Face).
+  bool fumbleConfirm{false};
+
+  /// How much information the result carries (see @ref Grading).
+  Grading grading{Grading::None};
+
+  /// How @c CheckParams::difficulty is applied (see @ref DifficultyMode).
+  DifficultyMode difficultyMode{DifficultyMode::ToThreshold};
+  /// Whether Easy / Difficult scales the reference multiplicatively.
+  DifficultyMultiplier difficultyMultiplier{DifficultyMultiplier::None};
+};
+
+/// Situational difficulty scale for a percentile roll-under check.
+///
+/// @par Why a scale rather than a flat modifier?
+/// Some percentile systems grade difficulty by multiplying the skill rating —
+/// Easy doubles it, Difficult halves it — rather than adding a constant.
+/// @c CheckParams::difficulty still carries the flat situational modifiers;
+/// the scale is orthogonal to them.
+enum class DifficultyScale : int8_t {
+  Average = 0,   ///< no change to the reference
+  Easy = 1,      ///< double the effective reference
+  Difficult = -1 ///< halve the effective reference
 };
 
 /// Per-call inputs shared by both modes.
 ///
-/// @par Why separate per-call inputs from the config?
-/// The config says @em how a check is resolved (which mechanism, which stats);
+/// @par Why separate per-call inputs from the recipe?
+/// The recipe says @em how a check is resolved (which dice, which stats);
 /// this struct carries the values that change @em per invocation — the
 /// difficulty imposed by the situation, and situational modifiers. Keeping
-/// them apart means the config can be built once and reused across many checks
-/// with different difficulties.
+/// them apart means the recipe can be built once and reused across many
+/// checks with different difficulties.
 struct CheckParams {
-  /// AdditiveD20: the DC when config.targetStat is empty; RollUnderD20: the
-  /// attribute modifier; TripleRollUnderPool / AttackVsDefense: the modifier
-  /// subtracted from the pool / attack value.
+  /// Threshold resolution: the reference when @c ThresholdSource::Difficulty;
+  /// otherwise the amount added to the stat that forms the reference.
   int32_t difficulty{0};
-  /// Extra flat modifier added to the d20 total (AdditiveD20) or the pool.
+  /// Extra flat modifier added to the rolled total (additive checks) or to
+  /// the pool (pool checks).
   int32_t situationalModifier{0};
-  /// BRP difficulty level (Easy doubles the stat, Difficult halves it). Only
-  /// the d100 roll-under kind uses it; see @ref DifficultyMode.
-  DifficultyMode difficultyMode{DifficultyMode::Average};
+  /// Multiplicative difficulty scale (Easy doubles / Difficult halves the
+  /// reference). Only checks that opt in via @c CheckRecipe::difficultyMultiplier
+  /// honour it; see @ref DifficultyScale.
+  DifficultyScale difficultyScale{DifficultyScale::Average};
 };
 
 /// The Dark Eye quality level derived from leftover skill points:
@@ -150,27 +200,26 @@ struct CheckParams {
 /// The official rule is a per-3-points band. Expressing it as a closed-form
 /// division (instead of a lookup table) keeps it in one line, matches the
 /// source rule exactly, and is trivially reproducible in the generated code.
-[[nodiscard]] inline int32_t qualityLevelFromRemaining(int32_t remaining) noexcept {
+[[nodiscard]] constexpr int32_t qualityLevelFromRemaining(int32_t remaining) noexcept {
   if (remaining <= 0) {
     return 1;
   }
   return (remaining - 1) / 3 + 1;
 }
 
-/// Maps a percentile roll to a Basic Roleplaying success level against `stat`.
+/// Maps a percentile roll to a graded success level against `stat`.
 ///
 /// @par Why a single helper shared by solo and opposed rolls?
-/// Both BRP mechanisms (a lone roll-under check and an opposed combat
-/// contest) grade the same way — Critical at stat/20, Special at stat/5,
-/// Success at stat, and a skill-dependent fumble band — and the opposed
-/// resolver must compare the two sides' levels. One helper guarantees the two
-/// mechanisms can never disagree about what a roll means.
+/// Any check that grades percentiles — a lone roll-under check or an opposed
+/// contest — grades the same way: Critical at stat/20, Special at stat/5,
+/// Success at stat, and a skill-dependent fumble band — and opposed checks
+/// must compare the two sides' levels. One helper guarantees every use can
+/// never disagree about what a roll means.
 ///
-/// The thresholds follow the BRP Skill Results Table: the critical range is
-/// ceil(stat/20), the special range ceil(stat/5), and the fumble band starts
-/// at 95 + ceil(stat/20) (i.e. 96-00 for a skill up to 20, 97-00 up to 40,
-/// ..., 00 for 81+), capped at 100 so a roll of 00 always fumbles.
-[[nodiscard]] inline SuccessLevel successLevelFor(int32_t stat, int roll) noexcept {
+/// The thresholds follow the classic Skill Results Table: the critical range
+/// is ceil(stat/20), the special range ceil(stat/5), and the fumble band
+/// starts at 95 + ceil(stat/20), capped at 100 so a roll of 00 always fumbles.
+[[nodiscard]] constexpr SuccessLevel successLevelFor(int32_t stat, int roll) noexcept {
   const int rawFumbleMin = 95 + (stat + 19) / 20; // 95 + ceil(stat/20)
   const int fumbleMin = rawFumbleMin < 100 ? rawFumbleMin : 100;
   if (roll >= fumbleMin) {
@@ -187,289 +236,257 @@ struct CheckParams {
 
 namespace detail {
 
-template <RandomNumberGenerator Rng> inline int rollDie(int sides, Rng &rng) {
+/// Rolls a single die of `sides` (a shared primitive used by every
+/// resolution; the recipe decides how many times it is called).
+template <RandomNumberGenerator Rng> constexpr int rollDie(int sides, Rng &rng) {
   return rng(1, sides);
+}
+
+/// Applies a multiplicative difficulty scale to a reference value.
+[[nodiscard]] constexpr int32_t scaleByDifficulty(int32_t value, DifficultyScale scale) noexcept {
+  if (scale == DifficultyScale::Easy) {
+    return value * 2;
+  }
+  if (scale == DifficultyScale::Difficult) {
+    return value / 2;
+  }
+  return value;
 }
 
 } // namespace detail
 
-/// Additive d20: total = rolled dice + bonus stats + situational modifier,
-/// compared to the target's stat (or params.difficulty). Natural 20 always
-/// succeeds, natural 1 always fails.
+/// Threshold resolution: roll the recipe's dice and compare the result
+/// (optionally plus actor bonus stats) against a single reference value.
 ///
-/// @par Why natural 20/1 override the comparison?
-/// D&D-style games treat the die faces as dramatic special cases: a natural
-/// 20 hits even against an unattainable AC, a natural 1 misses even a trivial
-/// target. Encoding that here (rather than in the ruleset) keeps the rule in
-/// the shared algorithm both modes use, so the parity guarantee covers it.
+/// @par Why one function for both additive and roll-under checks?
+/// They are the same shape — a single roll against a reference — differing
+/// only in the comparison direction, the source of the reference, and how
+/// difficulty is applied. Encoding those as recipe fields (rather than as
+/// separate named algorithms) is what lets the universal engine handle any
+/// new system's solo checks without new code.
 template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
-[[nodiscard]] CheckResult
-resolveAdditiveD20(const Actor &actor, const Target &target, std::string_view diceExpression,
-                   std::span<const std::string_view> bonusStats, std::string_view targetStat,
-                   const CheckParams &params, Rng &rng) {
+[[nodiscard]] constexpr CheckResult resolveThresholdCheck(const Actor &actor, const Target &target,
+                                                          const CheckRecipe &recipe,
+                                                          const CheckParams &params, Rng &rng) {
   CheckResult result;
-  result.rawDiceRolls = DiceExpression(diceExpression).roll(rng);
-  int total = params.situationalModifier;
-  for (const std::string_view stat : bonusStats) {
-    total += actor.getStat(stat);
-  }
-  for (const int die : result.rawDiceRolls) {
-    total += die;
-  }
-  const int targetValue = targetStat.empty() ? params.difficulty : target.getStat(targetStat);
-  result.marginOfSuccess = static_cast<int32_t>(total - targetValue);
+  const DiceExpression &dice = recipe.dice;
 
-  const bool natural20 = !result.rawDiceRolls.empty() && result.rawDiceRolls.front() == 20;
-  const bool natural1 = !result.rawDiceRolls.empty() && result.rawDiceRolls.front() == 1;
-  result.isCriticalSuccess = natural20;
-  result.isCriticalFailure = natural1;
-  if (natural20) {
-    result.isSuccess = true;
-  } else if (natural1) {
-    result.isSuccess = false;
-  } else {
-    result.isSuccess = total >= targetValue;
+  // Derive the reference value the roll is compared against.
+  int32_t reference = 0;
+  if (recipe.thresholdSource == ThresholdSource::TargetStat) {
+    reference = static_cast<int32_t>(target.getStat(recipe.thresholdStat));
+  } else if (recipe.thresholdSource == ThresholdSource::ActorStat) {
+    reference = static_cast<int32_t>(actor.getStat(recipe.thresholdStat));
   }
-  return result;
-}
-
-/// Roll-under d20: 1d20 <= effective attribute (attribute + difficulty).
-/// Optional confirmation rolls for criticals (nat 1) and botches (nat 20).
-///
-/// @par Why the eav < 1 early-out?
-/// With a roll-under mechanic the effective attribute value (EAV) is the
-/// highest number that can still succeed; if it drops below 1 no roll can
-/// possibly pass, so the check fails without consuming an RNG draw — keeping
-/// scripted-RNG tests exact and avoiding a pointless die roll.
-template <StatProvider Actor, RandomNumberGenerator Rng>
-[[nodiscard]] CheckResult resolveRollUnderD20(const Actor &actor, std::string_view attribute,
-                                              bool useConfirmationRoll, const CheckParams &params,
-                                              Rng &rng) {
-  CheckResult result;
-  const int32_t eav = actor.getStat(attribute) + params.difficulty;
-  if (eav < 1) {
-    // Cannot roll below 1, so success is impossible.
+  if (recipe.difficultyMode == DifficultyMode::ToStat) {
+    reference += params.difficulty;
+  } else if (recipe.difficultyMode == DifficultyMode::ToThreshold &&
+             recipe.thresholdSource == ThresholdSource::Difficulty) {
+    reference = params.difficulty;
+  }
+  if (recipe.difficultyMultiplier == DifficultyMultiplier::DoubleHalve) {
+    reference = detail::scaleByDifficulty(reference, params.difficultyScale);
+  }
+  // Roll-under checks fail outright when the reference is below the minimum
+  // rollable value (1): no die can possibly meet it, so no RNG is consumed.
+  if (recipe.comparison == Comparison::LessEqual && reference < 1) {
     result.isSuccess = false;
     return result;
   }
-  const int roll = detail::rollDie(20, rng);
-  result.rawDiceRolls.push_back(roll);
 
-  if (useConfirmationRoll && (roll == 1 || roll == 20)) {
-    const int confirm = detail::rollDie(20, rng);
-    result.rawDiceRolls.push_back(confirm);
-    if (roll == 1) {
-      // A successful confirmation is a critical success; otherwise a regular
-      // success on the original check.
-      result.isSuccess = true;
-      result.isCriticalSuccess = confirm <= eav;
-    } else {
-      // A failed confirmation (or another 20) is a botch; otherwise a regular
-      // failure on the original check.
-      result.isSuccess = false;
-      result.isCriticalFailure = confirm > eav || confirm == 20;
-    }
-  } else {
-    result.isSuccess = roll <= eav;
-    result.isCriticalSuccess = roll == 1;
-    result.isCriticalFailure = roll == 20;
+  result.rawDiceRolls = dice.roll(rng);
+  int diceTotal = 0;
+  for (const int die : result.rawDiceRolls) {
+    diceTotal += die;
   }
-  result.marginOfSuccess = static_cast<int32_t>(eav - roll);
+
+  // Additive checks sum bonus stats and the situational modifier into the
+  // rolled total; roll-under checks compare the bare roll.
+  int total = diceTotal;
+  if (recipe.comparison == Comparison::GreaterEqual) {
+    for (const std::string &stat : recipe.bonusStats) {
+      total += static_cast<int32_t>(actor.getStat(stat));
+    }
+    total += params.situationalModifier;
+  }
+
+  const int roll = diceTotal;
+  result.marginOfSuccess = static_cast<int32_t>(
+      recipe.comparison == Comparison::GreaterEqual ? total - reference : reference - roll);
+
+  if (recipe.criticalStyle == CriticalStyle::Face && roll == recipe.criticalFace) {
+    result.isSuccess = true;
+    if (recipe.criticalConfirm) {
+      const int confirm = dice.rollSum(rng);
+      result.rawDiceRolls.push_back(confirm);
+      result.isCriticalSuccess = confirm <= reference;
+    } else {
+      result.isCriticalSuccess = true;
+    }
+  } else if (recipe.fumbleStyle == CriticalStyle::Face && roll == recipe.fumbleFace) {
+    result.isSuccess = false;
+    if (recipe.fumbleConfirm) {
+      const int confirm = dice.rollSum(rng);
+      result.rawDiceRolls.push_back(confirm);
+      result.isCriticalFailure = confirm > reference || confirm == recipe.fumbleFace;
+    } else {
+      result.isCriticalFailure = true;
+    }
+  } else if (recipe.grading == Grading::Percentile) {
+    result.successLevel = successLevelFor(reference, roll);
+    result.isCriticalSuccess = result.successLevel == SuccessLevel::Critical;
+    result.isCriticalFailure = result.successLevel == SuccessLevel::Fumble;
+    result.isSuccess = result.successLevel >= SuccessLevel::Success;
+  } else {
+    result.isSuccess =
+        recipe.comparison == Comparison::GreaterEqual ? total >= reference : roll <= reference;
+  }
   return result;
 }
 
-/// The Dark Eye skill check (3d20): roll three d20s against three linked
-/// attributes. The difficulty modifier is applied to all three effective
-/// attribute values (EAV = attribute + difficulty; a positive value is a
-/// bonus, a negative one a penalty). Each roll above its EAV must be
-/// compensated from the skill points (pool = skill rating), i.e. the overshoot
-/// is subtracted from the pool. The check succeeds while the pool does not go
-/// negative. If any EAV drops below 1 the check fails automatically. Double-1
-/// is a critical success, double-20 a critical failure.
+/// Pool resolution: each independent roll is checked against its own effective
+/// attribute value; every overshoot (the amount by which a roll exceeds its
+/// attribute) is drawn from a shared pool. The check succeeds while the pool
+/// does not go negative.
 ///
 /// @par Why model the pool as "remaining points"?
-/// The leftover pool is the *primary* output of a real TDE talent check — it
-/// feeds the quality level and lets the game rule on "how well" the check
-/// went. Storing it in @ref CheckResult::remainingPool (and the derived
-/// quality in @ref CheckResult::qualityLevel) means the caller never has to
-/// re-derive success quality from the raw dice.
+/// The leftover pool is the *primary* output of such a check — it feeds the
+/// quality level and lets the game rule on "how well" the check went. Storing
+/// it in @c CheckResult::remainingPool (and the derived quality in
+/// @c CheckResult::qualityLevel) means the caller never has to re-derive
+/// success quality from the raw dice.
 template <StatProvider Actor, RandomNumberGenerator Rng>
-[[nodiscard]] CheckResult resolveTripleRollUnderPool(const Actor &actor, std::string_view attr1,
-                                                     std::string_view attr2, std::string_view attr3,
-                                                     std::string_view poolStat,
+[[nodiscard]] constexpr CheckResult resolvePoolCheck(const Actor &actor, const CheckRecipe &recipe,
                                                      const CheckParams &params, Rng &rng) {
   CheckResult result;
-  result.rawDiceRolls.reserve(3);
+  const DiceExpression &dice = recipe.dice;
 
-  const std::array<std::string_view, 3> attributes{attr1, attr2, attr3};
+  // Every effective attribute must be at least 1 before any die is rolled:
+  // otherwise that part of the check can never pass, and no RNG is consumed.
+  const std::size_t n = recipe.numPoolAttributes;
   int32_t eav[3]{};
-  for (std::size_t i = 0; i < 3; ++i) {
-    eav[i] = actor.getStat(attributes[i]) + params.difficulty;
+  for (std::size_t i = 0; i < n; ++i) {
+    eav[i] = static_cast<int32_t>(actor.getStat(recipe.poolAttributes[i])) + params.difficulty;
     if (eav[i] < 1) {
-      // Cannot roll below 1: this part of the check can never pass.
       result.isSuccess = false;
       return result;
     }
   }
 
-  int32_t dice[3]{};
-  int32_t totalMargin = 0;
-  for (std::size_t i = 0; i < 3; ++i) {
-    dice[i] = detail::rollDie(20, rng);
-    result.rawDiceRolls.push_back(dice[i]);
-    totalMargin += dice[i] > eav[i] ? (dice[i] - eav[i]) : 0;
+  result.rawDiceRolls = dice.roll(rng);
+  int32_t totalOvershoot = 0;
+  for (std::size_t i = 0; i < n; ++i) {
+    totalOvershoot += result.rawDiceRolls[i] > eav[i] ? (result.rawDiceRolls[i] - eav[i]) : 0;
   }
 
-  const int32_t pool = actor.getStat(poolStat) + params.situationalModifier;
-  const int32_t finalPool = pool - totalMargin;
+  const int32_t pool =
+      static_cast<int32_t>(actor.getStat(recipe.poolStat)) + params.situationalModifier;
+  const int32_t finalPool = pool - totalOvershoot;
   result.remainingPool = finalPool;
   result.marginOfSuccess = finalPool;
 
-  const bool doubleOne = (dice[0] == 1 && dice[1] == 1) || (dice[0] == 1 && dice[2] == 1) ||
-                         (dice[1] == 1 && dice[2] == 1);
-  const bool doubleTwenty = (dice[0] == 20 && dice[1] == 20) || (dice[0] == 20 && dice[2] == 20) ||
-                            (dice[1] == 20 && dice[2] == 20);
-  result.isCriticalSuccess = doubleOne;
-  result.isCriticalFailure = doubleTwenty;
+  bool doubleLow = false;
+  bool doubleHigh = false;
+  for (std::size_t i = 0; i < n; ++i) {
+    for (std::size_t j = i + 1; j < n; ++j) {
+      doubleLow = doubleLow || (result.rawDiceRolls[i] == 1 && result.rawDiceRolls[j] == 1);
+      doubleHigh = doubleHigh || (result.rawDiceRolls[i] == 20 && result.rawDiceRolls[j] == 20);
+    }
+  }
+  result.isCriticalSuccess = doubleLow;
+  result.isCriticalFailure = doubleHigh;
   result.isSuccess = finalPool >= 0;
-  if (doubleOne) {
+  if (doubleLow) {
     result.isSuccess = true;
-  } else if (doubleTwenty) {
+  } else if (doubleHigh) {
     result.isSuccess = false;
   }
-  result.qualityLevel = result.isSuccess ? qualityLevelFromRemaining(finalPool) : 0;
+  if (recipe.grading == Grading::PoolQuality) {
+    result.qualityLevel = result.isSuccess ? qualityLevelFromRemaining(finalPool) : 0;
+  }
   return result;
 }
 
-/// DSA combat: the attacker rolls against the attack value; on success the
-/// defender may roll against the parry value. The attack hits when the attacker
-/// succeeds and the defender fails. Natural 1s are critical successes, natural
-/// 20s are fumbles.
+/// Opposed resolution: the attacker rolls against their attack stat and the
+/// defender against their parry stat. With `compareLevels` the two rolls are
+/// graded and the attack strikes only on a strictly higher success level;
+/// otherwise the parry is staged — it only happens after a successful attack.
 ///
-/// @par Why two staged rolls?
-/// This mirrors the source rule: the parry only happens after a successful
-/// attack, so the defense roll must not consume RNG (or affect the result)
-/// when the attack already missed. Staging keeps the RNG stream aligned with
-/// the rules — important for scripted-RNG tests and for cross-mode parity.
+/// @par Why two distinct contest models?
+/// A contest can either compare the two raw roll-under results (attacker hits
+/// on a success the defender fails, parry staged) or compare graded success
+/// levels (a Special beats a Success, equal levels mean the defender wins).
+/// Both are legitimate, and both appear in shipped systems; encoding the
+/// choice as a recipe field keeps one generic resolver for both.
 template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
-[[nodiscard]] CheckResult
-resolveAttackVsDefense(const Actor &actor, const Target &target, std::string_view attackStat,
-                       std::string_view parryStat, const CheckParams &params, Rng &rng) {
+[[nodiscard]] constexpr CheckResult resolveOpposedCheck(const Actor &actor, const Target &target,
+                                                        const CheckRecipe &recipe,
+                                                        const CheckParams &params, Rng &rng) {
   CheckResult result;
-  const int32_t attackValue = actor.getStat(attackStat) + params.difficulty;
-  const int32_t parryValue = target.getStat(parryStat);
+  const DiceExpression &dice = recipe.dice;
+  const int32_t attackValue =
+      static_cast<int32_t>(actor.getStat(recipe.attackStat)) + params.difficulty;
+  const int32_t parryValue = static_cast<int32_t>(target.getStat(recipe.parryStat));
 
-  const int attackRoll = detail::rollDie(20, rng);
+  if (recipe.compareLevels) {
+    // Both rolls are needed up front: the two success levels are compared
+    // directly, so the defender's roll must exist even when the attack is a
+    // critical. Rolling both keeps the RNG stream aligned with the rules.
+    const int attackRoll = dice.rollSum(rng);
+    const int parryRoll = dice.rollSum(rng);
+    result.rawDiceRolls = {attackRoll, parryRoll};
+    result.marginOfSuccess = static_cast<int32_t>(attackValue - attackRoll);
+    const SuccessLevel attackLevel = successLevelFor(attackValue, attackRoll);
+    const SuccessLevel parryLevel = successLevelFor(parryValue, parryRoll);
+    result.successLevel = attackLevel;
+    result.isCriticalSuccess = attackLevel == SuccessLevel::Critical;
+    result.isCriticalFailure = attackLevel == SuccessLevel::Fumble;
+    // A hit needs a strictly higher success level (and at least a plain
+    // success); equal levels mean the defender parries.
+    result.isSuccess = attackLevel >= SuccessLevel::Success && attackLevel > parryLevel;
+    return result;
+  }
+
+  // Staged roll-under contest: the parry only happens after a successful
+  // attack, so the defense roll must not consume RNG (or affect the result)
+  // when the attack already missed.
+  const int attackRoll = dice.rollSum(rng);
   result.rawDiceRolls.push_back(attackRoll);
-  result.isCriticalSuccess = attackRoll == 1;
-  result.isCriticalFailure = attackRoll == 20;
+  result.isCriticalSuccess = attackRoll == recipe.criticalFace;
+  result.isCriticalFailure = attackRoll == recipe.fumbleFace;
   const bool attackHits =
-      attackRoll == 1 ? true : (attackRoll == 20 ? false : attackRoll <= attackValue);
+      attackRoll == recipe.criticalFace
+          ? true
+          : (attackRoll == recipe.fumbleFace ? false : attackRoll <= attackValue);
   result.marginOfSuccess = static_cast<int32_t>(attackValue - attackRoll);
-
   if (!attackHits) {
     result.isSuccess = false;
     return result;
   }
-
-  const int parryRoll = detail::rollDie(20, rng);
+  const int parryRoll = dice.rollSum(rng);
   result.rawDiceRolls.push_back(parryRoll);
   const bool parrySucceeds =
-      parryRoll == 1 ? true : (parryRoll == 20 ? false : parryRoll <= parryValue);
+      parryRoll == recipe.criticalFace
+          ? true
+          : (parryRoll == recipe.fumbleFace ? false : parryRoll <= parryValue);
   result.isSuccess = !parrySucceeds;
   return result;
 }
 
-/// BRP percentile roll-under: 1d100 <= stat with graded levels of success.
-/// Critical (<= stat/20), Special (<= stat/5), Success (<= stat), Failure
-/// (above stat) and a skill-dependent fumble band (see @ref successLevelFor).
-/// The difficulty parameter shifts the stat (a flat ±20% situational
-/// modifier) and @ref DifficultyMode applies BRP's Easy (double) / Difficult
-/// (halve) levels; the margin is stat - roll (higher is better, negative on
-/// failure).
-///
-/// @par Why a d100 variant at all?
-/// BRP (and the other percentile games built on it) resolve almost every
-/// check by rolling a percentage against a percentile skill or characteristic,
-/// grading the result into Critical / Special / Success / Fumble bands. The
-/// d20 roll-under mechanism cannot express those bands (the die never exceeds
-/// 20), so the d100 mechanism carries the full percentile semantics the game
-/// actually uses.
-template <StatProvider Actor, RandomNumberGenerator Rng>
-[[nodiscard]] CheckResult resolveRollUnderD100(const Actor &actor, std::string_view attribute,
-                                               const CheckParams &params, Rng &rng) {
-  CheckResult result;
-  int32_t stat = actor.getStat(attribute) + params.difficulty;
-  if (params.difficultyMode == DifficultyMode::Easy) {
-    stat *= 2;
-  } else if (params.difficultyMode == DifficultyMode::Difficult) {
-    stat /= 2;
-  }
-  const int roll = detail::rollDie(100, rng);
-  result.rawDiceRolls.push_back(roll);
-  result.marginOfSuccess = static_cast<int32_t>(stat - roll);
-  result.successLevel = successLevelFor(stat, roll);
-  result.isCriticalSuccess = result.successLevel == SuccessLevel::Critical;
-  result.isCriticalFailure = result.successLevel == SuccessLevel::Fumble;
-  result.isSuccess = result.successLevel >= SuccessLevel::Success;
-  return result;
-}
-
-/// BRP opposed combat: both sides roll 1d100 against their own stat (the
-/// attacker against `attackStat`, the defender against `parryStat`) and grade
-/// them Critical / Special / Success / Failure / Fumble. Per the Attack and
-/// Defense Matrix the attack strikes only when the attacker's success level
-/// is strictly higher than the defender's; equal levels mean the defender
-/// parries or dodges, and a fumbled or failed attack never connects. The
-/// result's @c isSuccess is true when the attacker hit.
-///
-/// @par Why roll both dice unconditionally (unlike the DSA parry)?
-/// The DSA attack-vs-defense parry is staged because the parry only matters
-/// after a successful attack. BRP needs both rolls up front: the two success
-/// levels are compared directly, so the defender's roll must exist even when
-/// the attack is a critical. Rolling both keeps the RNG stream aligned with
-/// the rules and the parity test exact.
-template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
-[[nodiscard]] CheckResult
-resolveOpposedRollUnderD100(const Actor &actor, const Target &target, std::string_view attackStat,
-                            std::string_view parryStat, const CheckParams &params, Rng &rng) {
-  const int32_t attackValue = actor.getStat(attackStat) + params.difficulty;
-  const int32_t parryValue = target.getStat(parryStat);
-
-  CheckResult result;
-  const int attackRoll = detail::rollDie(100, rng);
-  const int parryRoll = detail::rollDie(100, rng);
-  result.rawDiceRolls = {attackRoll, parryRoll};
-  result.marginOfSuccess = static_cast<int32_t>(attackValue - attackRoll);
-  const SuccessLevel attackLevel = successLevelFor(attackValue, attackRoll);
-  const SuccessLevel parryLevel = successLevelFor(parryValue, parryRoll);
-  result.successLevel = attackLevel;
-  result.isCriticalSuccess = attackLevel == SuccessLevel::Critical;
-  result.isCriticalFailure = attackLevel == SuccessLevel::Fumble;
-  // Attack and Defense Matrix: a hit needs a strictly higher success level
-  // (and at least a plain success); equal levels mean the defender parries.
-  result.isSuccess = attackLevel >= SuccessLevel::Success && attackLevel > parryLevel;
-  return result;
-}
-
-/// BRP resistance roll: a single D100 against the chance from the Resistance
-/// Table. Equal active and passive characteristics give a 50% chance; each
-/// point of difference shifts it by 5% (chance = 50 + 5 * (active - passive)),
-/// with automatic success/failure beyond the 5%-95% rollable band. The
-/// difficulty parameter shifts the active characteristic (a situational
-/// modifier).
+/// Resistance resolution: a single roll against the chance derived from two
+/// characteristics (chance = 50 + 5 * (active - passive)), with automatic
+/// success / failure beyond the rollable band.
 ///
 /// @par Why a single roll against a computed chance (not an opposed contest)?
-/// BRP resistance is not a both-sides-compare: the Resistance Table yields one
-/// percentage and the active side rolls it. Only the acting character consumes
-/// RNG, matching the table exactly.
+/// A resistance table yields one percentage and the active side rolls it; only
+/// the acting character consumes RNG, matching the table exactly.
 template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
-[[nodiscard]] CheckResult
-resolveResistanceRoll(const Actor &actor, const Target &target, std::string_view activeStat,
-                      std::string_view passiveStat, const CheckParams &params, Rng &rng) {
+[[nodiscard]] constexpr CheckResult resolveResistanceCheck(const Actor &actor, const Target &target,
+                                                           const CheckRecipe &recipe,
+                                                           const CheckParams &params, Rng &rng) {
   CheckResult result;
-  const int32_t active = actor.getStat(activeStat) + params.difficulty;
-  const int32_t passive = target.getStat(passiveStat);
+  const int32_t active = static_cast<int32_t>(actor.getStat(recipe.attackStat)) + params.difficulty;
+  const int32_t passive = static_cast<int32_t>(target.getStat(recipe.parryStat));
   const int32_t chance = 50 + 5 * (active - passive);
   if (chance >= 100) {
     result.isSuccess = true; // automatic success (off the top of the table)
@@ -481,7 +498,8 @@ resolveResistanceRoll(const Actor &actor, const Target &target, std::string_view
     result.successLevel = SuccessLevel::Failure;
     return result;
   }
-  const int roll = detail::rollDie(100, rng);
+  const DiceExpression &dice = recipe.dice;
+  const int roll = dice.rollSum(rng);
   result.rawDiceRolls.push_back(roll);
   result.marginOfSuccess = static_cast<int32_t>(chance - roll);
   result.isSuccess = roll <= chance;
@@ -489,46 +507,31 @@ resolveResistanceRoll(const Actor &actor, const Target &target, std::string_view
   return result;
 }
 
-/// Runtime dispatcher over @ref CheckKind. This is the *universal-mode* entry
-/// point: it turns a ruleset-supplied @ref CheckConfig into a call to one of
-/// the algorithm templates. Specific mode calls the algorithm functions
-/// directly with `constexpr` configs instead, so no runtime dispatch is paid
-/// there.
+/// The single generic check resolver. Dispatches on the (generic)
+/// @ref Resolution of a @ref CheckRecipe and applies every other recipe field
+/// data-driven — the universal engine feeds it a runtime recipe from the
+/// ruleset, generated code feeds it a `constexpr` recipe so the whole check
+/// folds at compile time. There is deliberately no per-ruleset branch here:
+/// a new game system is a new JSON recipe, nothing else.
 ///
-/// @par Why a separate dispatcher at all?
-/// Keeping the dispatch separate from the algorithms means the universal mode
-/// gets a clean @c switch over the config while the generated mode can bypass
-/// it entirely — the algorithms are the shared contract, the dispatcher is an
-/// implementation detail of only one mode.
+/// @par Why one dispatcher and no ruleset-specific algorithms?
+/// All check mechanics in this library are configurations of the four generic
+/// resolutions above. A single resolver keeps the universal and specific
+/// modes on the exact same code path (the parity guarantee), and guarantees a
+/// new ruleset can never need a change to this file.
 template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
-[[nodiscard]] CheckResult resolveCheck(const Actor &actor, const Target &target,
-                                       const CheckConfig &config, const CheckParams &params,
-                                       Rng &rng) {
-  switch (config.kind) {
-  case CheckKind::AdditiveD20: {
-    std::vector<std::string_view> views;
-    views.reserve(config.bonusStats.size());
-    for (const std::string &stat : config.bonusStats) {
-      views.push_back(stat);
-    }
-    return resolveAdditiveD20(actor, target, config.diceExpression, views, config.targetStat,
-                              params, rng);
-  }
-  case CheckKind::RollUnderD20:
-    return resolveRollUnderD20(actor, config.attributes[0], config.useConfirmationRoll, params,
-                               rng);
-  case CheckKind::TripleRollUnderPool:
-    return resolveTripleRollUnderPool(actor, config.attributes[0], config.attributes[1],
-                                      config.attributes[2], config.poolStat, params, rng);
-  case CheckKind::AttackVsDefense:
-    return resolveAttackVsDefense(actor, target, config.attackStat, config.parryStat, params, rng);
-  case CheckKind::RollUnderD100:
-    return resolveRollUnderD100(actor, config.attributes[0], params, rng);
-  case CheckKind::OpposedRollUnderD100:
-    return resolveOpposedRollUnderD100(actor, target, config.attackStat, config.parryStat, params,
-                                       rng);
-  case CheckKind::ResistanceRoll:
-    return resolveResistanceRoll(actor, target, config.attackStat, config.parryStat, params, rng);
+[[nodiscard]] constexpr CheckResult resolveCheck(const Actor &actor, const Target &target,
+                                                 const CheckRecipe &recipe,
+                                                 const CheckParams &params, Rng &rng) {
+  switch (recipe.resolution) {
+  case Resolution::Threshold:
+    return resolveThresholdCheck(actor, target, recipe, params, rng);
+  case Resolution::Pool:
+    return resolvePoolCheck(actor, recipe, params, rng);
+  case Resolution::Opposed:
+    return resolveOpposedCheck(actor, target, recipe, params, rng);
+  case Resolution::Resistance:
+    return resolveResistanceCheck(actor, target, recipe, params, rng);
   }
   return {};
 }

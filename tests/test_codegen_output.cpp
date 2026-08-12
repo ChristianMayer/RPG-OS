@@ -23,6 +23,7 @@
 #include <string>
 #include <string_view>
 #include <tde5e_core_static.hpp>
+#include <type_traits>
 
 namespace {
 
@@ -305,4 +306,56 @@ TEST_CASE("generated brp_ugc: loadArchetypes reads the average human") {
   REQUIRE(humans.size() == 1);
   CHECK(humans[0].strength == 11);
   CHECK(humans[0].brawl == 25);
+}
+
+TEST_CASE("generated characters store narrow stat types (no wasted int32)") {
+  // Attributes and skills fit in a single byte for the shipped rulesets, so
+  // the generated characters store them as uint8_t — the templates in
+  // core/checks.hpp and the StatProvider concept work with any integral
+  // storage type. Wide base stats (armor, hit-point maxima, level) and
+  // resource pools stay int32_t where they can genuinely grow.
+  static_assert(std::is_same_v<decltype(TdeCharacter::courage), uint8_t>,
+                "TDE attributes must be byte-sized");
+  static_assert(std::is_same_v<decltype(TdeCharacter::climbing), uint8_t>,
+                "TDE skills must be byte-sized");
+  static_assert(std::is_same_v<decltype(TdeCharacter::armorRating), int32_t>,
+                "armor rating stays wide");
+  static_assert(std::is_same_v<decltype(TdeCharacter::lifePoints), int32_t>,
+                "resource pools stay wide");
+  static_assert(std::is_same_v<decltype(DndCharacter::strength), uint8_t>,
+                "D&D attributes must be byte-sized");
+  static_assert(std::is_same_v<decltype(DndCharacter::hitPoints), int32_t>,
+                "D&D hit points stay wide");
+  static_assert(std::is_same_v<decltype(BrpCharacter::brawl), uint8_t>,
+                "BRP skills must be byte-sized");
+  static_assert(std::is_same_v<decltype(BrpCharacter::sanity), uint8_t>,
+                "BRP Sanity (0..100) fits a byte");
+
+  // The byte-sized storage keeps the whole character object small; a 59-skill
+  // TDE character must not balloon into hundreds of int32s.
+  CHECK(sizeof(TdeCharacter) <= 120);
+}
+
+TEST_CASE("generated code: data section loaders expose spells/poisons/etc.") {
+  const rpg_os::Json tde = loadRuleset("tde5e_core.json");
+  const std::vector<rpg_os::Json> spells = TdeCharacter::loadSpells(tde);
+  REQUIRE_FALSE(spells.empty());
+  const rpg_os::Json &balsam = spells[0];
+  CHECK(balsam.value("id", "") == "analyze_arcane_structure");
+  CHECK(TdeCharacter::loadPoisons(tde).size() >= 5);
+  CHECK(TdeCharacter::loadDiseases(tde).size() >= 4);
+  CHECK(TdeCharacter::loadConditions(tde).size() >= 4);
+  CHECK(TdeCharacter::loadItems(tde).size() >= 4);
+  // A missing section yields an empty vector rather than a crash.
+  CHECK(TdeCharacter::loadSection(tde, "no_such_section").empty());
+
+  const rpg_os::Json brp = loadRuleset("brp_ugc.json");
+  const std::vector<rpg_os::Json> brpSpells = BrpCharacter::loadSpells(brp);
+  REQUIRE_FALSE(brpSpells.empty());
+  CHECK(BrpCharacter::loadItems(brp).size() >= 20);
+
+  const rpg_os::Json dnd = loadRuleset("dnd5e_srd.json");
+  CHECK(DndCharacter::loadSpells(dnd).size() >= 300);
+  CHECK(DndCharacter::loadPoisons(dnd).size() >= 10);
+  CHECK(DndCharacter::loadConditions(dnd).size() >= 10);
 }
