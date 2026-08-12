@@ -34,6 +34,7 @@
 #include <rpg_os/universal/engine.hpp>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace rpg_os {
 
@@ -42,15 +43,23 @@ namespace rpg_os {
  * and reused to spawn fresh entities for every fight — this is what lets a
  * Monte-Carlo loop avoid re-deriving the stat block on each of thousands of
  * fights.
+ *
+ * A combatant may also be a spellcaster: @ref spellIds lists the spells it
+ * knows (for archetypes, their `spells_known`). When magic is enabled the
+ * fight loop prefers casting the strongest affordable damaging spell over
+ * swinging a weapon, falling back to a weapon attack only once the caster is
+ * out of usable magic. @ref runFight's @c useMagic flag turns this off for a
+ * pure weapon-vs-weapon comparison.
  */
 struct CombatantSpec {
   std::string id;
   std::string name;
-  bool isArchetype{false};      ///< true: archetype, false: bestiary entry
-  int32_t attackValue{0};       ///< to-hit value (Attack / bestiary `to_hit`)
-  int32_t defenseValue{0};      ///< parry / bestiary `dodge`
-  int32_t armorRating{0};       ///< Armor_Rating (bestiary `armor_rating`)
-  std::string damageExpression; ///< dice expression, e.g. "2d6+4"
+  bool isArchetype{false};           ///< true: archetype, false: bestiary entry
+  int32_t attackValue{0};            ///< to-hit value (Attack / bestiary `to_hit`)
+  int32_t defenseValue{0};           ///< parry / bestiary `dodge`
+  int32_t armorRating{0};            ///< Armor_Rating (bestiary `armor_rating`)
+  std::string damageExpression;      ///< dice expression, e.g. "2d6+4"
+  std::vector<std::string> spellIds; ///< spells the combatant can cast (empty = pure melee)
 };
 
 /// The result of one fight.
@@ -137,6 +146,9 @@ struct FightOutcome {
       out.defenseValue = probe->getStat("Parry");
       out.armorRating = probe->baseAttribute("Armor_Rating");
       out.damageExpression = std::string(weaponDamage);
+      // An archetype's `spells_known` were loaded into the probe's spellbook;
+      // copy them so the fight loop can cast magic for this combatant.
+      out.spellIds = probe->spellbook().known();
       return true;
     }
   }
@@ -207,6 +219,72 @@ template <RandomNumberGenerator Rng>
 
 namespace detail {
 
+/// The expected damage of a spell record, used only to rank spells so the
+/// caster picks its strongest option. Handles both the bare `damage` field
+/// and the structured `effects` array (sums the `dice` of every damage-kind
+/// effect). A spell with no damage at all (a buff, a heal, a utility effect)
+/// ranks as zero and is never chosen as a fight action.
+[[nodiscard]] inline double spellAverageDamage(const Json &spell) {
+  double total = 0.0;
+  const auto addDice = [&](const Json &value) {
+    if (value.is_number()) {
+      total += value.get<double>();
+    } else if (value.is_string()) {
+      total += DiceExpression(value.get<std::string>()).expectedValue();
+    }
+  };
+  if (spell.contains("damage")) {
+    addDice(spell.at("damage"));
+  }
+  if (spell.contains("effects") && spell.at("effects").is_array()) {
+    for (const Json &effect : spell.at("effects")) {
+      if (effect.value("kind", "") == "damage" && effect.contains("dice")) {
+        addDice(effect.at("dice"));
+      }
+    }
+  }
+  return total;
+}
+
+/// Returns the id of the strongest affordable damaging spell `caster` can cast
+/// from `spellIds`, or an empty string when none is usable.
+///
+/// @par Why "affordable" and "damaging"?
+/// A fight is a damage race: a spellcaster is only "magic" while it has a
+/// spell it can actually afford to cast and that actually hurts. The cost is
+/// read exactly as @ref RulesetEngine::castSpell reads it (`cost`, `ae_cost`,
+/// then `level`), so the affordability check cannot disagree with what casting
+/// would really spend.
+[[nodiscard]] inline std::string pickSpell(const RulesetEngine &engine, const DynamicEntity &caster,
+                                           const std::vector<std::string> &spellIds) {
+  const std::string &resourceId = engine.ruleset().spellResource;
+  std::string best;
+  double bestDamage = 0.0;
+  for (const std::string &spellId : spellIds) {
+    const Json *spell = engine.findSpell(spellId);
+    if (spell == nullptr) {
+      continue;
+    }
+    int32_t cost = 0;
+    if (spell->contains("cost") && spell->at("cost").is_number_integer()) {
+      cost = spell->at("cost").get<int32_t>();
+    } else if (spell->contains("ae_cost") && spell->at("ae_cost").is_number_integer()) {
+      cost = spell->at("ae_cost").get<int32_t>();
+    } else if (spell->contains("level") && spell->at("level").is_number_integer()) {
+      cost = spell->at("level").get<int32_t>();
+    }
+    if (cost > 0 && !resourceId.empty() && caster.resource(resourceId) < cost) {
+      continue; // cannot afford
+    }
+    const double damage = spellAverageDamage(*spell);
+    if (damage > 0.0 && damage > bestDamage) {
+      bestDamage = damage;
+      best = spellId;
+    }
+  }
+  return best;
+}
+
 /// One combatant's action: resolves the attack check against the defender and,
 /// on a hit, rolls and applies the damage through the event pipeline. Returns
 /// true when the defender is reduced to 0 (or below) hit points.
@@ -233,12 +311,46 @@ bool attackOnce(RulesetEngine &engine, DynamicEntity &attacker, const DiceExpres
   return defender.resource(hpResourceId) <= 0;
 }
 
+/// One combatant's action for a fight: prefer casting the strongest affordable
+/// damaging spell when magic is enabled and a usable spell exists, otherwise
+/// make a weapon attack. Returns true when the defender is reduced to 0 hit
+/// points.
+///
+/// @par Why does a failed casting attempt consume the action?
+/// Casting is what a spellcaster does instead of swinging a weapon (in The
+/// Dark Eye a spell takes a full action), and the arcane energy is spent on
+/// the attempt even when the check fails — so a botched cast simply wastes
+/// the round. Only when *no* spell is usable (nothing known, or all spells
+/// unaffordable) does the combatant fall back to its weapon.
+template <RandomNumberGenerator Rng>
+bool actOnce(RulesetEngine &engine, DynamicEntity &actor, const CombatantSpec &spec,
+             const DiceExpression &weaponDamage, DynamicEntity &defender,
+             std::string_view checkTypeId, std::string_view hpResourceId, bool useMagic, Rng &rng) {
+  if (useMagic && !spec.spellIds.empty()) {
+    const std::string spellId = pickSpell(engine, actor, spec.spellIds);
+    if (!spellId.empty()) {
+      const auto cast = engine.castSpell(spellId, actor, &defender, CheckParams{}, rng);
+      if (cast.cast) {
+        return defender.resource(hpResourceId) <= 0;
+      }
+      return false; // the casting attempt failed — the round is spent
+    }
+  }
+  return attackOnce(engine, actor, weaponDamage, defender, checkTypeId, hpResourceId, rng);
+}
+
 } // namespace detail
 
 /// Runs a fight between two freshly created combatants until one of them
 /// reaches 0 hit points, or `maxRounds` elapse (a draw). Each round the
 /// initiative order is re-rolled as the derived `Initiative` stat plus 1d6; the
 /// higher value acts first (ties are decided by a coin flip).
+///
+/// With @c useMagic (the default) a combatant that knows spells casts its
+/// strongest affordable damaging spell instead of attacking with a weapon,
+/// falling back to a weapon only when it has no usable spell left. Pass
+/// @c false for a pure weapon-vs-weapon comparison (e.g. when the ELO ranking
+/// should measure physical combat only).
 ///
 /// @par Why re-roll initiative every round?
 /// In the source rules initiative can change from round to round (a character
@@ -249,7 +361,8 @@ bool attackOnce(RulesetEngine &engine, DynamicEntity &attacker, const DiceExpres
 template <RandomNumberGenerator Rng>
 [[nodiscard]] FightOutcome runFight(RulesetEngine &engine, const CombatantSpec &a,
                                     const CombatantSpec &b, std::string_view checkTypeId,
-                                    std::string_view hpResourceId, int maxRounds, Rng &rng) {
+                                    std::string_view hpResourceId, int maxRounds, Rng &rng,
+                                    bool useMagic = true) {
   FightOutcome outcome;
   auto ea = createFighter(engine, a, rng);
   auto eb = createFighter(engine, b, rng);
@@ -269,14 +382,18 @@ template <RandomNumberGenerator Rng>
 
     DynamicEntity *first = aFirst ? ea.get() : eb.get();
     DynamicEntity *second = aFirst ? eb.get() : ea.get();
+    const CombatantSpec &firstSpec = aFirst ? a : b;
+    const CombatantSpec &secondSpec = aFirst ? b : a;
     const DiceExpression &firstDamage = aFirst ? damageA : damageB;
     const DiceExpression &secondDamage = aFirst ? damageB : damageA;
 
-    if (detail::attackOnce(engine, *first, firstDamage, *second, checkTypeId, hpResourceId, rng)) {
+    if (detail::actOnce(engine, *first, firstSpec, firstDamage, *second, checkTypeId, hpResourceId,
+                        useMagic, rng)) {
       outcome.winnerIndex = aFirst ? 0 : 1;
       break;
     }
-    if (detail::attackOnce(engine, *second, secondDamage, *first, checkTypeId, hpResourceId, rng)) {
+    if (detail::actOnce(engine, *second, secondSpec, secondDamage, *first, checkTypeId,
+                        hpResourceId, useMagic, rng)) {
       outcome.winnerIndex = aFirst ? 1 : 0;
       break;
     }

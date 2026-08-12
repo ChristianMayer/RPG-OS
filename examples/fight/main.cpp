@@ -10,6 +10,12 @@
  * the winner. Combatants can be named on the command line, or omitted to fall
  * back to a default pair (Geron the Mercenary vs. a Gotongi).
  *
+ * A spellcaster fights with magic by default: a combatant that knows spells
+ * (e.g. the Magister archetype) casts its strongest affordable damaging spell
+ * instead of swinging a weapon, falling back to a weapon only once it is out
+ * of usable magic. Pass @c --no-magic for a pure weapon-vs-weapon comparison,
+ * e.g. when ranking physical combat only.
+ *
  * The @c --csv mode prints one tab-separated line per fight, which is what the
  * Monte Carlo ELO ranking (@c scripts/elo_ranking.py) consumes — this demo
  * is the executable engine behind that script.
@@ -22,6 +28,7 @@
  *
  * Usage: @c rpg_os_example_fight [options] [combatant_a] [combatant_b]
  */
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
@@ -46,6 +53,7 @@ struct Options {
   bool rootExplicit{false};
   bool listOnly{false};
   bool csv{false};
+  bool useMagic{true};          // --no-magic disables spellcasting (pure weapon fight)
   std::optional<uint32_t> seed; // nullopt = unseeded (fresh entropy)
   int maxRounds{1000};
   int batch{1};
@@ -70,6 +78,7 @@ void printHelp(std::ostream &os) {
      << "  --rounds <n>    max rounds before a fight counts as a draw (default: 1000)\n"
      << "  --batch <n>     run n fights between the same pair (default: 1)\n"
      << "  --weapon <dice> weapon damage for archetypes (default: \"1d6+4\")\n"
+     << "  --no-magic      disable spellcasting: fight with weapons only\n"
      << "  --csv           one tab-separated line per fight (for scripts)\n";
 }
 
@@ -123,6 +132,8 @@ bool parseArgs(int argc, char **argv, Options &opts, std::string &error) {
         return false;
       }
       opts.weapon = *value;
+    } else if (arg == "--no-magic") {
+      opts.useMagic = false;
     } else if (arg == "--csv") {
       opts.csv = true;
     } else if (arg == "--list") {
@@ -158,13 +169,31 @@ void printCombatantList(const rpg_os::RulesetEngine &engine) {
 }
 
 /// Prints a human-readable stat block for both combatants before a fight, so
-/// the reader sees exactly which values the simulation is about to use.
+/// the reader sees exactly which values the simulation is about to use. A
+/// spellcaster's known spells are listed so it is clear the combatant will
+/// fight with magic rather than a weapon.
+void printCombatant(std::ostream &os, const rpg_os::CombatantSpec &spec) {
+  os << "(Attack " << spec.attackValue << ", Defence " << spec.defenseValue << ", Armour "
+     << spec.armorRating << ", \"" << spec.damageExpression << "\"";
+  if (!spec.spellIds.empty()) {
+    os << ", Spells: ";
+    for (std::size_t i = 0; i < spec.spellIds.size(); ++i) {
+      if (i > 0) {
+        os << ", ";
+      }
+      os << spec.spellIds[i];
+    }
+  }
+  os << ")\n";
+}
+
 void printCombatants(std::ostream &os, const rpg_os::CombatantSpec &a,
                      const rpg_os::CombatantSpec &b) {
-  os << "A: " << a.name << " (Attack " << a.attackValue << ", Defence " << a.defenseValue
-     << ", Armour " << a.armorRating << ", \"" << a.damageExpression << "\")\n";
-  os << "B: " << b.name << " (Attack " << b.attackValue << ", Defence " << b.defenseValue
-     << ", Armour " << b.armorRating << ", \"" << b.damageExpression << "\")\n\n";
+  os << "A: " << a.name << ' ';
+  printCombatant(os, a);
+  os << "B: " << b.name << ' ';
+  printCombatant(os, b);
+  os << '\n';
 }
 
 /// Prints one machine-readable line per fight in @c --csv mode: winner, loser,
@@ -281,8 +310,8 @@ int main(int argc, char **argv) {
   rpg_os::DefaultRandom rng =
       opts.seed ? rpg_os::DefaultRandom(*opts.seed) : rpg_os::DefaultRandom{};
   for (int i = 0; i < opts.batch; ++i) {
-    const rpg_os::FightOutcome outcome =
-        rpg_os::runFight(engine, specA, specB, checkType, hpPool, opts.maxRounds, rng);
+    const rpg_os::FightOutcome outcome = rpg_os::runFight(engine, specA, specB, checkType, hpPool,
+                                                          opts.maxRounds, rng, opts.useMagic);
     if (opts.csv) {
       printCsvLine(std::cout, specA, specB, outcome);
     } else {

@@ -10,6 +10,11 @@ by their current ELO rating and each entry plays one opponent of similar
 strength; the pair plays `--games` Monte Carlo fights (dice are re-rolled every
 fight) and the ratings are updated with the standard ELO formula afterwards.
 
+Magic is included by default: a spellcaster (an archetype with `spells_known`,
+e.g. the TDE Magister) fights with its spells, so the ranking reflects a
+combatant's full power. Pass `--no-magic` to rank pure weapon combat only —
+useful when comparing physical fighting ability across systems.
+
 This is deliberately NOT a full round-robin: with `n` entries a Swiss
 tournament needs O(rounds * n) fights instead of O(n^2), so it scales to large
 bestiaries while still converging to a meaningful ranking. The individual
@@ -24,6 +29,9 @@ Examples:
 
     # A quick 10-round run with 5 Monte Carlo fights per pair.
     python3 scripts/elo_ranking.py --rounds 10 --games 5
+
+    # Rank physical combat only (spellcasters fight with their weapons).
+    python3 scripts/elo_ranking.py --no-magic
 """
 
 import argparse
@@ -57,6 +65,9 @@ def parse_args():
                         help="parallel fight processes")
     parser.add_argument("--max-rounds", type=int, default=1000,
                         help="max rounds of a single fight (draw guard)")
+    parser.add_argument("--no-magic", action="store_true",
+                        help="disable spellcasting: rank pure weapon combat "
+                             "only (spellcasters then fight with their weapons)")
     parser.add_argument("--k", type=float, default=32.0, help="ELO K-factor")
     parser.add_argument("--initial", type=float, default=1500.0,
                         help="starting ELO rating for every combatant")
@@ -79,15 +90,19 @@ def load_entries(ruleset_path):
     return entries
 
 
-def run_pair_job(binary, root, ruleset, a, b, games, max_rounds, seed):
+def run_pair_job(binary, root, ruleset, a, b, games, max_rounds, seed, no_magic=False):
     """Runs `games` fights between `a` and `b` in one fight process.
 
     Returns (wins_a, wins_b, draws) as counted from the CSV lines. Each fight
     prints one line: `<winner_id>\\t<loser_id>\\t...` or `DRAW\\t...`.
+    `no_magic` disables spellcasting in the fight sim (pure weapon combat).
     """
     cmd = [binary, "--root", root, "--ruleset", ruleset, "--csv",
            "--batch", str(games), "--rounds", str(max_rounds),
-           "--seed", str(seed), a, b]
+           "--seed", str(seed)]
+    if no_magic:
+        cmd.append("--no-magic")
+    cmd += [a, b]
     proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if proc.returncode != 0:
         detail = (proc.stderr or proc.stdout).strip()
@@ -219,7 +234,7 @@ def main():
                 seed = (args.seed * 1000003 + round_index * 1009 + pair_index * 31) & 0xFFFFFFFF
                 future = pool.submit(run_pair_job, args.binary, REPO_ROOT,
                                      args.ruleset, a, b, args.games,
-                                     args.max_rounds, seed)
+                                     args.max_rounds, seed, args.no_magic)
                 futures[future] = (a, b)
             for future in concurrent.futures.as_completed(futures):
                 a, b = futures[future]

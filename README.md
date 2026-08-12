@@ -224,6 +224,17 @@ cmake --build build --target rpg_os_example_fight
 ./build/bin/rpg_os_example_fight . --list       # all combatants in the ruleset
 ```
 
+A combatant that knows spells (an archetype with `spells_known`, e.g. the TDE
+Magister) fights with **magic by default**: each round it casts its strongest
+affordable damaging spell instead of swinging a weapon, falling back to a
+weapon only once it is out of usable magic. Pass `--no-magic` for a pure
+weapon-vs-weapon comparison:
+
+```sh
+./build/bin/rpg_os_example_fight . magister toad        # magic (default)
+./build/bin/rpg_os_example_fight . --no-magic magister toad
+```
+
 `scripts/elo_ranking.py` ranks every combatant with a Monte Carlo ELO
 tournament. It runs a **Swiss** pairing (each combatant plays one similar-rated
 opponent per round) instead of a full round-robin, so it needs only
@@ -232,6 +243,7 @@ in `--jobs` parallel processes:
 
 ```sh
 python3 scripts/elo_ranking.py --jobs 8 --rounds 40 --games 10
+python3 scripts/elo_ranking.py --no-magic  # rank physical combat only
 ```
 
 Every random consumer follows the same rule: **explicitly seeded = exactly

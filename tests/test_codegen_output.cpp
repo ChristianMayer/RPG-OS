@@ -160,9 +160,11 @@ TEST_CASE("generated dnd5e: attack check matches the universal engine (parity)")
 TEST_CASE("generated tde5e: loadArchetypes reads every archetype from JSON") {
   const rpg_os::Json ruleset = loadRuleset("tde5e_core.json");
   const std::vector<TdeCharacter> heroes = TdeCharacter::loadArchetypes(ruleset);
-  REQUIRE(heroes.size() == 2);
+  REQUIRE(heroes.size() == 3);
   CHECK(heroes[0].courage == 14); // louisa
   CHECK(heroes[1].courage == 12); // geron
+  CHECK(heroes[2].courage == 11); // magister
+  CHECK(heroes[2].intuition == 15);
 }
 
 TEST_CASE("generated code: variance-aware fromCreature (ranged hit points)") {

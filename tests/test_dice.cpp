@@ -296,6 +296,15 @@ TEST_CASE("DiceExpression: die-size literals compose with the _dice suffix") {
   CHECK(expr.constant() == 0);
 }
 
+TEST_CASE("DiceExpression: expected value is the flat average") {
+  CHECK(("1d6"_dice).expectedValue() == doctest::Approx(3.5));
+  CHECK(("2d6+4"_dice).expectedValue() == doctest::Approx(11.0));
+  CHECK(("1d20"_dice).expectedValue() == doctest::Approx(10.5));
+  CHECK(("1d6-1d6"_dice).expectedValue() == doctest::Approx(0.0));
+  CHECK((2_d6).expectedValue() == doctest::Approx(7.0));
+  CHECK(rpg_os::DiceExpression(4).expectedValue() == doctest::Approx(4.0));
+}
+
 TEST_CASE("DefaultRandom: deterministic for a fixed seed") {
   rpg_os::DefaultRandom a(42u);
   rpg_os::DefaultRandom b(42u);

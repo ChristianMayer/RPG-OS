@@ -14,6 +14,7 @@
  */
 #include "test_util.hpp"
 
+#include <algorithm>
 #include <doctest/doctest.h>
 #include <fstream>
 #include <iterator>
@@ -177,4 +178,78 @@ TEST_CASE("combat: brp_ugc opposed percentile combat runs to the end") {
   CHECK(outcome.rounds == 1);
   CHECK(outcome.remainingLp[0] == 12); // attacker untouched
   CHECK(outcome.remainingLp[1] == 0);  // defender at 0
+}
+
+TEST_CASE("combat: a mage archetype spec carries its known spells") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  rpg_os::CombatantSpec magus;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "magister", magus));
+  CHECK(magus.isArchetype);
+  CHECK_FALSE(magus.spellIds.empty());
+  CHECK(std::find(magus.spellIds.begin(), magus.spellIds.end(), "fulminictus") !=
+        magus.spellIds.end());
+  CHECK(std::find(magus.spellIds.begin(), magus.spellIds.end(), "ignifaxius") !=
+        magus.spellIds.end());
+}
+
+TEST_CASE("combat: pickSpell ranks spells by affordability and expected damage") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  rpg_os::CombatantSpec magus;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "magister", magus));
+  rpg_os::DefaultRandom rng(7);
+  auto mage = rpg_os::createFighter(engine, magus, rng);
+  REQUIRE(mage != nullptr);
+  CHECK(mage->resource("AE") == 35); // 20 + INT 15
+  // Full arcane energy: the strongest damaging spell wins (Fulminictus 2d6).
+  CHECK(rpg_os::detail::pickSpell(engine, *mage, magus.spellIds) == "fulminictus");
+  // With no arcane energy left no spell is affordable.
+  (void)mage->modifyResource("AE", -mage->resource("AE"));
+  CHECK(mage->resource("AE") == 0);
+  CHECK(rpg_os::detail::pickSpell(engine, *mage, magus.spellIds).empty());
+  // With only enough AE for the cheap spell, the best affordable one is chosen.
+  (void)mage->modifyResource("AE", 4); // only Witch's Claws (4 AE) fits
+  CHECK(rpg_os::detail::pickSpell(engine, *mage, magus.spellIds) == "witch_s_claws");
+}
+
+TEST_CASE("combat: with magic enabled a mage casts instead of attacking with a weapon") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  rpg_os::CombatantSpec magus;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "magister", magus));
+  rpg_os::CombatantSpec toad;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "toad", toad));
+
+  // The script pins the magic path: the mage wins initiative (5), passes the
+  // SGC/INT/CON casting check (three 1s), and Fulminictus rolls maximum
+  // damage (6,6) = 12 -> the toad's 2 LP are gone in one round. A weapon
+  // attack consumes a different RNG sequence, so this script only completes
+  // when magic (not the sword) is used.
+  auto rng = script({5, 1, 1, 1, 1, 6, 6});
+  const rpg_os::FightOutcome outcome =
+      rpg_os::runFight(engine, magus, toad, "tde_attack", "LP", 100, rng);
+  CHECK(outcome.winnerIndex == 0);
+  CHECK(outcome.rounds == 1);
+  CHECK(outcome.remainingLp[0] == 27); // the mage's 27 LP untouched
+  CHECK(outcome.remainingLp[1] <= 0);
+}
+
+TEST_CASE("combat: magic can be disabled for a pure weapon comparison") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  rpg_os::CombatantSpec magus;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "magister", magus));
+  rpg_os::CombatantSpec toad;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "toad", toad));
+
+  // With magic disabled the same mage swings its weapon: it wins initiative
+  // (6), rolls a critical attack (1) the toad fails to parry (20), and deals
+  // 1d6+4 -> 10, killing the toad in one round.
+  auto rng = script({6, 1, 1, 20, 6});
+  const rpg_os::FightOutcome outcome =
+      rpg_os::runFight(engine, magus, toad, "tde_attack", "LP", 100, rng, false);
+  CHECK(outcome.winnerIndex == 0);
+  CHECK(outcome.rounds == 1);
+  CHECK(outcome.remainingLp[1] <= 0);
 }

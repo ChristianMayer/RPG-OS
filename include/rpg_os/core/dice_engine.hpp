@@ -174,6 +174,18 @@ public:
     return m_constant;
   }
 
+  /// The expected (average) total of the expression: the constant plus, per
+  /// group, `sign * count * (sides + 1) / 2`. This is the flat mathematical
+  /// mean of all outcomes — useful for ranking options (e.g. a mage picking
+  /// the strongest spell to cast) without actually rolling dice.
+  [[nodiscard]] constexpr double expectedValue() const noexcept {
+    double total = static_cast<double>(m_constant);
+    for (const DieSpec &die : m_dice) {
+      total += die.sign * die.count * (die.sides + 1) / 2.0;
+    }
+    return total;
+  }
+
   /// Rolls every die with `rng`. The raw results are always positive and
   /// appear in roll order (checks that need individual dice use this).
   template <RandomNumberGenerator Rng>
