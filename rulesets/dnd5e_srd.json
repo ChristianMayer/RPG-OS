@@ -6,6 +6,27 @@
   "licence": "CC-BY-4.0",
   "comment": "Data transcription of the D&D 5e SRD 5.2.1 (Wizards of the Coast, Open Game Content). Not affiliated with WotC. Rules and stats are informational for use with the RPG-OS engine.",
   "namespace": "rpg_os::generated::dnd5e",
+  "currencies": {
+    "id": "dnd_coins",
+    "name": "D&D Coins",
+    "base_unit": "cp",
+    "denominations": [
+      { "id": "cp", "name": "Copper", "symbol": "CP", "per_base": 1 },
+      { "id": "sp", "name": "Silver", "symbol": "SP", "per_base": 10 },
+      { "id": "gp", "name": "Gold", "symbol": "GP", "per_base": 100 },
+      { "id": "pp", "name": "Platinum", "symbol": "PP", "per_base": 1000 }
+    ]
+  },
+  "encumbrance": {
+    "weight_unit": "lb",
+    "default_weight": 1.0,
+    "capacity": "15 * STR",
+    "levels": [
+      { "max_ratio": 0.5, "condition": "" },
+      { "max_ratio": 1.0, "condition": "" },
+      { "max_ratio": 10.0, "condition": "" }
+    ]
+  },
   "attributes": [
     {
       "id": "STR",
@@ -19986,6 +20007,9 @@
     "spells": [
       {
         "id": "acid_arrow",
+        "effects": [
+          {"kind": "damage", "dice": "4d4", "type": "Acid", "attack": {"bonus_stats": ["INT_mod", "proficiency_bonus"], "target_stat": "AC", "on_miss": "half"}}
+        ],
         "name": "Acid Arrow",
         "level": 2,
         "school": "Evocation",
@@ -20002,6 +20026,9 @@
       },
       {
         "id": "acid_splash",
+        "effects": [
+          {"kind": "damage", "dice": "1d6", "type": "Acid", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Acid Splash",
         "level": 0,
         "school": "Evocation",
@@ -20068,6 +20095,9 @@
       },
       {
         "id": "animal_friendship",
+        "effects": [
+          {"kind": "condition", "condition": "charmed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Animal Friendship",
         "level": 1,
         "school": "Enchantment",
@@ -20205,6 +20235,9 @@
       },
       {
         "id": "arcane_hand",
+        "effects": [
+          {"kind": "damage", "dice": "5d8", "type": "Force", "attack": {"bonus_stats": ["CHA_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Arcane Hand",
         "level": 5,
         "school": "Evocation",
@@ -20394,6 +20427,9 @@
       },
       {
         "id": "befuddlement",
+        "effects": [
+          {"kind": "damage", "dice": "10d12", "type": "Psychic", "save": {"stat": "INT", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Befuddlement",
         "level": 8,
         "school": "Enchantment",
@@ -20413,6 +20449,9 @@
       },
       {
         "id": "bestow_curse",
+        "effects": [
+          {"kind": "condition", "condition": "cursed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Bestow Curse",
         "level": 3,
         "school": "Necromancy",
@@ -20430,6 +20469,10 @@
       },
       {
         "id": "black_tentacles",
+        "effects": [
+          {"kind": "damage", "dice": "3d6", "type": "Bludgeoning", "save": {"stat": "STR", "dc": "8 + proficiency_bonus + max(0, floor((INT - 10) / 2))", "on_success": "none"}},
+          {"kind": "condition", "condition": "restrained", "save": {"stat": "STR", "dc": "8 + proficiency_bonus + max(0, floor((INT - 10) / 2))"}}
+        ],
         "name": "Black Tentacles",
         "level": 4,
         "school": "Conjuration",
@@ -20446,6 +20489,9 @@
       },
       {
         "id": "blade_barrier",
+        "effects": [
+          {"kind": "damage", "dice": "6d10", "type": "Force", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Blade Barrier",
         "level": 6,
         "school": "Evocation",
@@ -20478,6 +20524,9 @@
       },
       {
         "id": "blight",
+        "effects": [
+          {"kind": "damage", "dice": "8d8", "type": "Necrotic", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Blight",
         "level": 4,
         "school": "Necromancy",
@@ -20545,6 +20594,9 @@
       },
       {
         "id": "burning_hands",
+        "effects": [
+          {"kind": "damage", "dice": "3d6", "type": "Fire", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Burning Hands",
         "level": 1,
         "school": "Evocation",
@@ -20562,6 +20614,9 @@
       },
       {
         "id": "call_lightning",
+        "effects": [
+          {"kind": "damage", "dice": "3d10", "type": "Lightning", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Call Lightning",
         "level": 3,
         "school": "Conjuration",
@@ -20593,6 +20648,9 @@
       },
       {
         "id": "chain_lightning",
+        "effects": [
+          {"kind": "damage", "dice": "10d8", "type": "Lightning", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Chain Lightning",
         "level": 6,
         "school": "Evocation",
@@ -20610,6 +20668,9 @@
       },
       {
         "id": "charm_monster",
+        "effects": [
+          {"kind": "condition", "condition": "charmed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Charm Monster",
         "level": 4,
         "school": "Enchantment",
@@ -20628,6 +20689,9 @@
       },
       {
         "id": "charm_person",
+        "effects": [
+          {"kind": "condition", "condition": "charmed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Charm Person",
         "level": 1,
         "school": "Enchantment",
@@ -20646,6 +20710,9 @@
       },
       {
         "id": "chill_touch",
+        "effects": [
+          {"kind": "damage", "dice": "1d10", "type": "Necrotic", "attack": {"bonus_stats": ["CHA_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Chill Touch",
         "level": 0,
         "school": "Necromancy",
@@ -20680,6 +20747,9 @@
       },
       {
         "id": "circle_of_death",
+        "effects": [
+          {"kind": "damage", "dice": "8d8", "type": "Necrotic", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Circle of Death",
         "level": 6,
         "school": "Necromancy",
@@ -20729,6 +20799,9 @@
       },
       {
         "id": "cloudkill",
+        "effects": [
+          {"kind": "damage", "dice": "5d8", "type": "Poison", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Cloudkill",
         "level": 5,
         "school": "Conjuration",
@@ -20746,6 +20819,9 @@
       },
       {
         "id": "color_spray",
+        "effects": [
+          {"kind": "condition", "condition": "blinded", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Color Spray",
         "level": 1,
         "school": "Illusion",
@@ -20824,6 +20900,9 @@
       },
       {
         "id": "compulsion",
+        "effects": [
+          {"kind": "condition", "condition": "charmed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Compulsion",
         "level": 4,
         "school": "Enchantment",
@@ -20838,6 +20917,9 @@
       },
       {
         "id": "cone_of_cold",
+        "effects": [
+          {"kind": "damage", "dice": "8d8", "type": "Cold", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Cone of Cold",
         "level": 5,
         "school": "Evocation",
@@ -20874,6 +20956,9 @@
       },
       {
         "id": "conjure_animals",
+        "effects": [
+          {"kind": "damage", "dice": "3d10", "type": "Slashing", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Conjure Animals",
         "level": 3,
         "school": "Conjuration",
@@ -20891,6 +20976,10 @@
       },
       {
         "id": "conjure_celestial",
+        "effects": [
+          {"kind": "damage", "dice": "6d12", "type": "Radiant", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}},
+          {"kind": "heal", "dice": "4d12", "add": "max(0, floor((WIS - 10) / 2))"}
+        ],
         "name": "Conjure Celestial",
         "level": 7,
         "school": "Conjuration",
@@ -20923,6 +21012,9 @@
       },
       {
         "id": "conjure_fey",
+        "effects": [
+          {"kind": "condition", "condition": "frightened", "attack": {"bonus_stats": ["WIS_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Conjure Fey",
         "level": 6,
         "school": "Conjuration",
@@ -20955,6 +21047,9 @@
       },
       {
         "id": "conjure_woodland_beings",
+        "effects": [
+          {"kind": "damage", "dice": "5d8", "type": "Force", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Conjure Woodland Beings",
         "level": 4,
         "school": "Conjuration",
@@ -20989,6 +21084,9 @@
       },
       {
         "id": "contagion",
+        "effects": [
+          {"kind": "damage", "dice": "11d8", "type": "Necrotic", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Contagion",
         "level": 5,
         "school": "Necromancy",
@@ -21036,6 +21134,9 @@
       },
       {
         "id": "control_water",
+        "effects": [
+          {"kind": "damage", "dice": "2d8", "type": "Bludgeoning", "save": {"stat": "STR", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Control Water",
         "level": 4,
         "school": "Transmutation",
@@ -21148,6 +21249,9 @@
       },
       {
         "id": "cure_wounds",
+        "effects": [
+          {"kind": "heal", "dice": "2d8", "add": "max(0, floor((CHA - 10) / 2))"}
+        ],
         "name": "Cure Wounds",
         "level": 1,
         "school": "Abjuration",
@@ -21386,6 +21490,9 @@
       },
       {
         "id": "disintegrate",
+        "effects": [
+          {"kind": "damage", "dice": "10d6+40", "type": "Force", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Disintegrate",
         "level": 6,
         "school": "Transmutation",
@@ -21439,6 +21546,9 @@
       },
       {
         "id": "dissonant_whispers",
+        "effects": [
+          {"kind": "damage", "dice": "3d6", "type": "Psychic", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Dissonant Whispers",
         "level": 1,
         "school": "Enchantment",
@@ -21517,6 +21627,9 @@
       },
       {
         "id": "dominate_beast",
+        "effects": [
+          {"kind": "condition", "condition": "charmed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))"}}
+        ],
         "name": "Dominate Beast",
         "level": 4,
         "school": "Enchantment",
@@ -21533,6 +21646,9 @@
       },
       {
         "id": "dominate_monster",
+        "effects": [
+          {"kind": "condition", "condition": "charmed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Dominate Monster",
         "level": 8,
         "school": "Enchantment",
@@ -21550,6 +21666,9 @@
       },
       {
         "id": "dominate_person",
+        "effects": [
+          {"kind": "condition", "condition": "charmed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Dominate Person",
         "level": 5,
         "school": "Enchantment",
@@ -21582,6 +21701,9 @@
       },
       {
         "id": "dream",
+        "effects": [
+          {"kind": "damage", "dice": "3d6", "type": "Psychic", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Dream",
         "level": 5,
         "school": "Illusion",
@@ -21616,6 +21738,10 @@
       },
       {
         "id": "earthquake",
+        "effects": [
+          {"kind": "damage", "dice": "12d6", "type": "Bludgeoning", "save": {"stat": "DEX", "dc": 20, "on_success": "none"}},
+          {"kind": "condition", "condition": "prone", "save": {"stat": "DEX", "dc": 20}}
+        ],
         "name": "Earthquake",
         "level": 8,
         "school": "Transmutation",
@@ -21634,6 +21760,9 @@
       },
       {
         "id": "eldritch_blast",
+        "effects": [
+          {"kind": "damage", "dice": "1d10", "type": "Force", "attack": {"bonus_stats": ["CHA_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Eldritch Blast",
         "level": 0,
         "school": "Evocation",
@@ -21703,6 +21832,9 @@
       },
       {
         "id": "ensnaring_strike",
+        "effects": [
+          {"kind": "condition", "condition": "restrained", "save": {"stat": "STR", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))"}}
+        ],
         "name": "Ensnaring Strike",
         "level": 1,
         "school": "Conjuration",
@@ -21719,6 +21851,9 @@
       },
       {
         "id": "entangle",
+        "effects": [
+          {"kind": "condition", "condition": "restrained", "save": {"stat": "STR", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))"}}
+        ],
         "name": "Entangle",
         "level": 1,
         "school": "Conjuration",
@@ -21830,6 +21965,9 @@
       },
       {
         "id": "faithful_hound",
+        "effects": [
+          {"kind": "damage", "dice": "4d8", "type": "Force", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((INT - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Faithful Hound",
         "level": 4,
         "school": "Conjuration",
@@ -21846,6 +21984,9 @@
       },
       {
         "id": "false_life",
+        "effects": [
+          {"kind": "temp_hp", "dice": "2d4", "add": 4}
+        ],
         "name": "False Life",
         "level": 1,
         "school": "Necromancy",
@@ -21955,6 +22096,9 @@
       },
       {
         "id": "finger_of_death",
+        "effects": [
+          {"kind": "damage", "dice": "7d8+30", "type": "Necrotic", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Finger of Death",
         "level": 7,
         "school": "Necromancy",
@@ -21973,6 +22117,9 @@
       },
       {
         "id": "fire_bolt",
+        "effects": [
+          {"kind": "damage", "dice": "1d10", "type": "Fire", "attack": {"bonus_stats": ["CHA_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Fire Bolt",
         "level": 0,
         "school": "Evocation",
@@ -22008,6 +22155,9 @@
       },
       {
         "id": "fire_storm",
+        "effects": [
+          {"kind": "damage", "dice": "7d10", "type": "Fire", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Fire Storm",
         "level": 7,
         "school": "Evocation",
@@ -22026,6 +22176,9 @@
       },
       {
         "id": "fireball",
+        "effects": [
+          {"kind": "damage", "dice": "8d6", "type": "Fire", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Fireball",
         "level": 3,
         "school": "Evocation",
@@ -22060,6 +22213,9 @@
       },
       {
         "id": "flame_strike",
+        "effects": [
+          {"kind": "damage", "dice": "5d6", "type": "Fire", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Flame Strike",
         "level": 5,
         "school": "Evocation",
@@ -22076,6 +22232,9 @@
       },
       {
         "id": "flaming_sphere",
+        "effects": [
+          {"kind": "damage", "dice": "2d6", "type": "Fire", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Flaming Sphere",
         "level": 2,
         "school": "Conjuration",
@@ -22094,6 +22253,9 @@
       },
       {
         "id": "flesh_to_stone",
+        "effects": [
+          {"kind": "condition", "condition": "restrained", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))"}}
+        ],
         "name": "Flesh to Stone",
         "level": 6,
         "school": "Transmutation",
@@ -22223,6 +22385,9 @@
       },
       {
         "id": "freezing_sphere",
+        "effects": [
+          {"kind": "damage", "dice": "10d6", "type": "Cold", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Freezing Sphere",
         "level": 6,
         "school": "Evocation",
@@ -22274,6 +22439,10 @@
       },
       {
         "id": "geas",
+        "effects": [
+          {"kind": "damage", "dice": "5d10", "type": "Psychic", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "none"}},
+          {"kind": "condition", "condition": "charmed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Geas",
         "level": 5,
         "school": "Enchantment",
@@ -22387,6 +22556,9 @@
       },
       {
         "id": "grease",
+        "effects": [
+          {"kind": "condition", "condition": "prone", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Grease",
         "level": 1,
         "school": "Conjuration",
@@ -22482,6 +22654,9 @@
       },
       {
         "id": "guiding_bolt",
+        "effects": [
+          {"kind": "damage", "dice": "4d6", "type": "Radiant", "attack": {"bonus_stats": ["WIS_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Guiding Bolt",
         "level": 1,
         "school": "Evocation",
@@ -22546,6 +22721,9 @@
       },
       {
         "id": "harm",
+        "effects": [
+          {"kind": "damage", "dice": "14d6", "type": "Necrotic", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Harm",
         "level": 6,
         "school": "Necromancy",
@@ -22592,6 +22770,9 @@
       },
       {
         "id": "healing_word",
+        "effects": [
+          {"kind": "heal", "dice": "2d4", "add": "max(0, floor((CHA - 10) / 2))"}
+        ],
         "name": "Healing Word",
         "level": 1,
         "school": "Abjuration",
@@ -22626,6 +22807,9 @@
       },
       {
         "id": "hellish_rebuke",
+        "effects": [
+          {"kind": "damage", "dice": "2d10", "type": "Fire", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Hellish Rebuke",
         "level": 1,
         "school": "Evocation",
@@ -22642,6 +22826,9 @@
       },
       {
         "id": "heroes_feast",
+        "effects": [
+          {"kind": "resist", "types": ["Poison"]}
+        ],
         "name": "Heroes’ Feast",
         "level": 6,
         "school": "Conjuration",
@@ -22707,6 +22894,9 @@
       },
       {
         "id": "hold_monster",
+        "effects": [
+          {"kind": "condition", "condition": "paralyzed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Hold Monster",
         "level": 5,
         "school": "Enchantment",
@@ -22724,6 +22914,9 @@
       },
       {
         "id": "hold_person",
+        "effects": [
+          {"kind": "condition", "condition": "paralyzed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Hold Person",
         "level": 2,
         "school": "Enchantment",
@@ -22743,6 +22936,9 @@
       },
       {
         "id": "holy_aura",
+        "effects": [
+          {"kind": "condition", "condition": "blinded", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))"}}
+        ],
         "name": "Holy Aura",
         "level": 8,
         "school": "Abjuration",
@@ -22773,6 +22969,9 @@
       },
       {
         "id": "hypnotic_pattern",
+        "effects": [
+          {"kind": "condition", "condition": "charmed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Hypnotic Pattern",
         "level": 3,
         "school": "Illusion",
@@ -22790,6 +22989,10 @@
       },
       {
         "id": "ice_knife",
+        "effects": [
+          {"kind": "damage", "dice": "2d6", "type": "Cold", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "none"}},
+          {"kind": "damage", "dice": "1d10", "type": "Piercing", "attack": {"bonus_stats": ["WIS_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Ice Knife",
         "level": 1,
         "school": "Conjuration",
@@ -22808,6 +23011,9 @@
       },
       {
         "id": "ice_storm",
+        "effects": [
+          {"kind": "damage", "dice": "2d10", "type": "Bludgeoning", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Ice Storm",
         "level": 4,
         "school": "Evocation",
@@ -22872,6 +23078,9 @@
       },
       {
         "id": "incendiary_cloud",
+        "effects": [
+          {"kind": "damage", "dice": "10d8", "type": "Fire", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Incendiary Cloud",
         "level": 8,
         "school": "Conjuration",
@@ -22890,6 +23099,9 @@
       },
       {
         "id": "inflict_wounds",
+        "effects": [
+          {"kind": "damage", "dice": "2d10", "type": "Necrotic", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Inflict Wounds",
         "level": 1,
         "school": "Necromancy",
@@ -22906,6 +23118,9 @@
       },
       {
         "id": "insect_plague",
+        "effects": [
+          {"kind": "damage", "dice": "4d10", "type": "Piercing", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Insect Plague",
         "level": 5,
         "school": "Conjuration",
@@ -22955,6 +23170,9 @@
       },
       {
         "id": "irresistible_dance",
+        "effects": [
+          {"kind": "condition", "condition": "charmed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Irresistible Dance",
         "level": 6,
         "school": "Enchantment",
@@ -23069,6 +23287,9 @@
       },
       {
         "id": "lightning_bolt",
+        "effects": [
+          {"kind": "damage", "dice": "8d6", "type": "Lightning", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Lightning Bolt",
         "level": 3,
         "school": "Evocation",
@@ -23301,6 +23522,9 @@
       },
       {
         "id": "mass_cure_wounds",
+        "effects": [
+          {"kind": "heal", "dice": "5d8", "add": "max(0, floor((CHA - 10) / 2))"}
+        ],
         "name": "Mass Cure Wounds",
         "level": 5,
         "school": "Abjuration",
@@ -23332,6 +23556,9 @@
       },
       {
         "id": "mass_healing_word",
+        "effects": [
+          {"kind": "heal", "dice": "2d4", "add": "max(0, floor((CHA - 10) / 2))"}
+        ],
         "name": "Mass Healing Word",
         "level": 3,
         "school": "Abjuration",
@@ -23348,6 +23575,9 @@
       },
       {
         "id": "mass_suggestion",
+        "effects": [
+          {"kind": "condition", "condition": "charmed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Mass Suggestion",
         "level": 6,
         "school": "Enchantment",
@@ -23430,6 +23660,9 @@
       },
       {
         "id": "meteor_swarm",
+        "effects": [
+          {"kind": "damage", "dice": "20d6", "type": "Fire", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Meteor Swarm",
         "level": 9,
         "school": "Evocation",
@@ -23463,6 +23696,9 @@
       },
       {
         "id": "mind_spike",
+        "effects": [
+          {"kind": "damage", "dice": "3d8", "type": "Psychic", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Mind Spike",
         "level": 2,
         "school": "Divination",
@@ -23563,6 +23799,9 @@
       },
       {
         "id": "modify_memory",
+        "effects": [
+          {"kind": "condition", "condition": "charmed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Modify Memory",
         "level": 5,
         "school": "Enchantment",
@@ -23578,6 +23817,9 @@
       },
       {
         "id": "moonbeam",
+        "effects": [
+          {"kind": "damage", "dice": "2d10", "type": "Radiant", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Moonbeam",
         "level": 2,
         "school": "Evocation",
@@ -23672,6 +23914,9 @@
       },
       {
         "id": "phantasmal_killer",
+        "effects": [
+          {"kind": "damage", "dice": "4d10", "type": "Psychic", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Phantasmal Killer",
         "level": 4,
         "school": "Illusion",
@@ -23769,6 +24014,9 @@
       },
       {
         "id": "poison_spray",
+        "effects": [
+          {"kind": "damage", "dice": "1d12", "type": "Poison", "attack": {"bonus_stats": ["WIS_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Poison Spray",
         "level": 0,
         "school": "Necromancy",
@@ -23856,6 +24104,9 @@
       },
       {
         "id": "prayer_of_healing",
+        "effects": [
+          {"kind": "heal", "dice": "2d8"}
+        ],
         "name": "Prayer of Healing",
         "level": 2,
         "school": "Abjuration",
@@ -23906,6 +24157,9 @@
       },
       {
         "id": "prismatic_wall",
+        "effects": [
+          {"kind": "condition", "condition": "blinded", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Prismatic Wall",
         "level": 9,
         "school": "Abjuration",
@@ -23935,6 +24189,9 @@
       },
       {
         "id": "produce_flame",
+        "effects": [
+          {"kind": "damage", "dice": "1d8", "type": "Fire", "attack": {"bonus_stats": ["WIS_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Produce Flame",
         "level": 0,
         "school": "Conjuration",
@@ -24017,6 +24274,9 @@
       },
       {
         "id": "protection_from_poison",
+        "effects": [
+          {"kind": "resist", "types": ["Poison"]}
+        ],
         "name": "Protection from Poison",
         "level": 2,
         "school": "Abjuration",
@@ -24083,6 +24343,9 @@
       },
       {
         "id": "ray_of_frost",
+        "effects": [
+          {"kind": "damage", "dice": "1d8", "type": "Cold", "attack": {"bonus_stats": ["CHA_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Ray of Frost",
         "level": 0,
         "school": "Evocation",
@@ -24100,6 +24363,10 @@
       },
       {
         "id": "ray_of_sickness",
+        "effects": [
+          {"kind": "damage", "dice": "2d8", "type": "Poison", "attack": {"bonus_stats": ["CHA_mod", "proficiency_bonus"], "target_stat": "AC"}},
+          {"kind": "condition", "condition": "poisoned", "attack": {"bonus_stats": ["CHA_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Ray of Sickness",
         "level": 1,
         "school": "Necromancy",
@@ -24117,6 +24384,9 @@
       },
       {
         "id": "regenerate",
+        "effects": [
+          {"kind": "heal", "dice": "4d8", "add": 15}
+        ],
         "name": "Regenerate",
         "level": 7,
         "school": "Transmutation",
@@ -24258,6 +24528,9 @@
       },
       {
         "id": "sacred_flame",
+        "effects": [
+          {"kind": "damage", "dice": "1d8", "type": "Radiant", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Sacred Flame",
         "level": 0,
         "school": "Evocation",
@@ -24288,6 +24561,9 @@
       },
       {
         "id": "scorching_ray",
+        "effects": [
+          {"kind": "damage", "dice": "2d6", "type": "Fire", "attack": {"bonus_stats": ["CHA_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Scorching Ray",
         "level": 2,
         "school": "Evocation",
@@ -24323,6 +24599,9 @@
       },
       {
         "id": "searing_smite",
+        "effects": [
+          {"kind": "damage", "dice": "1d6", "type": "Fire", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Searing Smite",
         "level": 1,
         "school": "Evocation",
@@ -24430,6 +24709,9 @@
       },
       {
         "id": "shatter",
+        "effects": [
+          {"kind": "damage", "dice": "3d8", "type": "Thunder", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Shatter",
         "level": 2,
         "school": "Evocation",
@@ -24509,6 +24791,9 @@
       },
       {
         "id": "shocking_grasp",
+        "effects": [
+          {"kind": "damage", "dice": "1d8", "type": "Lightning", "attack": {"bonus_stats": ["CHA_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Shocking Grasp",
         "level": 0,
         "school": "Evocation",
@@ -24573,6 +24858,9 @@
       },
       {
         "id": "sleep",
+        "effects": [
+          {"kind": "condition", "condition": "incapacitated", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Sleep",
         "level": 1,
         "school": "Enchantment",
@@ -24589,6 +24877,9 @@
       },
       {
         "id": "sleet_storm",
+        "effects": [
+          {"kind": "condition", "condition": "prone", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))"}}
+        ],
         "name": "Sleet Storm",
         "level": 3,
         "school": "Conjuration",
@@ -24733,6 +25024,9 @@
       },
       {
         "id": "spirit_guardians",
+        "effects": [
+          {"kind": "damage", "dice": "3d8", "type": "Radiant", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Spirit Guardians",
         "level": 3,
         "school": "Conjuration",
@@ -24765,6 +25059,9 @@
       },
       {
         "id": "starry_wisp",
+        "effects": [
+          {"kind": "damage", "dice": "1d8", "type": "Radiant", "attack": {"bonus_stats": ["CHA_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Starry Wisp",
         "level": 0,
         "school": "Evocation",
@@ -24782,6 +25079,9 @@
       },
       {
         "id": "stinking_cloud",
+        "effects": [
+          {"kind": "condition", "condition": "poisoned", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Stinking Cloud",
         "level": 3,
         "school": "Conjuration",
@@ -24848,6 +25148,9 @@
       },
       {
         "id": "suggestion",
+        "effects": [
+          {"kind": "condition", "condition": "charmed", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Suggestion",
         "level": 2,
         "school": "Enchantment",
@@ -24879,6 +25182,10 @@
       },
       {
         "id": "sunbeam",
+        "effects": [
+          {"kind": "damage", "dice": "6d8", "type": "Radiant", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "none"}},
+          {"kind": "condition", "condition": "blinded", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))"}}
+        ],
         "name": "Sunbeam",
         "level": 6,
         "school": "Evocation",
@@ -24898,6 +25205,10 @@
       },
       {
         "id": "sunburst",
+        "effects": [
+          {"kind": "damage", "dice": "12d6", "type": "Radiant", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "none"}},
+          {"kind": "condition", "condition": "blinded", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))"}}
+        ],
         "name": "Sunburst",
         "level": 8,
         "school": "Evocation",
@@ -25015,6 +25326,9 @@
       },
       {
         "id": "thunderwave",
+        "effects": [
+          {"kind": "damage", "dice": "2d8", "type": "Thunder", "save": {"stat": "CON", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Thunderwave",
         "level": 1,
         "school": "Evocation",
@@ -25179,6 +25493,10 @@
       },
       {
         "id": "tsunami",
+        "effects": [
+          {"kind": "damage", "dice": "6d10", "type": "Bludgeoning", "save": {"stat": "STR", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}},
+          {"kind": "damage", "dice": "5d10", "type": "Bludgeoning", "save": {"stat": "STR", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Tsunami",
         "level": 8,
         "school": "Conjuration",
@@ -25211,6 +25529,9 @@
       },
       {
         "id": "vampiric_touch",
+        "effects": [
+          {"kind": "damage", "dice": "3d6", "type": "Necrotic", "attack": {"bonus_stats": ["CHA_mod", "proficiency_bonus"], "target_stat": "AC"}}
+        ],
         "name": "Vampiric Touch",
         "level": 3,
         "school": "Necromancy",
@@ -25229,6 +25550,9 @@
       },
       {
         "id": "vicious_mockery",
+        "effects": [
+          {"kind": "damage", "dice": "1d6", "type": "Psychic", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Vicious Mockery",
         "level": 0,
         "school": "Enchantment",
@@ -25245,6 +25569,9 @@
       },
       {
         "id": "vitriolic_sphere",
+        "effects": [
+          {"kind": "damage", "dice": "10d4", "type": "Acid", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "none"}}
+        ],
         "name": "Vitriolic Sphere",
         "level": 4,
         "school": "Evocation",
@@ -25262,6 +25589,9 @@
       },
       {
         "id": "wall_of_fire",
+        "effects": [
+          {"kind": "damage", "dice": "5d8", "type": "Fire", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Wall of Fire",
         "level": 4,
         "school": "Evocation",
@@ -25294,6 +25624,10 @@
       },
       {
         "id": "wall_of_ice",
+        "effects": [
+          {"kind": "damage", "dice": "10d6", "type": "Cold", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((INT - 10) / 2))", "on_success": "half"}},
+          {"kind": "damage", "dice": "5d6", "type": "Cold", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((INT - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Wall of Ice",
         "level": 6,
         "school": "Evocation",
@@ -25327,6 +25661,10 @@
       },
       {
         "id": "wall_of_thorns",
+        "effects": [
+          {"kind": "damage", "dice": "7d8", "type": "Piercing", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}},
+          {"kind": "damage", "dice": "7d8", "type": "Slashing", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Wall of Thorns",
         "level": 6,
         "school": "Conjuration",
@@ -25392,6 +25730,9 @@
       },
       {
         "id": "web",
+        "effects": [
+          {"kind": "condition", "condition": "restrained", "save": {"stat": "DEX", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Web",
         "level": 2,
         "school": "Conjuration",
@@ -25409,6 +25750,11 @@
       },
       {
         "id": "weird",
+        "effects": [
+          {"kind": "damage", "dice": "10d10", "type": "Psychic", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "none"}},
+          {"kind": "damage", "dice": "5d10", "type": "Psychic", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))", "on_success": "none"}},
+          {"kind": "condition", "condition": "frightened", "save": {"stat": "WIS", "dc": "8 + proficiency_bonus + max(0, floor((CHA - 10) / 2))"}}
+        ],
         "name": "Weird",
         "level": 9,
         "school": "Illusion",
@@ -25441,6 +25787,9 @@
       },
       {
         "id": "wind_wall",
+        "effects": [
+          {"kind": "damage", "dice": "4d8", "type": "Bludgeoning", "save": {"stat": "STR", "dc": "8 + proficiency_bonus + max(0, floor((WIS - 10) / 2))", "on_success": "half"}}
+        ],
         "name": "Wind Wall",
         "level": 3,
         "school": "Evocation",

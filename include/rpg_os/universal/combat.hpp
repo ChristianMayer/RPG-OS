@@ -220,7 +220,11 @@ template <RandomNumberGenerator Rng>
 bool attackOnce(RulesetEngine &engine, DynamicEntity &attacker, const DiceExpression &damage,
                 DynamicEntity &defender, std::string_view checkTypeId,
                 std::string_view hpResourceId, Rng &rng) {
-  const CheckResult hit = engine.executeCheck(checkTypeId, attacker, &defender, CheckParams{}, rng);
+  // Resolve against effective stats so worn gear and active conditions (armour,
+  // encumbrance, wounds) influence the fight — with nothing equipped the
+  // effective value equals the raw value, so ungeared fights are unchanged.
+  const CheckResult hit =
+      engine.executeCheckEffective(checkTypeId, attacker, &defender, CheckParams{}, rng);
   if (!hit.isSuccess) {
     return false;
   }

@@ -20,7 +20,11 @@
  */
 #pragma once
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
+#include <cstdlib>
+#include <expected>
 #include <fstream>
 #include <memory>
 #include <rpg_os/common/event_system.hpp>
@@ -28,6 +32,7 @@
 #include <rpg_os/common/types.hpp>
 #include <rpg_os/core/checks.hpp>
 #include <rpg_os/core/dice_engine.hpp>
+#include <rpg_os/core/errors.hpp>
 #include <rpg_os/core/math.hpp>
 #include <rpg_os/core/variance.hpp>
 #include <rpg_os/universal/check_resolver.hpp>
@@ -36,6 +41,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace rpg_os {
 
@@ -197,6 +203,30 @@ public:
     return executeCheck(checkTypeId, actor, target, params, rng);
   }
 
+  /// Resolves a named check type against the *effective* stats of both sides
+  /// (raw value plus equipped-item and condition modifiers). This is what
+  /// combat and anything that should reflect gear/status use.
+  template <RandomNumberGenerator Rng>
+  [[nodiscard]] CheckResult
+  executeCheckEffective(std::string_view checkTypeId, const DynamicEntity &actor,
+                        const DynamicEntity *target, const CheckParams &params, Rng &rng) const {
+    if (target != nullptr) {
+      return CheckResolver::resolve(m_ruleset, EffectiveStatProvider{actor},
+                                    EffectiveStatProvider{*target}, checkTypeId, params, rng);
+    }
+    return CheckResolver::resolve(m_ruleset, EffectiveStatProvider{actor}, NullStatProvider{},
+                                  checkTypeId, params, rng);
+  }
+
+  /// Resolves a check against effective stats using a fresh default RNG.
+  [[nodiscard]] CheckResult executeCheckEffective(std::string_view checkTypeId,
+                                                  const DynamicEntity &actor,
+                                                  const DynamicEntity *target,
+                                                  const CheckParams &params) const {
+    DefaultRandom rng;
+    return executeCheckEffective(checkTypeId, actor, target, params, rng);
+  }
+
   /// Resolves a skill check for a named skill, using the skill's own linked
   /// attributes and the skill rating as the pool (the generic pool
   /// resolution applied to the skill's three linked attributes). Skill checks
@@ -264,6 +294,14 @@ public:
     int32_t finalDamage = data.getInt("damage", rawDamage);
     if (finalDamage < 0) {
       finalDamage = 0;
+    }
+    // Temporary Hit Points are a buffer: they absorb damage before the real
+    // hit-point pool ("Lose Temporary Hit Points First").
+    if (target.temporaryHitPoints() > 0 && finalDamage > 0) {
+      const int32_t absorbed = std::min(target.temporaryHitPoints(), finalDamage);
+      target.addTemporaryHitPoints(-absorbed);
+      finalDamage -= absorbed;
+      data.payload["temporary_hp_absorbed"] = absorbed;
     }
     const int32_t applied = target.modifyResource(resourceId, -finalDamage);
     data.payload["applied_damage"] = -applied;
@@ -395,10 +433,17 @@ public:
       result.cast = true;
     }
 
-    // Damage: roll the spell's damage and apply it to the target's hit points.
-    // `applyDamage` reports the (negative) pool delta, so negate it into the
-    // positive "damage dealt" the caller expects.
-    if (target != nullptr && spell->contains("damage")) {
+    // Structured effects take precedence over the bare `damage` field: they
+    // are the extracted, machine-readable form of the spell's prose (saves,
+    // half-on-save damage, conditions, healing, resistances). A spell with no
+    // `effects` falls back to the simple damage field.
+    if (target != nullptr && spell->contains("effects") && spell->at("effects").is_array()) {
+      const EffectsResult effects =
+          resolveEffects(actor, *target, spell->at("effects"), params, rng);
+      result.appliedDamage = effects.damageDealt;
+    } else if (target != nullptr && spell->contains("damage")) {
+      // `applyDamage` reports the (negative) pool delta, so negate it into the
+      // positive "damage dealt" the caller expects.
       const int32_t damage = readVariantValue(spell->at("damage"), Variance::Random, rng);
       const std::string hitPool = resolveHitPointPoolId();
       if (!hitPool.empty()) {
@@ -455,6 +500,7 @@ public:
       }
     }
     if (affliction->contains("effects") && affliction->at("effects").is_array()) {
+      std::vector<std::string> appliedConditions;
       for (const Json &effect : affliction->at("effects")) {
         const std::string stat = effect.value("stat", "");
         if (stat.empty()) {
@@ -468,15 +514,28 @@ public:
           (void)victim.modifyResource(stat, -amount);
           ++result.effectsApplied;
         } else if (effect.contains("condition") && effect.at("condition").is_string()) {
-          victim.addCondition(effect.at("condition").get<std::string>(), amount);
+          const std::string conditionId = effect.at("condition").get<std::string>();
+          victim.addCondition(conditionId, amount);
+          appliedConditions.push_back(conditionId);
           ++result.effectsApplied;
         } else if (m_ruleset.isCondition(stat)) {
           victim.addCondition(stat, amount);
+          appliedConditions.push_back(stat);
           ++result.effectsApplied;
         } else if (m_ruleset.findAttribute(stat) != nullptr) {
           victim.setBaseAttribute(stat, victim.baseAttribute(stat) - amount);
           ++result.effectsApplied;
         }
+      }
+      // Remember what was applied so an application can cure it later.
+      if (result.effectsApplied > 0) {
+        victim.addAffliction(section, id, appliedConditions);
+        EventData data;
+        data.payload = {{"section", std::string(section)},
+                        {"affliction", std::string(id)},
+                        {"victim_id", victim.id()},
+                        {"effects_applied", result.effectsApplied}};
+        fireEvent(EventType::OnAfflictionApplied, data, victim, nullptr, Json{});
       }
     }
     return result;
@@ -487,6 +546,797 @@ public:
                                                  DynamicEntity &victim, const CheckParams &params) {
     DefaultRandom rng;
     return applyAffliction(section, id, victim, params, rng);
+  }
+
+  // ------------------------------------------------------------------------
+  // Bookkeeping: economy
+  // ------------------------------------------------------------------------
+
+  /// Whether the loaded ruleset declares a currency system.
+  [[nodiscard]] bool hasCurrency() const noexcept {
+    return m_ruleset.hasCurrency();
+  }
+
+  /// The loaded ruleset's currency system (valid only when hasCurrency()).
+  [[nodiscard]] const CurrencySystem &currencySystem() const noexcept {
+    return m_ruleset.currencySystem;
+  }
+
+  /// The price of one unit of `itemId`, parsed from the item record's `cost` /
+  /// `price` / `value` field into Money. A record without a price field is
+  /// free (Money{0}); a non-numeric, non-parseable price yields
+  /// UnknownDenomination. UnknownItem / UnknownCurrency otherwise.
+  [[nodiscard]] std::expected<Money, BookkeepingError> itemPrice(std::string_view itemId) const {
+    if (!m_loaded) {
+      return std::unexpected(BookkeepingError::NoRuleset);
+    }
+    const Json *item = findItem(itemId);
+    if (item == nullptr) {
+      return std::unexpected(BookkeepingError::UnknownItem);
+    }
+    if (!m_ruleset.hasCurrency()) {
+      return std::unexpected(BookkeepingError::UnknownCurrency);
+    }
+    const Json *price = nullptr;
+    if (item->contains("cost")) {
+      price = &item->at("cost");
+    } else if (item->contains("price")) {
+      price = &item->at("price");
+    } else if (item->contains("value")) {
+      price = &item->at("value");
+    }
+    if (price == nullptr) {
+      return Money{0};
+    }
+    if (price->is_number_integer()) {
+      return Money{price->get<int64_t>()};
+    }
+    if (price->is_string()) {
+      return parsePriceString(price->get<std::string>());
+    }
+    return Money{0};
+  }
+
+  /// Adds `quantity` of `itemId` to a sheet's inventory. Fires OnItemAdded.
+  [[nodiscard]] std::expected<void, BookkeepingError>
+  addItem(DynamicEntity &sheet, std::string_view itemId, int32_t quantity = 1) {
+    if (!m_loaded) {
+      return std::unexpected(BookkeepingError::NoRuleset);
+    }
+    if (findItem(itemId) == nullptr) {
+      return std::unexpected(BookkeepingError::UnknownItem);
+    }
+    sheet.inventory().add(ItemInstance{std::string(itemId), quantity, {}});
+    EventData data;
+    data.payload = {
+        {"item", std::string(itemId)}, {"quantity", quantity}, {"owner_id", sheet.id()}};
+    fireEvent(EventType::OnItemAdded, data, sheet, nullptr, Json{});
+    return {};
+  }
+
+  /// Removes `quantity` of `itemId` from a sheet's inventory; ItemNotOwned when
+  /// the sheet does not carry enough. Fires OnItemRemoved.
+  [[nodiscard]] std::expected<void, BookkeepingError>
+  removeItem(DynamicEntity &sheet, std::string_view itemId, int32_t quantity = 1) {
+    if (!m_loaded) {
+      return std::unexpected(BookkeepingError::NoRuleset);
+    }
+    if (findItem(itemId) == nullptr) {
+      return std::unexpected(BookkeepingError::UnknownItem);
+    }
+    if (!sheet.inventory().remove(itemId, quantity)) {
+      return std::unexpected(BookkeepingError::ItemNotOwned);
+    }
+    EventData data;
+    data.payload = {
+        {"item", std::string(itemId)}, {"quantity", quantity}, {"owner_id", sheet.id()}};
+    fireEvent(EventType::OnItemRemoved, data, sheet, nullptr, Json{});
+    return {};
+  }
+
+  /// Transfers `amount` from one sheet's wealth to another's (null recipient =
+  /// the money leaves the economy, e.g. a tax). NotEnoughMoney when the payer
+  /// cannot cover it. Fires OnCurrencyChanged.
+  [[nodiscard]] std::expected<void, BookkeepingError> pay(DynamicEntity &from, DynamicEntity *to,
+                                                          Money amount) {
+    if (!m_loaded) {
+      return std::unexpected(BookkeepingError::NoRuleset);
+    }
+    if (amount.isNegative() || from.money() < amount) {
+      return std::unexpected(BookkeepingError::NotEnoughMoney);
+    }
+    from.money() -= amount;
+    if (to != nullptr) {
+      to->money() += amount;
+    }
+    EventData data;
+    data.payload = {{"amount", amount.baseUnits()},
+                    {"payer_id", from.id()},
+                    {"recipient_id", to != nullptr ? to->id() : std::string{}}};
+    fireEvent(EventType::OnCurrencyChanged, data, from, to, Json{});
+    return {};
+  }
+
+  /// Buys `quantity` of `itemId` for `buyer` from `seller` (null seller = the
+  /// money leaves the economy). Returns the total price paid. Fires the item
+  /// and currency events.
+  [[nodiscard]] std::expected<Money, BookkeepingError>
+  buy(DynamicEntity &buyer, DynamicEntity *seller, std::string_view itemId, int32_t quantity = 1) {
+    auto price = itemPrice(itemId);
+    if (!price) {
+      return std::unexpected(price.error());
+    }
+    const Money total = (*price) * quantity;
+    auto paid = pay(buyer, seller, total);
+    if (!paid) {
+      return std::unexpected(paid.error());
+    }
+    auto added = addItem(buyer, itemId, quantity);
+    if (!added) {
+      return std::unexpected(added.error());
+    }
+    return total;
+  }
+
+  // ------------------------------------------------------------------------
+  // Bookkeeping: equipment & encumbrance
+  // ------------------------------------------------------------------------
+
+  /// The outcome of equipping an item.
+  struct EquipResult {
+    std::string slotId;         ///< the slot filled
+    std::string itemId;         ///< the item equipped
+    std::string previousItemId; ///< item that was in the slot (empty = free)
+    int32_t quantityBefore{0};  ///< how many of the item were carried before
+  };
+
+  /// Equips `itemId` into `slotId` on `sheet`. The slot must be declared by
+  /// the ruleset, the item must exist, its `slot` field (when present) must
+  /// match, and the sheet must carry the item. An occupied slot is swapped:
+  /// the old item returns to the inventory. Fires OnEquipChanged.
+  [[nodiscard]] std::expected<EquipResult, BookkeepingError>
+  equip(DynamicEntity &sheet, std::string_view slotId, std::string_view itemId) {
+    if (!m_loaded) {
+      return std::unexpected(BookkeepingError::NoRuleset);
+    }
+    bool slotOk = false;
+    for (const std::string &slot : m_ruleset.equipmentSlots) {
+      if (slot == slotId) {
+        slotOk = true;
+        break;
+      }
+    }
+    if (!slotOk) {
+      return std::unexpected(BookkeepingError::SlotMismatch);
+    }
+    const Json *item = findItem(itemId);
+    if (item == nullptr) {
+      return std::unexpected(BookkeepingError::UnknownItem);
+    }
+    const std::string itemSlot = item->value("slot", "");
+    if (!itemSlot.empty() && itemSlot != slotId) {
+      return std::unexpected(BookkeepingError::SlotMismatch);
+    }
+    if (sheet.inventory().count(itemId) <= 0) {
+      return std::unexpected(BookkeepingError::ItemNotOwned);
+    }
+    EquipResult result;
+    result.slotId = std::string(slotId);
+    result.itemId = std::string(itemId);
+    result.quantityBefore = sheet.inventory().count(itemId);
+    if (sheet.equipment().isEquipped(slotId)) {
+      result.previousItemId = std::string(sheet.equipment().itemIn(slotId));
+      (void)sheet.equipment().unequip(slotId);
+      if (!result.previousItemId.empty()) {
+        sheet.inventory().add(ItemInstance{result.previousItemId, 1, {}});
+      }
+    }
+    (void)sheet.equipment().equip(slotId, itemId);
+    (void)sheet.inventory().remove(itemId, 1);
+    EventData data;
+    data.payload = {
+        {"slot", std::string(slotId)}, {"item", std::string(itemId)}, {"owner_id", sheet.id()}};
+    fireEvent(EventType::OnEquipChanged, data, sheet, nullptr, Json{});
+    return result;
+  }
+
+  /// Unequips `slotId` on `sheet`; the item returns to the inventory. Fails
+  /// with NotEquipped when the slot is free. Fires OnEquipChanged.
+  [[nodiscard]] std::expected<void, BookkeepingError> unequip(DynamicEntity &sheet,
+                                                              std::string_view slotId) {
+    if (!m_loaded) {
+      return std::unexpected(BookkeepingError::NoRuleset);
+    }
+    if (!sheet.equipment().isEquipped(slotId)) {
+      return std::unexpected(BookkeepingError::NotEquipped);
+    }
+    const std::string itemId = std::string(sheet.equipment().unequip(slotId));
+    sheet.inventory().add(ItemInstance{itemId, 1, {}});
+    EventData data;
+    data.payload = {{"slot", std::string(slotId)}, {"item", itemId}, {"owner_id", sheet.id()}};
+    fireEvent(EventType::OnEquipChanged, data, sheet, nullptr, Json{});
+    return {};
+  }
+
+  /// Total weight the sheet carries: every flat item, everything inside
+  /// containers (bag-in-bags, visited recursively), plus equipped gear. Each
+  /// item's weight comes from its record's `weight` field (parsed) or the
+  /// ruleset's default.
+  [[nodiscard]] Weight carriedWeight(const DynamicEntity &sheet) const {
+    const EncumbranceConfig &cfg = m_ruleset.encumbrance;
+    Weight total{0.0, cfg.weightUnit};
+    const auto addWeight = [&](std::string_view itemId, int32_t quantity) {
+      double unit = cfg.defaultItemWeight;
+      const Json *item = findItem(itemId);
+      if (item != nullptr && item->contains("weight")) {
+        const Json &weightField = item->at("weight");
+        if (weightField.is_number()) {
+          unit = weightField.get<double>();
+        } else if (weightField.is_string()) {
+          const double parsed = parseWeightValue(weightField.get<std::string>());
+          if (parsed >= 0.0) {
+            unit = parsed;
+          }
+        }
+      }
+      total.value += unit * quantity;
+    };
+    sheet.inventory().visitStacks(
+        [&](const ItemInstance &stack) { addWeight(stack.itemId, stack.quantity); });
+    for (const auto &[slot, itemId] : sheet.equipment().slots()) {
+      addWeight(itemId, 1);
+    }
+    return total;
+  }
+
+  /// Adds `quantity` of `itemId` into the container `containerItemId` (which
+  /// must be carried as a single unit). UnknownContainer / UnknownItem
+  /// otherwise. Fires OnItemAdded.
+  [[nodiscard]] std::expected<void, BookkeepingError>
+  addItemToContainer(DynamicEntity &sheet, std::string_view containerItemId,
+                     std::string_view itemId, int32_t quantity = 1) {
+    if (!m_loaded) {
+      return std::unexpected(BookkeepingError::NoRuleset);
+    }
+    if (findItem(itemId) == nullptr) {
+      return std::unexpected(BookkeepingError::UnknownItem);
+    }
+    if (sheet.inventory().count(containerItemId) != 1) {
+      return std::unexpected(BookkeepingError::UnknownContainer);
+    }
+    if (!sheet.inventory().putInto(containerItemId,
+                                   ItemInstance{std::string(itemId), quantity, {}})) {
+      return std::unexpected(BookkeepingError::UnknownContainer);
+    }
+    EventData data;
+    data.payload = {{"item", std::string(itemId)},
+                    {"container", std::string(containerItemId)},
+                    {"quantity", quantity},
+                    {"owner_id", sheet.id()}};
+    fireEvent(EventType::OnItemAdded, data, sheet, nullptr, Json{});
+    return {};
+  }
+
+  /// Removes `quantity` of `itemId` from inside `containerItemId`. Returns
+  /// ItemNotOwned when the container or the item is not present in it.
+  [[nodiscard]] std::expected<void, BookkeepingError>
+  removeItemFromContainer(DynamicEntity &sheet, std::string_view containerItemId,
+                          std::string_view itemId, int32_t quantity = 1) {
+    if (!m_loaded) {
+      return std::unexpected(BookkeepingError::NoRuleset);
+    }
+    if (findItem(itemId) == nullptr) {
+      return std::unexpected(BookkeepingError::UnknownItem);
+    }
+    if (!sheet.inventory().removeFrom(containerItemId, itemId, quantity)) {
+      return std::unexpected(BookkeepingError::ItemNotOwned);
+    }
+    EventData data;
+    data.payload = {{"item", std::string(itemId)},
+                    {"container", std::string(containerItemId)},
+                    {"quantity", quantity},
+                    {"owner_id", sheet.id()}};
+    fireEvent(EventType::OnItemRemoved, data, sheet, nullptr, Json{});
+    return {};
+  }
+
+  /// The sheet's carrying capacity, from the ruleset's `encumbrance.capacity`
+  /// formula evaluated against the sheet. NoEncumbrance when the ruleset has
+  /// no carrying rules.
+  [[nodiscard]] std::expected<Weight, BookkeepingError>
+  carryingCapacity(const DynamicEntity &sheet) const {
+    const EncumbranceConfig &cfg = m_ruleset.encumbrance;
+    if (!cfg.enabled || cfg.capacityText.empty()) {
+      return std::unexpected(BookkeepingError::NoEncumbrance);
+    }
+    const Json emptyEnv = Json::object();
+    const Json emptyParams = Json::object();
+    const EntityContext context(sheet, nullptr, emptyEnv, emptyParams);
+    return Weight{cfg.capacity.evaluate(context), cfg.weightUnit};
+  }
+
+  /// The encumbrance level of `sheet`: 0 = unencumbered, then one per level
+  /// whose carried/capacity ratio ceiling the sheet is at or under. Returns 0
+  /// when the ruleset has no carrying rules.
+  [[nodiscard]] std::expected<int32_t, BookkeepingError>
+  encumbranceLevel(const DynamicEntity &sheet) const {
+    const EncumbranceConfig &cfg = m_ruleset.encumbrance;
+    if (!cfg.enabled || cfg.capacityText.empty() || cfg.levels.empty()) {
+      return 0;
+    }
+    auto capacity = carryingCapacity(sheet);
+    if (!capacity) {
+      return 0;
+    }
+    if (capacity->value <= 0.0) {
+      return 0;
+    }
+    const double ratio = carriedWeight(sheet).value / capacity->value;
+    int32_t level = 0;
+    for (std::size_t i = 0; i < cfg.levels.size(); ++i) {
+      if (ratio <= cfg.levels[i].maxRatio) {
+        level = static_cast<int32_t>(i);
+        break;
+      }
+      level = static_cast<int32_t>(cfg.levels.size());
+    }
+    return level;
+  }
+
+  /// Applies the condition of the sheet's current encumbrance level and clears
+  /// the other levels' conditions (bookkeeping for "you are now encumbered").
+  [[nodiscard]] std::expected<void, BookkeepingError>
+  updateEncumbrance(DynamicEntity &sheet) const {
+    const EncumbranceConfig &cfg = m_ruleset.encumbrance;
+    auto level = encumbranceLevel(sheet);
+    if (!level) {
+      return std::unexpected(level.error());
+    }
+    for (std::size_t i = 0; i < cfg.levels.size(); ++i) {
+      if (cfg.levels[i].conditionId.empty()) {
+        continue;
+      }
+      if (static_cast<int32_t>(i) == *level) {
+        sheet.addCondition(cfg.levels[i].conditionId, 1);
+      } else {
+        sheet.removeCondition(cfg.levels[i].conditionId);
+      }
+    }
+    return {};
+  }
+
+  // ------------------------------------------------------------------------
+  // Bookkeeping: conditions & effects
+  // ------------------------------------------------------------------------
+
+  /// Applies `stacks` of `conditionId` to `sheet` for `duration` ticks
+  /// (0 = permanent). The condition must be declared in `data.conditions`;
+  /// throws std::invalid_argument otherwise. Fires OnConditionChanged.
+  void applyCondition(DynamicEntity &sheet, std::string_view conditionId, int32_t stacks = 1,
+                      int32_t duration = 0, std::string_view source = {}) {
+    if (!m_ruleset.isCondition(conditionId)) {
+      throw std::invalid_argument("unknown condition '" + std::string(conditionId) + "'");
+    }
+    sheet.addCondition(conditionId, stacks);
+    sheet.effects().add(
+        ActiveEffect{std::string(conditionId), stacks, duration, std::string(source)});
+    EventData data;
+    data.payload = {
+        {"condition", std::string(conditionId)}, {"stacks", stacks}, {"actor_id", sheet.id()}};
+    fireEvent(EventType::OnConditionChanged, data, sheet, nullptr, Json{});
+  }
+
+  /// Removes `conditionId` entirely (stacks and effect timeline). Fires
+  /// OnConditionChanged.
+  void removeCondition(DynamicEntity &sheet, std::string_view conditionId) {
+    sheet.removeCondition(conditionId);
+    (void)sheet.effects().remove(conditionId);
+    EventData data;
+    data.payload = {{"condition", std::string(conditionId)}, {"actor_id", sheet.id()}};
+    fireEvent(EventType::OnConditionChanged, data, sheet, nullptr, Json{});
+  }
+
+  /// Advances the sheet's effect timeline: durations tick down, expired
+  /// conditions are removed (both from the timeline and the stack map).
+  /// Returns how many effects expired.
+  int32_t tickEffects(DynamicEntity &sheet) {
+    std::vector<std::string> hadTimers;
+    for (const ActiveEffect &effect : sheet.effects().effects()) {
+      hadTimers.push_back(effect.conditionId);
+    }
+    const int32_t expired = sheet.effects().tick();
+    for (const std::string &conditionId : hadTimers) {
+      if (sheet.effects().stacks(conditionId) <= 0) {
+        sheet.removeCondition(conditionId);
+      }
+    }
+    return expired;
+  }
+
+  /// Runs one full turn for `sheet`: fires OnTurnStart, ticks effect
+  /// durations, then fires OnTurnEnd.
+  void runTurn(DynamicEntity &sheet) {
+    EventData start;
+    start.payload = {{"actor_id", sheet.id()}};
+    fireEvent(EventType::OnTurnStart, start, sheet, nullptr, Json{});
+    (void)tickEffects(sheet);
+    EventData end;
+    end.payload = {{"actor_id", sheet.id()}};
+    fireEvent(EventType::OnTurnEnd, end, sheet, nullptr, Json{});
+  }
+
+  // ------------------------------------------------------------------------
+  // Bookkeeping: magic
+  // ------------------------------------------------------------------------
+
+  /// Adds `spellId` to the sheet's spellbook as known and prepared. Returns
+  /// false when the spell is unknown.
+  bool prepareSpell(DynamicEntity &sheet, std::string_view spellId) const {
+    if (findSpell(spellId) == nullptr) {
+      return false;
+    }
+    sheet.spellbook().learn(spellId);
+    sheet.spellbook().prepare(spellId);
+    return true;
+  }
+
+  /// Free spell slots of `level` remaining today (0 when the ruleset does not
+  /// use vancian slots, or the level has no schedule).
+  [[nodiscard]] int32_t spellSlotsRemaining(const DynamicEntity &sheet, int32_t level) const {
+    const auto it = m_ruleset.spellcasting.slots.find(level);
+    if (m_ruleset.spellcasting.style != "slots" || it == m_ruleset.spellcasting.slots.end()) {
+      return 0;
+    }
+    return it->second - sheet.spellbook().slotsUsed(level);
+  }
+
+  /// Marks one spell slot of `level` used; NoSpellSlot when none are free.
+  [[nodiscard]] std::expected<void, BookkeepingError> spendSpellSlot(DynamicEntity &sheet,
+                                                                     int32_t level) {
+    if (spellSlotsRemaining(sheet, level) <= 0) {
+      return std::unexpected(BookkeepingError::NoSpellSlot);
+    }
+    sheet.spellbook().markSlotUsed(level);
+    return {};
+  }
+
+  /// Restores all spell slots (a long rest).
+  void recoverSpellSlots(DynamicEntity &sheet) {
+    sheet.spellbook().recoverAllSlots();
+  }
+
+  /// Casts a spell that must be prepared. For vancian rulesets the spell's
+  /// level slot is spent instead of a resource pool; for pool rulesets the
+  /// normal cost applies. Unlike @ref castSpell, an unprepared spell is not
+  /// cast (cast = false, no cost spent).
+  template <RandomNumberGenerator Rng>
+  [[nodiscard]] SpellResult castSpellPrepared(std::string_view spellId, DynamicEntity &actor,
+                                              DynamicEntity *target, const CheckParams &params,
+                                              Rng &rng) {
+    SpellResult result;
+    if (!actor.spellbook().hasPrepared(spellId)) {
+      return result; // cast stays false
+    }
+    if (m_ruleset.spellcasting.style == "slots") {
+      const Json *spell = findSpell(spellId);
+      const int32_t level = spell != nullptr ? spell->value("level", 1) : 1;
+      if (spellSlotsRemaining(actor, level) <= 0) {
+        return result;
+      }
+      result = castSpell(spellId, actor, target, "", params, rng);
+      if (result.cast) {
+        (void)spendSpellSlot(actor, level);
+      }
+    } else {
+      result = castSpell(spellId, actor, target, params, rng);
+    }
+    if (result.cast) {
+      EventData data;
+      data.payload = {{"spell", std::string(spellId)}, {"actor_id", actor.id()}};
+      fireEvent(EventType::OnSpellCast, data, actor, target, Json{});
+    }
+    return result;
+  }
+
+  /// Casts a prepared spell using a fresh default RNG (convenience overload).
+  [[nodiscard]] SpellResult castSpellPrepared(std::string_view spellId, DynamicEntity &actor,
+                                              DynamicEntity *target, const CheckParams &params) {
+    DefaultRandom rng;
+    return castSpellPrepared(spellId, actor, target, params, rng);
+  }
+
+  // ------------------------------------------------------------------------
+  // Structured effects (the extracted, machine-readable form of prose rules)
+  // ------------------------------------------------------------------------
+
+  /// The outcome of resolving a batch of structured effects.
+  ///
+  /// @par Why a typed result?
+  /// An application that triggers a spell, a magic item, or a monster trait
+  /// needs to know what actually happened — how much damage landed, whether a
+  /// condition was applied, how much was healed — so it can narrate and react.
+  struct EffectsResult {
+    int32_t damageDealt{0};       ///< net damage applied to the target
+    int32_t conditionsApplied{0}; ///< how many condition effects landed
+    int32_t healingDone{0};       ///< hit points restored
+    int32_t savesPassed{0};       ///< how many saves the target passed
+  };
+
+  /// Resolves a batch of structured effects (the `effects` array on spells,
+  /// magic items, monster traits, ...) against `target`, driven by `source`.
+  ///
+  /// @par Why structured effects instead of parsing prose?
+  /// The engine is data-driven: it interprets structured data, it does not
+  /// read English. Rules that used to live only in a `description` are
+  /// transcribed (by the extraction scripts / a ruleset author) into this
+  /// effect vocabulary, so their mechanical consequences — saving throws,
+  /// damage with half-on-save, conditions, healing, resistances — are applied
+  /// automatically and consistently. Prose stays as the human-readable layer.
+  ///
+  /// Supported effect kinds:
+  ///   - @c damage: rolls `dice`, applies it through the damage pipeline; an
+  ///     optional `save` halves it (on_success "half") or negates it ("none").
+  ///   - @c condition: applies `condition` (stacks, optional `duration` in
+  ///     ticks) unless the target passes the optional `save`.
+  ///   - @c heal: rolls `dice` (+ optional formula `add`) into the target's
+  ///     hit-point pool.
+  ///   - @c resist: adds the listed `types` to the target's resistances.
+  template <RandomNumberGenerator Rng>
+  [[nodiscard]] EffectsResult resolveEffects(DynamicEntity &source, DynamicEntity &target,
+                                             const Json &effects, const CheckParams &params,
+                                             Rng &rng) {
+    EffectsResult result;
+    if (!effects.is_array()) {
+      return result;
+    }
+    const std::string hitPool = resolveHitPointPoolId();
+    for (const Json &effect : effects) {
+      const std::string kind = effect.value("kind", "");
+      if (kind == "damage") {
+        if (!effect.contains("dice")) {
+          continue;
+        }
+        int32_t final =
+            static_cast<int32_t>(readVariantValue(effect.at("dice"), Variance::Random, rng));
+        if (effect.contains("save")) {
+          if (resolveSave(source, target, effect.at("save"), params, rng)) {
+            ++result.savesPassed;
+            final = effect.at("save").value("on_success", "none") == "half" ? final / 2 : 0;
+          }
+        } else if (effect.contains("attack")) {
+          const Json &attack = effect.at("attack");
+          if (!resolveAttack(source, target, attack, params, rng)) {
+            final = attack.value("on_miss", "none") == "half" ? final / 2 : 0;
+          }
+        }
+        if (final > 0 && !hitPool.empty()) {
+          // applyDamage reports the negative pool delta; negate for "dealt".
+          result.damageDealt += -applyDamage(source, target, hitPool, final);
+        }
+      } else if (kind == "condition") {
+        const std::string conditionId = effect.value("condition", "");
+        if (conditionId.empty()) {
+          continue;
+        }
+        bool applied = true;
+        if (effect.contains("save") &&
+            resolveSave(source, target, effect.at("save"), params, rng)) {
+          ++result.savesPassed;
+          applied = false;
+        } else if (effect.contains("attack") &&
+                   !resolveAttack(source, target, effect.at("attack"), params, rng)) {
+          applied = false;
+        }
+        if (!applied) {
+          continue;
+        }
+        const int32_t stacks = effect.value("stacks", 1);
+        target.addCondition(conditionId, stacks);
+        const int32_t duration = effect.value("duration", 0);
+        if (duration > 0) {
+          target.effects().add(ActiveEffect{conditionId, stacks, duration, "effect"});
+        }
+        ++result.conditionsApplied;
+      } else if (kind == "heal") {
+        if (!effect.contains("dice") || hitPool.empty()) {
+          continue;
+        }
+        int32_t amount =
+            static_cast<int32_t>(readVariantValue(effect.at("dice"), Variance::Random, rng));
+        if (effect.contains("add")) {
+          const Json &add = effect.at("add");
+          if (add.is_number()) {
+            amount += add.get<int32_t>();
+          } else if (add.is_string()) {
+            const Json emptyEnv = Json::object();
+            const EntityContext context(source, &target, emptyEnv, Json{});
+            amount += math::toStat(Expression(add.get<std::string>()).evaluate(context));
+          }
+        }
+        result.healingDone += target.modifyResource(hitPool, amount);
+      } else if (kind == "temp_hp") {
+        if (!effect.contains("dice")) {
+          continue;
+        }
+        int32_t amount =
+            static_cast<int32_t>(readVariantValue(effect.at("dice"), Variance::Random, rng));
+        if (effect.contains("add")) {
+          const Json &add = effect.at("add");
+          if (add.is_number()) {
+            amount += add.get<int32_t>();
+          } else if (add.is_string()) {
+            const Json emptyEnv = Json::object();
+            const EntityContext context(source, &target, emptyEnv, Json{});
+            amount += math::toStat(Expression(add.get<std::string>()).evaluate(context));
+          }
+        }
+        target.addTemporaryHitPoints(amount);
+      } else if (kind == "resist") {
+        if (effect.contains("types")) {
+          for (const Json &type : effect.at("types")) {
+            target.addResistance(type.get<std::string>());
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  /// Resolves structured effects using a fresh default RNG (convenience).
+  [[nodiscard]] EffectsResult resolveEffects(DynamicEntity &source, DynamicEntity &target,
+                                             const Json &effects, const CheckParams &params) {
+    DefaultRandom rng;
+    return resolveEffects(source, target, effects, params, rng);
+  }
+
+  /// The outcome of a structured effect's saving throw.
+  ///
+  /// @par Why a template returning bool?
+  /// A save is just a threshold check: the target rolls `save.dice` (default
+  /// 1d20), adds its `save.stat`, and succeeds when the total is >= the DC.
+  /// The DC is a fixed number or a formula evaluated against the *source*
+  /// (the caster), so "8 + proficiency + ability modifier" style DCs are
+  /// expressed in the ruleset data rather than in C++. Returns true when the
+  /// target saved.
+  template <RandomNumberGenerator Rng>
+  [[nodiscard]] bool resolveSave(const DynamicEntity &source, DynamicEntity &target,
+                                 const Json &save, const CheckParams &params, Rng &rng) {
+    int32_t dc = 10;
+    if (save.contains("dc")) {
+      const Json &dcJson = save.at("dc");
+      if (dcJson.is_number()) {
+        dc = dcJson.get<int32_t>();
+      } else if (dcJson.is_string()) {
+        const Json emptyEnv = Json::object();
+        const EntityContext context(source, &target, emptyEnv, Json{});
+        dc = math::toStat(Expression(dcJson.get<std::string>()).evaluate(context));
+      }
+    }
+    const std::string stat = save.value("stat", "");
+    CheckRecipe recipe;
+    recipe.resolution = Resolution::Threshold;
+    recipe.dice = DiceExpression(save.value("dice", "1d20"));
+    recipe.comparison = Comparison::GreaterEqual;
+    recipe.thresholdSource = ThresholdSource::Difficulty;
+    recipe.difficultyMode = DifficultyMode::ToThreshold;
+    if (!stat.empty()) {
+      recipe.bonusStats = {stat};
+    }
+    CheckParams adjusted = params;
+    adjusted.difficulty = dc;
+    const CheckResult roll = resolveCheck(target, NullStatProvider{}, recipe, adjusted, rng);
+    return roll.isSuccess;
+  }
+
+  /// Whether the source's attack roll beats the target's defence (an attack
+  /// roll instead of a saving throw — spell attacks, breath weapons, ...).
+  /// The source rolls `dice` (default 1d20), adds each stat id in
+  /// `bonus_stats` (resolved on the source, e.g. the ability `_mod` plus
+  /// `proficiency_bonus`), and hits when the total is >= the target's
+  /// `target_stat` (default `AC`).
+  template <RandomNumberGenerator Rng>
+  [[nodiscard]] bool resolveAttack(const DynamicEntity &source, DynamicEntity &target,
+                                   const Json &attack, const CheckParams &params, Rng &rng) {
+    CheckRecipe recipe;
+    recipe.resolution = Resolution::Threshold;
+    recipe.dice = DiceExpression(attack.value("dice", "1d20"));
+    recipe.comparison = Comparison::GreaterEqual;
+    recipe.thresholdSource = ThresholdSource::TargetStat;
+    recipe.thresholdStat = attack.value("target_stat", "AC");
+    recipe.difficultyMode = DifficultyMode::ToThreshold;
+    if (attack.contains("bonus_stats")) {
+      for (const Json &stat : attack.at("bonus_stats")) {
+        recipe.bonusStats.push_back(stat.get<std::string>());
+      }
+    }
+    const CheckResult roll = resolveCheck(source, target, recipe, params, rng);
+    return roll.isSuccess;
+  }
+
+  // ------------------------------------------------------------------------
+  // Bookkeeping: advancement, rest, time, afflictions
+  // ------------------------------------------------------------------------
+
+  /// Grants `xp` to `sheet` and updates its level from the ruleset's
+  /// `xp_to_level` cost table (when present). Returns the LevelUp outcome and
+  /// fires OnLevelUp when the level changed.
+  [[nodiscard]] std::expected<LevelUp, BookkeepingError> gainXp(DynamicEntity &sheet, int64_t xp) {
+    if (!m_loaded) {
+      return std::unexpected(BookkeepingError::NoRuleset);
+    }
+    sheet.advancement().gainXp(xp);
+    const CostTableDef *table = m_ruleset.findCostTable("xp_to_level");
+    if (table == nullptr) {
+      return LevelUp{sheet.advancement().level, sheet.advancement().level, false};
+    }
+    const int32_t newLevel = table->table.lookup(static_cast<int32_t>(sheet.advancement().xp()));
+    LevelUp result{sheet.advancement().level, newLevel, newLevel != sheet.advancement().level};
+    sheet.advancement().level = newLevel;
+    if (result.leveled) {
+      EventData data;
+      data.payload = {
+          {"from_level", result.fromLevel}, {"to_level", result.toLevel}, {"actor_id", sheet.id()}};
+      fireEvent(EventType::OnLevelUp, data, sheet, nullptr, Json{});
+    }
+    return result;
+  }
+
+  /// The cost (from `costTableId`) to advance a rating that is currently
+  /// `currentRating` — a per-point multiplier (TDE AP columns). (D&D's
+  /// XP-to-level table is consumed by gainXp instead.)
+  [[nodiscard]] std::expected<int32_t, BookkeepingError>
+  improvementCost(std::string_view costTableId, int32_t currentRating) const {
+    const CostTableDef *table = m_ruleset.findCostTable(costTableId);
+    if (table == nullptr) {
+      return std::unexpected(BookkeepingError::UnknownCostTable);
+    }
+    return table->table.lookup(currentRating);
+  }
+
+  /// A short rest: tick effect durations and notify. Resources are unchanged.
+  void shortRest(DynamicEntity &sheet) {
+    (void)tickEffects(sheet);
+    EventData data;
+    data.payload = {{"actor_id", sheet.id()}, {"kind", "short"}};
+    fireEvent(EventType::OnRest, data, sheet, nullptr, Json{});
+  }
+
+  /// A long rest: fully restores every resource pool, recovers spell slots,
+  /// and ends timed conditions (effects whose duration expired).
+  void longRest(DynamicEntity &sheet) {
+    for (const ResourcePoolDef &def : m_ruleset.resourcePools) {
+      const int32_t max = sheet.getStat(def.maxStat);
+      (void)sheet.modifyResource(def.id, max - sheet.resource(def.id));
+    }
+    recoverSpellSlots(sheet);
+    (void)tickEffects(sheet);
+    EventData data;
+    data.payload = {{"actor_id", sheet.id()}, {"kind", "long"}};
+    fireEvent(EventType::OnRest, data, sheet, nullptr, Json{});
+  }
+
+  /// Applies a curse from `data.curses` (the same generic save + effects path
+  /// as poisons / diseases) and records it on the victim for later curing.
+  template <RandomNumberGenerator Rng>
+  [[nodiscard]] AfflictionResult applyCurse(std::string_view curseId, DynamicEntity &victim,
+                                            const CheckParams &params, Rng &rng) {
+    return applyAffliction("curses", curseId, victim, params, rng);
+  }
+
+  /// Ends an active affliction on `victim`: removes the conditions its effects
+  /// applied and forgets the record. Returns false when the affliction was not
+  /// active (already cured or never applied).
+  bool cureAffliction(DynamicEntity &victim, std::string_view section, std::string_view id) {
+    for (auto it = victim.afflictions().begin(); it != victim.afflictions().end(); ++it) {
+      if (it->section == section && it->id == id) {
+        for (const std::string &condition : it->conditions) {
+          removeCondition(victim, condition);
+        }
+        victim.afflictions().erase(it);
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Registers a user-facing event listener (returns a handle for removal).
@@ -518,6 +1368,49 @@ public:
   }
 
 private:
+  /// Parses a price string like "150 GP", "1 SP", "45 ST", or "1,500 GP" into
+  /// Money using the ruleset's currency system. "—", "Varies", and empty
+  /// strings mean no price (Money{0}); a bare number is base units; a coin
+  /// symbol that matches no denomination is an UnknownDenomination error.
+  [[nodiscard]] std::expected<Money, BookkeepingError>
+  parsePriceString(std::string_view text) const {
+    std::string trimmed = trimWhitespace(text);
+    if (trimmed.empty() || trimmed == "-" || trimmed == "—" || trimmed == "Varies" ||
+        trimmed == "varies") {
+      return Money{0};
+    }
+    std::size_t pos = 0;
+    bool sawDigit = false;
+    while (pos < trimmed.size()) {
+      const char c = trimmed[pos];
+      if (c == ',' || c == '.' || c == ' ' || (c >= '0' && c <= '9')) {
+        if (c >= '0' && c <= '9') {
+          sawDigit = true;
+        }
+        ++pos;
+        continue;
+      }
+      break;
+    }
+    if (!sawDigit) {
+      return Money{0};
+    }
+    std::string number = trimmed.substr(0, pos);
+    std::string symbol = trimWhitespace(trimmed.substr(pos));
+    number.erase(std::remove(number.begin(), number.end(), ','), number.end());
+    number.erase(std::remove(number.begin(), number.end(), ' '), number.end());
+    const int64_t amount = static_cast<int64_t>(std::llround(std::strtod(number.c_str(), nullptr)));
+    if (symbol.empty()) {
+      return Money{amount}; // a bare number is base units
+    }
+    for (const Denomination &d : m_ruleset.currencySystem.denominations) {
+      if (d.symbol == symbol || d.id == symbol) {
+        return Money{amount * d.perBase};
+      }
+    }
+    return std::unexpected(BookkeepingError::UnknownDenomination);
+  }
+
   /// Runs the ruleset's JSON-driven triggers for `type` (mutating `data`), then
   /// notifies user-facing listeners. The ordering is deliberate: ruleset rules
   /// (e.g. armor absorption) must see the payload first and mutate it, so
@@ -571,6 +1464,23 @@ private:
       const int32_t stacks =
           action.stacksText.empty() ? 1 : math::toStat(action.stacks.evaluate(context));
       subject.addCondition(action.condition, stacks);
+    } else if (action.type == "gain_item" || action.type == "remove_item") {
+      if (!action.item.empty()) {
+        if (action.type == "gain_item") {
+          subject.inventory().add(ItemInstance{action.item, action.amount, {}});
+        } else {
+          (void)subject.inventory().remove(action.item, action.amount);
+        }
+      }
+    } else if (action.type == "gain_currency" || action.type == "spend_currency") {
+      const Money amount{action.amount};
+      if (action.type == "gain_currency") {
+        subject.money() += amount;
+      } else {
+        subject.money() -= amount;
+      }
+    } else if (action.type == "gain_xp") {
+      subject.advancement().gainXp(action.amount);
     }
   }
 

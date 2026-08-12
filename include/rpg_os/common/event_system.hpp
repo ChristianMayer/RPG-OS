@@ -43,13 +43,14 @@ namespace rpg_os {
 /**
  * Event types emitted by the engine.
  *
- * @par Why these six?
- * The set is deliberately small and mirrors the moments the shipped rulesets
- * actually react to (check roll resolution, damage flow, and turn cadence).
- * Keeping it closed makes the two halves of the engine — the JSON trigger
- * runner and the user-facing callback API — agree on a fixed vocabulary; an
- * open-ended string-based event system would let a typo in a ruleset silently
- * produce an event nobody listens to.
+ * @par Why this closed set?
+ * The set mirrors the moments the shipped rulesets actually react to — check
+ * roll resolution, damage flow, turn cadence, and the bookkeeping layer's
+ * state changes (inventory, currency, equipment, conditions, rests,
+ * advancement, afflictions, time). Keeping it closed makes the two halves of
+ * the engine — the JSON trigger runner and the user-facing callback API —
+ * agree on a fixed vocabulary; an open-ended string-based event system would
+ * let a typo in a ruleset silently produce an event nobody listens to.
  */
 enum class EventType {
   /// Before a check's dice are rolled (may alter the roll / advantage).
@@ -64,6 +65,26 @@ enum class EventType {
   OnTurnStart,
   /// End of a combatant's turn.
   OnTurnEnd,
+  /// An item was added to a sheet's inventory.
+  OnItemAdded,
+  /// An item was removed from a sheet's inventory.
+  OnItemRemoved,
+  /// Money changed hands (paid, received, spent, or converted).
+  OnCurrencyChanged,
+  /// An item was equipped or unequipped (slot changed).
+  OnEquipChanged,
+  /// A condition was added, removed, or expired.
+  OnConditionChanged,
+  /// A spell was cast.
+  OnSpellCast,
+  /// A sheet rested (short or long rest).
+  OnRest,
+  /// A sheet gained a level.
+  OnLevelUp,
+  /// An affliction (poison / disease / curse) was applied.
+  OnAfflictionApplied,
+  /// Game time advanced (calendar / duration ticking).
+  OnTimePassed,
 };
 
 /**

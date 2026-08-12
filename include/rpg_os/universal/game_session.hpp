@@ -1,0 +1,234 @@
+// Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
+// SPDX-License-Identifier: Apache-2.0
+
+/**
+ * @file game_session.hpp
+ * @brief The application-facing facade ("OS kernel").
+ *
+ * An application that drives a tabletop session should talk to one object:
+ * a @ref GameSession. It owns a @ref RulesetEngine (the interpreter), the
+ * character / creature sheets it created, and the minimal shared @ref
+ * WorldState (party treasury, day counter). The domain operations — economy,
+ * equipment, conditions, magic, advancement, rests, afflictions — are exposed
+ * here as conveniences over the engine, so application code rarely needs to
+ * thread engine and entity pointers around.
+ *
+ * @par Why a facade instead of extending RulesetEngine?
+ * The engine is about *resolution* (load rules, create entities, resolve
+ * checks and damage). A session is about *running a game*: it owns the
+ * characters and the shared bookkeeping. Keeping the two separate lets an
+ * application that only needs the rules (a character builder, a test harness)
+ * use the engine alone, and lets the session grow world-agnostic bookkeeping
+ * without bloating the resolver. Per the project's scope, the session keeps
+ * per-character / creature / object state and only the *shared* bookkeeping
+ * (treasury, day) — never plot, maps, or encounter logic.
+ */
+#pragma once
+
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <rpg_os/common/event_system.hpp>
+#include <rpg_os/universal/engine.hpp>
+#include <rpg_os/universal/world_state.hpp>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+namespace rpg_os {
+
+/// Application-facing session facade (see the file doc comment).
+class GameSession {
+public:
+  /// Loads a ruleset file; false (with @ref lastError) on failure.
+  bool loadRulesetFromFile(std::string_view path) {
+    return m_engine.loadRulesetFromFile(path);
+  }
+  /// Loads a ruleset from a JSON string; false (with @ref lastError) on failure.
+  bool loadRulesetFromJson(std::string_view jsonContent) {
+    return m_engine.loadRulesetFromJson(jsonContent);
+  }
+
+  /// Whether a ruleset is loaded.
+  [[nodiscard]] bool loaded() const noexcept {
+    return m_engine.loaded();
+  }
+  /// Message from the last failed load.
+  [[nodiscard]] const std::string &lastError() const noexcept {
+    return m_engine.lastError();
+  }
+
+  /// The underlying engine (resolution primitives).
+  [[nodiscard]] RulesetEngine &engine() noexcept {
+    return m_engine;
+  }
+  [[nodiscard]] const RulesetEngine &engine() const noexcept {
+    return m_engine;
+  }
+
+  /// Creates a character sheet from an archetype and takes ownership of it.
+  /// The returned reference stays valid (the sheet lives on the heap).
+  [[nodiscard]] DynamicEntity &createCharacter(std::string_view archetypeId) {
+    return adopt(m_engine.createEntity(archetypeId));
+  }
+  /// Creates a creature sheet from a bestiary entry and takes ownership.
+  [[nodiscard]] DynamicEntity &createCreature(std::string_view creatureId) {
+    return adopt(m_engine.createCreature(creatureId));
+  }
+
+  /// The shared world bookkeeping (treasury, day counter).
+  [[nodiscard]] WorldState &world() noexcept {
+    return m_world;
+  }
+  [[nodiscard]] const WorldState &world() const noexcept {
+    return m_world;
+  }
+
+  /// Registers a listener for a bookkeeping event (e.g. OnCurrencyChanged).
+  [[nodiscard]] uint64_t onEvent(EventType type, EventBus::Callback callback) {
+    return m_engine.registerEventListener(type, std::move(callback));
+  }
+
+  // ---- economy ---------------------------------------------------------
+  [[nodiscard]] bool hasCurrency() const noexcept {
+    return m_engine.hasCurrency();
+  }
+  [[nodiscard]] const CurrencySystem &currencySystem() const noexcept {
+    return m_engine.currencySystem();
+  }
+  [[nodiscard]] std::expected<Money, BookkeepingError> itemPrice(std::string_view itemId) const {
+    return m_engine.itemPrice(itemId);
+  }
+  [[nodiscard]] std::expected<void, BookkeepingError>
+  addItem(DynamicEntity &sheet, std::string_view itemId, int32_t quantity = 1) {
+    return m_engine.addItem(sheet, itemId, quantity);
+  }
+  [[nodiscard]] std::expected<void, BookkeepingError>
+  removeItem(DynamicEntity &sheet, std::string_view itemId, int32_t quantity = 1) {
+    return m_engine.removeItem(sheet, itemId, quantity);
+  }
+  [[nodiscard]] std::expected<void, BookkeepingError>
+  addItemToContainer(DynamicEntity &sheet, std::string_view containerItemId,
+                     std::string_view itemId, int32_t quantity = 1) {
+    return m_engine.addItemToContainer(sheet, containerItemId, itemId, quantity);
+  }
+  [[nodiscard]] std::expected<void, BookkeepingError>
+  removeItemFromContainer(DynamicEntity &sheet, std::string_view containerItemId,
+                          std::string_view itemId, int32_t quantity = 1) {
+    return m_engine.removeItemFromContainer(sheet, containerItemId, itemId, quantity);
+  }
+  [[nodiscard]] std::expected<void, BookkeepingError> pay(DynamicEntity &from, DynamicEntity *to,
+                                                          Money amount) {
+    return m_engine.pay(from, to, amount);
+  }
+  [[nodiscard]] std::expected<Money, BookkeepingError>
+  buy(DynamicEntity &buyer, DynamicEntity *seller, std::string_view itemId, int32_t quantity = 1) {
+    return m_engine.buy(buyer, seller, itemId, quantity);
+  }
+
+  // ---- equipment & encumbrance -----------------------------------------
+  [[nodiscard]] std::expected<RulesetEngine::EquipResult, BookkeepingError>
+  equip(DynamicEntity &sheet, std::string_view slotId, std::string_view itemId) {
+    return m_engine.equip(sheet, slotId, itemId);
+  }
+  [[nodiscard]] std::expected<void, BookkeepingError> unequip(DynamicEntity &sheet,
+                                                              std::string_view slotId) {
+    return m_engine.unequip(sheet, slotId);
+  }
+  [[nodiscard]] Weight carriedWeight(const DynamicEntity &sheet) const {
+    return m_engine.carriedWeight(sheet);
+  }
+  [[nodiscard]] std::expected<Weight, BookkeepingError>
+  carryingCapacity(const DynamicEntity &sheet) const {
+    return m_engine.carryingCapacity(sheet);
+  }
+  [[nodiscard]] std::expected<int32_t, BookkeepingError>
+  encumbranceLevel(const DynamicEntity &sheet) const {
+    return m_engine.encumbranceLevel(sheet);
+  }
+  [[nodiscard]] std::expected<void, BookkeepingError>
+  updateEncumbrance(DynamicEntity &sheet) const {
+    return m_engine.updateEncumbrance(sheet);
+  }
+
+  // ---- conditions & effects ---------------------------------------------
+  void applyCondition(DynamicEntity &sheet, std::string_view conditionId, int32_t stacks = 1,
+                      int32_t duration = 0, std::string_view source = {}) {
+    m_engine.applyCondition(sheet, conditionId, stacks, duration, source);
+  }
+  void removeCondition(DynamicEntity &sheet, std::string_view conditionId) {
+    m_engine.removeCondition(sheet, conditionId);
+  }
+  [[nodiscard]] int32_t tickEffects(DynamicEntity &sheet) {
+    return m_engine.tickEffects(sheet);
+  }
+  void runTurn(DynamicEntity &sheet) {
+    m_engine.runTurn(sheet);
+  }
+
+  // ---- magic ------------------------------------------------------------
+  [[nodiscard]] bool prepareSpell(DynamicEntity &sheet, std::string_view spellId) const {
+    return m_engine.prepareSpell(sheet, spellId);
+  }
+  [[nodiscard]] int32_t spellSlotsRemaining(const DynamicEntity &sheet, int32_t level) const {
+    return m_engine.spellSlotsRemaining(sheet, level);
+  }
+  [[nodiscard]] std::expected<void, BookkeepingError> spendSpellSlot(DynamicEntity &sheet,
+                                                                     int32_t level) {
+    return m_engine.spendSpellSlot(sheet, level);
+  }
+  void recoverSpellSlots(DynamicEntity &sheet) {
+    m_engine.recoverSpellSlots(sheet);
+  }
+  template <RandomNumberGenerator Rng>
+  [[nodiscard]] RulesetEngine::SpellResult
+  castSpellPrepared(std::string_view spellId, DynamicEntity &actor, DynamicEntity *target,
+                    const CheckParams &params, Rng &rng) {
+    return m_engine.castSpellPrepared(spellId, actor, target, params, rng);
+  }
+  [[nodiscard]] RulesetEngine::SpellResult castSpellPrepared(std::string_view spellId,
+                                                             DynamicEntity &actor,
+                                                             DynamicEntity *target,
+                                                             const CheckParams &params) {
+    return m_engine.castSpellPrepared(spellId, actor, target, params);
+  }
+
+  // ---- advancement, rest, afflictions -----------------------------------
+  [[nodiscard]] std::expected<LevelUp, BookkeepingError> gainXp(DynamicEntity &sheet, int64_t xp) {
+    return m_engine.gainXp(sheet, xp);
+  }
+  [[nodiscard]] std::expected<int32_t, BookkeepingError>
+  improvementCost(std::string_view costTableId, int32_t currentRating) const {
+    return m_engine.improvementCost(costTableId, currentRating);
+  }
+  void shortRest(DynamicEntity &sheet) {
+    m_engine.shortRest(sheet);
+  }
+  void longRest(DynamicEntity &sheet) {
+    m_engine.longRest(sheet);
+  }
+  template <RandomNumberGenerator Rng>
+  [[nodiscard]] RulesetEngine::AfflictionResult
+  applyCurse(std::string_view curseId, DynamicEntity &victim, const CheckParams &params, Rng &rng) {
+    return m_engine.applyCurse(curseId, victim, params, rng);
+  }
+  [[nodiscard]] bool cureAffliction(DynamicEntity &victim, std::string_view section,
+                                    std::string_view id) {
+    return m_engine.cureAffliction(victim, section, id);
+  }
+
+private:
+  /// Takes ownership of a freshly created sheet; returns the reference.
+  [[nodiscard]] DynamicEntity &adopt(std::shared_ptr<DynamicEntity> sheet) {
+    DynamicEntity *raw = sheet.get();
+    m_sheets.push_back(std::move(sheet));
+    return *raw;
+  }
+
+  RulesetEngine m_engine;
+  std::vector<std::shared_ptr<DynamicEntity>> m_sheets;
+  WorldState m_world;
+};
+
+} // namespace rpg_os

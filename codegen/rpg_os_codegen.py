@@ -486,6 +486,9 @@ class Generator:
         self.skills = ruleset.get("skills", [])
         self.checks = ruleset.get("check_types", {})
         self.cost_tables = ruleset.get("cost_tables", {})
+        # Optional coinage; None means the ruleset has no money and the
+        # generated character simply has no typed money helpers.
+        self.currency = ruleset.get("currencies")
 
         self.attr_members: dict[str, str] = {}
         for a in self.attrs:
@@ -579,11 +582,17 @@ class Generator:
         lines.append("")
         lines.append("#include <rpg_os/common/json.hpp>")
         lines.append("#include <rpg_os/common/types.hpp>")
+        lines.append("#include <rpg_os/core/advancement.hpp>")
         lines.append("#include <rpg_os/core/checks.hpp>")
         lines.append("#include <rpg_os/core/cost_table.hpp>")
         lines.append("#include <rpg_os/core/dice_engine.hpp>")
+        lines.append("#include <rpg_os/core/equipment.hpp>")
+        lines.append("#include <rpg_os/core/inventory.hpp>")
         lines.append("#include <rpg_os/core/math.hpp>")
+        lines.append("#include <rpg_os/core/money.hpp>")
+        lines.append("#include <rpg_os/core/spellbook.hpp>")
         lines.append("#include <rpg_os/core/variance.hpp>")
+        lines.append("#include <initializer_list>")
         lines.append("")
 
         for ns in self._namespace_parts():
@@ -597,6 +606,7 @@ class Generator:
         lines.extend(self._attribute_members())
         lines.extend(self._skill_members_block())
         lines.extend(self._resource_members())
+        lines.extend(self._bookkeeping_members())
         lines.extend(self._derived_getters())
         lines.extend(self._get_stat())
         lines.extend(self._check_methods())
@@ -664,6 +674,47 @@ class Generator:
         lines = ["", "  // ---- resources ----"]
         for r in self.resources:
             lines.append(f"  int32_t {self._member(r['id'], r.get('name'))}{{ 0 }};  // {r['id']} (max: {r['max_stat']})")
+        return lines
+
+    def _bookkeeping_members(self) -> list[str]:
+        """Sheet bookkeeping state: inventory, worn gear, spellbook and
+        advancement are always present (a generated character is a full
+        sheet). Money and its typed helpers are emitted only when the ruleset
+        declares a `currencies` section — a ruleset without money simply has
+        no money members (the user-facing opt-in model)."""
+        lines = ["", "  // ---- bookkeeping (inventory, gear, wealth, spells, advancement) ----",
+                 "  rpg_os::Inventory inventory;",
+                 "  rpg_os::Equipment equipment;",
+                 "  rpg_os::Spellbook spellbook;",
+                 "  rpg_os::Advancement advancement;"]
+        if not self.currency:
+            return lines
+        lines.append("  rpg_os::Money money{0};  // wealth in base units")
+        lines.append("")
+        lines.append("  /// The ruleset's currency system (denominations + exchange).")
+        lines.append("  static const rpg_os::CurrencySystem& currencySystem() {")
+        lines.append("    static const rpg_os::CurrencySystem system = rpg_os::CurrencySystem{")
+        lines.append(f'      "{self.currency.get("id", "coins")}",')
+        lines.append(f'      "{self.currency.get("name", self.currency.get("id", "coins"))}",')
+        lines.append(f'      "{self.currency.get("base_unit", "")}",')
+        lines.append("      {")
+        for d in self.currency.get("denominations", []):
+            lines.append(f'        rpg_os::Denomination{{"{d["id"]}", "{d.get("name", d["id"])}", "{d.get("symbol", d["id"])}", {d.get("per_base", 1)}}},')
+        lines.append("      }")
+        lines.append("    };")
+        lines.append("    return system;")
+        lines.append("  }")
+        lines.append("")
+        lines.append("  /// Adds a bag of coins to the character's wealth, e.g.")
+        lines.append("  /// `depositCoins({{{\"gp\", 2}, {\"sp\", 5}}})`.")
+        lines.append("  void depositCoins(std::initializer_list<std::pair<std::string, int64_t>> coins) {")
+        lines.append("    money += rpg_os::Money::fromCoins(currencySystem(), coins);")
+        lines.append("  }")
+        lines.append("")
+        lines.append("  /// How many whole `denomId` coins the wealth equals (floor).")
+        lines.append("  [[nodiscard]] int64_t coinAmount(std::string_view denomId) const {")
+        lines.append("    return money.in(currencySystem(), denomId);")
+        lines.append("  }")
         return lines
 
     def _derived_getters(self) -> list[str]:
@@ -870,6 +921,33 @@ class Generator:
                 lines.append(f"        if (key == \"{r['id']}\") {{ {self._member(r['id'], r.get('name'))} = rpg_os::readVariantValue(value, variance, rng); }}")
             lines.append("      }")
             lines.append("    }")
+        # Bookkeeping fields a record may declare: wealth, starting gear,
+        # known spells, and experience. Each is optional; the flat
+        # equipment/slot and flat-spellbook forms mirror the universal loader.
+        if self.currency:
+            lines.append("    if (record.contains(\"wealth\") && record.at(\"wealth\").is_object()) {")
+            lines.append("      int64_t total = 0;")
+            lines.append("      for (const auto& [denom, qty] : record.at(\"wealth\").items()) {")
+            lines.append("        total += currencySystem().valueOf(denom, qty.get<int64_t>());")
+            lines.append("      }")
+            lines.append("      money = rpg_os::Money{total};")
+            lines.append("    }")
+        lines.append("    if (record.contains(\"equipment\") && record.at(\"equipment\").is_object()) {")
+        lines.append("      for (const auto& [slot, item] : record.at(\"equipment\").items()) {")
+        lines.append("        (void)equipment.equip(slot, item.get<std::string>());")
+        lines.append("      }")
+        lines.append("    }")
+        lines.append("    if (record.contains(\"spells_known\") && record.at(\"spells_known\").is_array()) {")
+        lines.append("      for (const auto& spellId : record.at(\"spells_known\")) {")
+        lines.append("        spellbook.learn(spellId.get<std::string>());")
+        lines.append("      }")
+        lines.append("    }")
+        lines.append("    if (record.contains(\"xp\")) {")
+        lines.append("      advancement.gainXp(record.at(\"xp\").get<int64_t>());")
+        lines.append("    }")
+        lines.append("    if (record.contains(\"level\")) {")
+        lines.append("      advancement.level = record.at(\"level\").get<int32_t>();")
+        lines.append("    }")
         lines.append("  }")
         lines.append("")
         lines.append("  /// Loads a single archetype by id; throws std::invalid_argument when missing.")
@@ -972,7 +1050,7 @@ class Generator:
                  "    }",
                  "    return out;",
                  "  }"]
-        for section in ("spells", "conditions", "poisons", "diseases", "items"):
+        for section in ("spells", "conditions", "poisons", "diseases", "items", "curses"):
             method = f"load{section[:1].upper()}{section[1:]}"
             lines.append("")
             lines.append(f"  /// Loads every {section} record from the ruleset JSON.")

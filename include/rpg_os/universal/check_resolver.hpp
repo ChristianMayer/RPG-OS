@@ -39,10 +39,9 @@ public:
   /// a caller asking for a check the loaded system does not define). Failing
   /// fast with the offending name beats silently returning a "default" check
   /// that would resolve against the wrong mechanism.
-  template <StatProvider Target, RandomNumberGenerator Rng>
-  static CheckResult resolve(const Ruleset &ruleset, const DynamicEntity &actor,
-                             const Target &target, std::string_view checkTypeId,
-                             const CheckParams &params, Rng &rng) {
+  template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
+  static CheckResult resolve(const Ruleset &ruleset, const Actor &actor, const Target &target,
+                             std::string_view checkTypeId, const CheckParams &params, Rng &rng) {
     const CheckTypeDef *def = ruleset.findCheckType(checkTypeId);
     if (def == nullptr) {
       throw std::invalid_argument("unknown check type '" + std::string(checkTypeId) + "'");

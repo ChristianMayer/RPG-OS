@@ -145,7 +145,17 @@ mode:
   `spell_resource` (optional: the resource pool spell casting draws its cost
   from; enables `RulesetEngine::castSpell`), then `attributes`,
   `derived_stats`, `resource_pools`, `skills`, `check_types`, `cost_tables`,
-  `modifier_pipeline`, `equipment_slots`, `event_triggers`, `data`.
+  `equipment_slots`, `event_triggers`, `data`. **Optional bookkeeping
+  sections** (each is opt-in — a ruleset without one simply does not use that
+  feature): `currencies` (denominations with `per_base` values in the
+  `base_unit`; enables `Money`/`itemPrice`/`buy`), `encumbrance` (a `capacity`
+  stat formula + ratio `levels` with an optional condition per level),
+  `spellcasting` (`style` `pool`/`slots`; vancian per-day `slots` per spell
+  level). The bookkeeping layer (inventory, equipment, conditions with
+  durations, advancement, rests, curses) is universal and data-driven;
+  `data.conditions` may carry `stat_modifiers` (per-stack stat changes) and
+  `data.curses` is an `afflictionRecord`-shaped section, so everything a
+  rulebook covers is modelable without engine changes.
 - Attribute ids are short uppercase codes (`COU`, `STR`); `name` is the human
   name used to derive C++ identifiers (`"Courage"` → `courage`).
 - Derived-stat `formula` strings use the restricted grammar: arithmetic
