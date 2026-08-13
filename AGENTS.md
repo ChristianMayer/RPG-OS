@@ -26,6 +26,10 @@ Both modes share one header-only, template-based core
 
 ## Ground rules
 
+0. **Never commit on the user's behalf.** The human always reviews and commits
+   their own work (`commit.gpgsign=true`; a human quality check is required
+   before any commit). Leave changes staged or in the working tree and hand
+   the commit to the user with a clear summary of what is staged.
 1. **Test-driven development (TDD) is mandatory.** Write a failing test first
    (red), implement the minimal code to pass (green), then refactor. Never add
    functionality without a test that exercises it. Keep the test suite green
@@ -160,12 +164,40 @@ mode:
   `all` — and by side: the carrier's own checks or checks *against* the
   carrier), and `data.curses` is an
   `afflictionRecord`-shaped section, so everything a rulebook covers is
-  modelable without engine changes. Inherent, always-on creature abilities are
+  modelable without engine changes. Conditions and traits may also carry
+  `restrictions` (what the carrier *cannot* do — `no_action`,
+  `no_bonus_action`, `no_reaction`, `no_move`, `no_speak`, `no_concentration`,
+  `no_cast`; queried via `DynamicEntity::hasRestriction`/`restrictions` and
+  *enforced* by `RulesetEngine::actionAllowed` in `castSpell` and the combat
+  helpers, which refuse the action before any resource is spent) and
+  `capabilities` (what it *can* do — movement/senses like `swim`, `climb`,
+  `breath_water`, `darkvision`, `see_invisible`; queried via
+  `DynamicEntity::hasCapability`/`capabilities`). Casting requires the
+  standard action, so `no_action` also blocks `cast` (an explicit `no_cast`
+  is reported as the reason when present). The shipped D&D conditions carry
+  these restrictions (incapacitated blocks action/bonus/reaction; paralyzed,
+  petrified, unconscious also block move/speak/concentration; restrained and
+  grappled block move). The engine never makes a
+  caller-side choice for the caller: a spell effect of `kind` `options`
+  declares an option group (`id` + `options` array of effect records, each
+  recursively resolvable including its own save/attack/ongoing logic). A
+  required group without a selection is reported on the result's
+  `choicesRequired` (nothing applied) so the caller knows a choice is pending;
+  an `optional` group is skipped silently; with a selection (a map of group id
+  → option index passed to `castSpell`/`resolveEffects`) the chosen option
+  resolves. Inherent, always-on creature abilities are
   `data.traits`: trait definitions (same `stat_modifiers`/`check_modifiers`
   vocabulary as conditions, plus an `effects` array resolved once when a
   creature carrying the trait is created — resistances, recurring
   regeneration) referenced by id from a creature's `traits` array,
-  applied to every check the creature makes or is the target of. Spells carry
+  applied to every check the creature makes or is the target of. Every
+  creature trait in the shipped rulesets is a trait id (no prose strings left
+  in creature `traits` arrays): movement/senses become `capabilities`,
+  unconditional save/attack edges become `check_modifiers`, regeneration and
+  always-on conditions become `effects`, and anything the engine cannot
+  enforce keeps its full prose as the trait's `description` — the engine
+  exposes `hasTrait`/`traits()` so a caller takes note of the rule while the
+  engine enforces what it can. Spells carry
   a machine-readable `effects`
   array (`effectRecord` in the schema: damage/condition/heal/temp_hp/resist/
   stat_bonus, each optionally gated by a `save` or an `attack`; `stat_bonus`

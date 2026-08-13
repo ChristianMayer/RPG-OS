@@ -541,7 +541,29 @@ public:
     int32_t cost{0};          ///< resource points spent
     int32_t appliedDamage{0}; ///< damage applied to the target (when the spell deals damage)
     std::string resourceId;   ///< the resource pool the cost was drawn from
+    std::string denied;       ///< why the cast was refused ("", "no_action", "no_cast", ...)
+    std::vector<std::string> choicesRequired; ///< option-group ids needing a caller selection
   };
+
+  /// Whether `entity` may take the given action ("action", "bonus_action",
+  /// "reaction", "move", "speak", "concentrate", "cast"), given its active
+  /// restrictions. A caller can query this before attempting an action; the
+  /// engine also enforces it in @ref castSpell and the combat helpers.
+  ///
+  /// Casting a spell requires the standard action, so a creature that cannot
+  /// take actions (`no_action`, e.g. paralyzed) also cannot cast — even
+  /// without an explicit `no_cast` restriction. The engine reports the *most
+  /// specific* reason on @ref SpellResult::denied (an explicit `no_cast` wins
+  /// over the implied `no_action`).
+  [[nodiscard]] bool actionAllowed(const DynamicEntity &entity, std::string_view action) const {
+    if (entity.hasRestriction("no_" + std::string(action))) {
+      return false;
+    }
+    if (action == "cast" && entity.hasRestriction("no_action")) {
+      return false;
+    }
+    return true;
+  }
 
   /// The outcome of applying an affliction through @ref applyAffliction.
   struct AfflictionResult {
@@ -566,15 +588,25 @@ public:
   }
 
   /// As above, but draws the cost from `resourceId` instead of the ruleset's
-  /// declared spell resource.
+  /// declared spell resource. `selections` (optional) resolves the spell's
+  /// `options` effects: a map of option-group id -> chosen option index.
   template <RandomNumberGenerator Rng>
-  [[nodiscard]] SpellResult castSpell(std::string_view spellId, DynamicEntity &actor,
-                                      DynamicEntity *target, std::string_view resourceId,
-                                      const CheckParams &params, Rng &rng) {
+  [[nodiscard]] SpellResult
+  castSpell(std::string_view spellId, DynamicEntity &actor, DynamicEntity *target,
+            std::string_view resourceId, const CheckParams &params, Rng &rng,
+            const std::unordered_map<std::string, int32_t> *selections = nullptr) {
     SpellResult result;
     const Json *spell = findSpell(spellId);
     if (spell == nullptr) {
       throw std::invalid_argument("unknown spell '" + std::string(spellId) + "'");
+    }
+    // The actor's restrictions are enforced: a creature that cannot take
+    // actions (incapacitated, stunned, ...) or cannot cast is refused before
+    // any resource is spent, with the reason recorded on the result.
+    if (!actionAllowed(actor, "action") || !actionAllowed(actor, "cast")) {
+      result.cast = false;
+      result.denied = actor.hasRestriction("no_cast") ? "no_cast" : "no_action";
+      return result;
     }
     // Cost: `cost` or `ae_cost`, else `level` (one point per level).
     if (spell->contains("cost") && spell->at("cost").is_number_integer()) {
@@ -620,8 +652,9 @@ public:
       // data alone.
       const int32_t ql = result.check.qualityLevel;
       const EffectsResult effects =
-          resolveEffects(actor, *target, spell->at("effects"), params, rng, ql);
+          resolveEffects(actor, *target, spell->at("effects"), params, rng, ql, selections);
       result.appliedDamage = effects.damageDealt;
+      result.choicesRequired = effects.choicesRequired;
     } else if (target != nullptr && spell->contains("damage")) {
       // `applyDamage` reports the (negative) pool delta, so negate it into the
       // positive "damage dealt" the caller expects.
@@ -641,7 +674,14 @@ public:
     return castSpell(spellId, actor, target, params, rng);
   }
 
-  /// Applies an affliction (a poison or disease) from `data.<section>` to
+  /// Casts a spell with a fresh default RNG, resolving the spell's `options`
+  /// effects via `selections` (option-group id -> chosen option index).
+  [[nodiscard]] SpellResult castSpell(std::string_view spellId, DynamicEntity &actor,
+                                      DynamicEntity *target, const CheckParams &params,
+                                      const std::unordered_map<std::string, int32_t> &selections) {
+    DefaultRandom rng;
+    return castSpell(spellId, actor, target, spellResourceId(), params, rng, &selections);
+  }
   /// `victim` (see @ref AfflictionResult).
   ///
   /// The application is fully data-driven: if the record declares a `save`
@@ -1304,11 +1344,12 @@ public:
   /// needs to know what actually happened — how much damage landed, whether a
   /// condition was applied, how much was healed — so it can narrate and react.
   struct EffectsResult {
-    int32_t damageDealt{0};        ///< net damage applied to the target
-    int32_t conditionsApplied{0};  ///< how many condition effects landed
-    int32_t healingDone{0};        ///< hit points restored
-    int32_t savesPassed{0};        ///< how many saves the target passed
-    int32_t statBonusesApplied{0}; ///< how many temporary stat bonuses landed
+    int32_t damageDealt{0};                   ///< net damage applied to the target
+    int32_t conditionsApplied{0};             ///< how many condition effects landed
+    int32_t healingDone{0};                   ///< hit points restored
+    int32_t savesPassed{0};                   ///< how many saves the target passed
+    int32_t statBonusesApplied{0};            ///< how many temporary stat bonuses landed
+    std::vector<std::string> choicesRequired; ///< option-group ids needing a caller selection
   };
 
   /// Resolves a batch of structured effects (the `effects` array on spells,
@@ -1334,16 +1375,26 @@ public:
   ///   - @c resist: adds the listed `types` to the target's resistances.
   ///   - @c stat_bonus: applies a temporary `add` (number or formula) to the
   ///     target's effective `stat` for `duration` ticks (0 = permanent).
+  ///   - @c options: a caller-side choice. The effect carries an `id` and a
+  ///     list of mutually exclusive `options` (effect records). The engine
+  ///     never chooses for the caller: without a selection (via the
+  ///     `selections` map) a required option group is reported in
+  ///     `choicesRequired` and nothing is applied; an `optional` group is
+  ///     skipped silently; with a selection the chosen option resolves.
   ///
   /// Any effect may additionally carry an `ongoing` object
   /// (`{"at": "start_of_turn"|"end_of_turn", "duration": N}`) making it
   /// recurring: after the base effect resolves once, it is remembered on the
   /// target and re-resolved at the declared phase of each of the target's
   /// turns until `duration` more applications have fired.
+  ///
+  /// `selections` (optional) resolves `options` groups: a map of option-group
+  /// id -> index into that group's `options` array.
   template <RandomNumberGenerator Rng>
-  [[nodiscard]] EffectsResult resolveEffects(DynamicEntity &source, DynamicEntity &target,
-                                             const Json &effects, const CheckParams &params,
-                                             Rng &rng, int32_t qualityLevel = 0) {
+  [[nodiscard]] EffectsResult
+  resolveEffects(DynamicEntity &source, DynamicEntity &target, const Json &effects,
+                 const CheckParams &params, Rng &rng, int32_t qualityLevel = 0,
+                 const std::unordered_map<std::string, int32_t> *selections = nullptr) {
     EffectsResult result;
     if (!effects.is_array()) {
       return result;
@@ -1468,6 +1519,40 @@ public:
         const std::string scope = effect.value("scope", "all");
         const int32_t duration = effect.value("duration", 0);
         target.effects().addBonusDie(BonusDie{dice, scope, duration, "effect"});
+      } else if (kind == "options") {
+        // A caller-side choice: the engine never picks for the caller. Without
+        // a selection a required group is reported in choicesRequired (nothing
+        // applied); an optional group is skipped silently; with a selection the
+        // chosen option resolves (including its own save/attack/ongoing logic).
+        const std::string groupId = effect.value("id", "");
+        const Json &options = effect.at("options");
+        int32_t chosen = -1;
+        if (!groupId.empty() && selections != nullptr) {
+          const auto it = selections->find(groupId);
+          if (it != selections->end()) {
+            chosen = it->second;
+          }
+        }
+        if (chosen < 0) {
+          if (!effect.value("optional", false)) {
+            result.choicesRequired.push_back(groupId);
+          }
+          continue;
+        }
+        if (!options.is_array() || chosen >= static_cast<int32_t>(options.size())) {
+          continue;
+        }
+        Json batch = Json::array();
+        batch.push_back(options.at(static_cast<std::size_t>(chosen)));
+        const EffectsResult sub =
+            resolveEffects(source, target, batch, params, rng, qualityLevel, selections);
+        result.damageDealt += sub.damageDealt;
+        result.conditionsApplied += sub.conditionsApplied;
+        result.healingDone += sub.healingDone;
+        result.savesPassed += sub.savesPassed;
+        result.statBonusesApplied += sub.statBonusesApplied;
+        result.choicesRequired.insert(result.choicesRequired.end(), sub.choicesRequired.begin(),
+                                      sub.choicesRequired.end());
       }
 
       // Recurring (ongoing) effects: after the base effect resolves and
@@ -1513,11 +1598,12 @@ public:
   }
 
   /// Resolves structured effects using a fresh default RNG (convenience).
-  [[nodiscard]] EffectsResult resolveEffects(DynamicEntity &source, DynamicEntity &target,
-                                             const Json &effects, const CheckParams &params,
-                                             int32_t qualityLevel = 0) {
+  [[nodiscard]] EffectsResult
+  resolveEffects(DynamicEntity &source, DynamicEntity &target, const Json &effects,
+                 const CheckParams &params, int32_t qualityLevel = 0,
+                 const std::unordered_map<std::string, int32_t> *selections = nullptr) {
     DefaultRandom rng;
-    return resolveEffects(source, target, effects, params, rng, qualityLevel);
+    return resolveEffects(source, target, effects, params, rng, qualityLevel, selections);
   }
 
   /// The outcome of a structured effect's saving throw.

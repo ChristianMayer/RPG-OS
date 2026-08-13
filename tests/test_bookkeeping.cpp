@@ -25,6 +25,7 @@
 #include <rpg_os/core/inventory.hpp>
 #include <rpg_os/core/money.hpp>
 #include <rpg_os/core/spellbook.hpp>
+#include <rpg_os/universal/combat.hpp>
 #include <rpg_os/universal/engine.hpp>
 #include <rpg_os/universal/game_session.hpp>
 #include <string>
@@ -1440,4 +1441,412 @@ TEST_CASE("bookkeeping: roll-under saves express TDE resistance (stat minus QL)"
   auto rngFail = script({12});
   (void)dnd.resolveEffects(caster, target, effects, CheckParams{}, rngFail, 3);
   CHECK(target.hasCondition("cursed"));
+}
+
+TEST_CASE("bookkeeping: options effects require a caller choice (choice interface)") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10},
+                   {"id": "WIS", "name": "Wisdom", "min": 1, "max": 30, "default": 10}],
+    "derived_stats": [{"id": "WIS_mod", "name": "Wisdom Mod", "formula": "floor((WIS - 10) / 2)"}],
+    "resource_pools": [{"id": "HP", "name": "Hit Points", "max_stat": "STR", "min": 0}],
+    "data": {
+      "spells": [
+        {"id": "elemental_blast", "name": "Elemental Blast", "level": 1, "effects": [
+          {"kind": "options", "id": "element", "options": [
+            {"kind": "damage", "dice": "1d6", "type": "Fire"},
+            {"kind": "damage", "dice": "1d8", "type": "Cold"}
+          ]}
+        ]}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  const auto &ruleset = engine.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  caster.setBaseAttribute("STR", 10);
+  DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("STR", 20);
+  target.loadFromArchetype(rpg_os::Json::object()); // initialise the HP pool
+
+  // No selection: the required option group is reported in choicesRequired
+  // and nothing is applied (no dice are rolled).
+  auto rng = script({});
+  const auto pending = engine.castSpell("elemental_blast", caster, &target, CheckParams{}, rng);
+  CHECK(pending.cast);
+  CHECK(pending.choicesRequired == std::vector<std::string>{"element"});
+  CHECK(pending.appliedDamage == 0);
+  CHECK(target.resource("HP") == 20);
+  CHECK(rng.idx == 0);
+
+  // Selecting the cold option (index 1) resolves it: 1d8 = 4 damage.
+  const std::unordered_map<std::string, int32_t> selections{{"element", 1}};
+  auto rng2 = script({4});
+  const auto chosen =
+      engine.castSpell("elemental_blast", caster, &target, "", CheckParams{}, rng2, &selections);
+  CHECK(chosen.cast);
+  CHECK(chosen.choicesRequired.empty());
+  CHECK(chosen.appliedDamage == 4);
+  CHECK(target.resource("HP") == 16);
+}
+
+TEST_CASE("bookkeeping: optional option groups are skipped without a choice") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10},
+                   {"id": "WIS", "name": "Wisdom", "min": 1, "max": 30, "default": 10}],
+    "derived_stats": [{"id": "WIS_mod", "name": "Wisdom Mod", "formula": "floor((WIS - 10) / 2)"}],
+    "resource_pools": [{"id": "HP", "name": "Hit Points", "max_stat": "STR", "min": 0}],
+    "data": {
+      "spells": [
+        {"id": "versatile", "name": "Versatile", "level": 1, "effects": [
+          {"kind": "options", "id": "mode", "optional": true, "options": [
+            {"kind": "damage", "dice": "1d4", "type": "Fire"}
+          ]}
+        ]}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  const auto &ruleset = engine.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  caster.setBaseAttribute("STR", 10);
+  DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("STR", 20);
+  target.loadFromArchetype(rpg_os::Json::object());
+
+  // No selection on an optional group is fine: nothing required, nothing applied.
+  auto rng = script({});
+  const auto skipped = engine.castSpell("versatile", caster, &target, CheckParams{}, rng);
+  CHECK(skipped.cast);
+  CHECK(skipped.choicesRequired.empty());
+  CHECK(skipped.appliedDamage == 0);
+  CHECK(target.resource("HP") == 20);
+
+  // With a selection the chosen option resolves.
+  const std::unordered_map<std::string, int32_t> selections{{"mode", 0}};
+  auto rng2 = script({2});
+  const auto chosen =
+      engine.castSpell("versatile", caster, &target, "", CheckParams{}, rng2, &selections);
+  CHECK(chosen.appliedDamage == 2);
+  CHECK(target.resource("HP") == 18);
+}
+
+TEST_CASE("bookkeeping: restrictions are queryable and enforced in castSpell") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10},
+                   {"id": "WIS", "name": "Wisdom", "min": 1, "max": 30, "default": 10}],
+    "resource_pools": [{"id": "MP", "name": "Mana", "max_stat": "WIS", "min": 0}],
+    "spell_resource": "MP",
+    "data": {
+      "conditions": [
+        {"id": "stunned", "name": "Stunned", "restrictions": ["no_action", "no_cast", "no_move"]}
+      ],
+      "spells": [
+        {"id": "cantrip", "name": "Cantrip", "level": 1, "cost": 1}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  const auto &ruleset = engine.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  caster.setBaseAttribute("WIS", 10);
+  caster.loadFromArchetype(rpg_os::Json::object()); // initialise MP pool
+  CHECK(caster.resource("MP") == 10);
+
+  // Without a restriction the spell casts and the cost is paid.
+  auto rngOk = script({});
+  const auto ok = engine.castSpell("cantrip", caster, nullptr, CheckParams{}, rngOk);
+  CHECK(ok.cast);
+  CHECK(caster.resource("MP") == 9);
+
+  // A stunned creature cannot act or cast: the restriction is queryable...
+  engine.applyCondition(caster, "stunned", 1, 0);
+  CHECK(caster.hasRestriction("no_action"));
+  CHECK(caster.hasRestriction("no_cast"));
+  CHECK(caster.hasRestriction("no_move"));
+  CHECK_FALSE(engine.actionAllowed(caster, "action"));
+  CHECK_FALSE(engine.actionAllowed(caster, "cast"));
+  CHECK_FALSE(engine.actionAllowed(caster, "move"));
+  CHECK(engine.actionAllowed(caster, "speak"));
+
+  // ...and enforced: the cast is denied before any resource is spent.
+  auto rngDenied = script({});
+  const auto denied = engine.castSpell("cantrip", caster, nullptr, CheckParams{}, rngDenied);
+  CHECK_FALSE(denied.cast);
+  CHECK(denied.denied == "no_cast");
+  CHECK(caster.resource("MP") == 9); // cost NOT spent
+  CHECK(rngDenied.idx == 0);
+}
+
+TEST_CASE("bookkeeping: restrictions come from traits too and block casting") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10},
+                   {"id": "WIS", "name": "Wisdom", "min": 1, "max": 30, "default": 10}],
+    "resource_pools": [{"id": "MP", "name": "Mana", "max_stat": "WIS", "min": 0}],
+    "spell_resource": "MP",
+    "data": {
+      "traits": [
+        {"id": "mute", "name": "Mute", "restrictions": ["no_cast"]}
+      ],
+      "creatures": [
+        {"id": "mute_being", "name": "Mute Being", "traits": ["mute"],
+         "attributes": {"WIS": 10}}
+      ],
+      "spells": [
+        {"id": "cantrip", "name": "Cantrip", "level": 1, "cost": 1}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  auto being = engine.createCreature("mute_being");
+  REQUIRE(being != nullptr);
+  CHECK(being->hasTrait("mute"));
+  CHECK(being->hasRestriction("no_cast"));
+  CHECK_FALSE(being->hasRestriction("no_action"));
+  CHECK_FALSE(engine.actionAllowed(*being, "cast"));
+  CHECK(engine.actionAllowed(*being, "action"));
+
+  // The trait's restriction is enforced at cast time.
+  auto rng = script({});
+  const auto denied = engine.castSpell("cantrip", *being, nullptr, CheckParams{}, rng);
+  CHECK_FALSE(denied.cast);
+  CHECK(denied.denied == "no_cast");
+  CHECK(rng.idx == 0);
+}
+
+TEST_CASE("bookkeeping: capabilities are queryable on traits and conditions") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10}],
+    "data": {
+      "traits": [
+        {"id": "amphibious", "name": "Amphibious", "capabilities": ["swim", "breath_water"]}
+      ],
+      "conditions": [
+        {"id": "blessed", "name": "Blessed", "capabilities": ["see_invisible"]}
+      ],
+      "creatures": [
+        {"id": "frog", "name": "Frog", "traits": ["amphibious"], "attributes": {"STR": 10}}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  auto frog = engine.createCreature("frog");
+  REQUIRE(frog != nullptr);
+  CHECK(frog->hasCapability("swim"));
+  CHECK(frog->hasCapability("breath_water"));
+  CHECK_FALSE(frog->hasCapability("fly"));
+  const auto caps = frog->capabilities();
+  CHECK(caps == std::vector<std::string>({"swim", "breath_water"}));
+
+  // Conditions contribute capabilities while active.
+  engine.applyCondition(*frog, "blessed", 1, 0);
+  CHECK(frog->hasCapability("see_invisible"));
+  CHECK_FALSE(frog->hasCapability("fly"));
+  engine.removeCondition(*frog, "blessed"); // expires
+  CHECK_FALSE(frog->hasCapability("see_invisible"));
+}
+
+TEST_CASE("bookkeeping: attackOnce enforces the attacker's restrictions") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10},
+                   {"id": "WIS", "name": "Wisdom", "min": 1, "max": 30, "default": 10},
+                   {"id": "AC", "name": "Armor Class", "min": 1, "max": 30, "default": 10}],
+    "derived_stats": [{"id": "WIS_mod", "name": "Wisdom Mod", "formula": "floor((WIS - 10) / 2)"}],
+    "resource_pools": [{"id": "HP", "name": "Hit Points", "max_stat": "STR", "min": 0}],
+    "check_types": {
+      "mini_attack": {
+        "resolution": "threshold", "dice": "1d20", "comparison": "ge",
+        "threshold_source": "target_stat", "threshold_stat": "AC",
+        "bonus_stats": ["WIS_mod"]
+      }
+    },
+    "data": {
+      "conditions": [
+        {"id": "stunned", "name": "Stunned", "restrictions": ["no_action", "no_move"]}
+      ],
+      "creatures": [
+        {"id": "fighter", "name": "Fighter", "attributes": {"STR": 20, "WIS": 14, "AC": 10}}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  auto attacker = engine.createCreature("fighter");
+  REQUIRE(attacker != nullptr);
+  attacker->loadFromArchetype(rpg_os::Json::object()); // HP pool = STR 20
+  rpg_os::DynamicEntity defender(engine.ruleset(), "defender");
+  defender.setBaseAttribute("STR", 20);
+  defender.setBaseAttribute("AC", 10);
+  defender.loadFromArchetype(rpg_os::Json::object()); // HP pool
+
+  const rpg_os::DiceExpression damage("1d6");
+  // Unrestricted: the attack resolves (17 + WIS_mod 2 = 19 >= AC 10 -> hit);
+  // 1d6 = 4 damage leaves the defender at 16 HP (not dead, so false).
+  auto rngHit = script({17, 4});
+  CHECK_FALSE(
+      rpg_os::detail::attackOnce(engine, *attacker, damage, defender, "mini_attack", "HP", rngHit));
+  CHECK(defender.resource("HP") == 16);
+  CHECK(attacker->resource("HP") == 20); // attacker unharmed
+
+  // Stunned: no action allowed — the attack is refused and no dice are rolled.
+  engine.applyCondition(*attacker, "stunned", 1, 0);
+  auto rngDenied = script({17, 4});
+  CHECK_FALSE(rpg_os::detail::attackOnce(engine, *attacker, damage, defender, "mini_attack", "HP",
+                                         rngDenied));
+  CHECK(rngDenied.idx == 0);
+}
+
+TEST_CASE("bookkeeping: converted D&D creature traits expose capabilities") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  // Amphibious creatures gained swim + breath_water capabilities.
+  auto frog = dnd.createCreature("giant_frog");
+  REQUIRE(frog != nullptr);
+  CHECK(frog->hasTrait("amphibious"));
+  CHECK(frog->hasCapability("swim"));
+  CHECK(frog->hasCapability("breath_water"));
+  CHECK_FALSE(frog->hasCapability("climb"));
+
+  // Spider Climb grants climb.
+  auto spider = dnd.createCreature("giant_spider");
+  REQUIRE(spider != nullptr);
+  CHECK(spider->hasTrait("spider_climb"));
+  CHECK(spider->hasCapability("climb"));
+
+  // Water Breathing grants breath_water.
+  auto octopus = dnd.createCreature("giant_octopus");
+  REQUIRE(octopus != nullptr);
+  CHECK(octopus->hasCapability("breath_water"));
+  CHECK_FALSE(octopus->hasCapability("swim")); // it does not "swim" in the trait sense
+
+  // A non-amphibious creature has none of these.
+  auto wolf = dnd.createCreature("wolf");
+  REQUIRE(wolf != nullptr);
+  CHECK_FALSE(wolf->hasCapability("swim"));
+  CHECK_FALSE(wolf->hasCapability("breath_water"));
+}
+
+TEST_CASE("bookkeeping: converted regeneration traits heal per amount") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  // The troll regenerates 15 per turn, the oni 10, a severed limb 5.
+  auto troll = dnd.createCreature("troll");
+  REQUIRE(troll != nullptr);
+  CHECK(troll->hasTrait("regeneration_15"));
+  CHECK(troll->effects().ongoing().size() == 1);
+  (void)troll->modifyResource("HP", -30);
+  const int32_t afterDamage = troll->resource("HP");
+  auto rng = script({});
+  dnd.runTurn(*troll, rng);
+  CHECK(troll->resource("HP") == afterDamage + 15);
+
+  auto oni = dnd.createCreature("oni");
+  REQUIRE(oni != nullptr);
+  CHECK(oni->hasTrait("regeneration_10"));
+  (void)oni->modifyResource("HP", -30);
+  const int32_t oniAfter = oni->resource("HP");
+  auto rng2 = script({});
+  dnd.runTurn(*oni, rng2);
+  CHECK(oni->resource("HP") == oniAfter + 10);
+}
+
+TEST_CASE("bookkeeping: converted D&D creature traits keep their prose") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  // Legendary Resistance is a caller-side rule: the trait exists (so a caller
+  // can take note) and its definition preserves the prose.
+  auto balor = dnd.createCreature("balor");
+  REQUIRE(balor != nullptr);
+  CHECK(balor->hasTrait("legendary_resistance_3"));
+  CHECK_FALSE(balor->hasRestriction("no_action")); // not an action restriction
+
+  // The engine exposes the trait's prose through the ruleset's data database.
+  const rpg_os::Json *trait = dnd.findDataRecord("traits", "legendary_resistance_3");
+  REQUIRE(trait != nullptr);
+  const std::string desc = trait->value("description", "");
+  CHECK(desc.find("can choose to succeed instead") != std::string::npos);
+}
+
+TEST_CASE("bookkeeping: converted creature traits shape checks (magic resistance)") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  // A deva has Magic Resistance: Advantage on saving throws against spells,
+  // expressed as save-advantage check modifiers (same trait as the earlier
+  // migrated creatures).
+  auto deva = dnd.createCreature("deva");
+  REQUIRE(deva != nullptr);
+  CHECK(deva->hasTrait("magic_resistance"));
+  const auto &ruleset = dnd.ruleset();
+  rpg_os::DynamicEntity attacker(ruleset, "attacker");
+  attacker.setBaseAttribute("WIS_mod", 3);
+  attacker.setBaseAttribute("proficiency_bonus", 2);
+  rpg_os::DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("AC", 10);
+
+  // A spell attack against the deva's DEX save is rolled with Advantage.
+  CheckParams params;
+  params.difficulty = 15;
+  auto rng = script({2, 18}); // low then high; advantage keeps 18 + 3 = 21
+  const auto result = dnd.executeCheck("dnd5e_save_dex", *deva, nullptr, params, rng);
+  CHECK(result.isSuccess);
+  CHECK(result.rawDiceRolls == std::vector<int>{18});
+}
+
+TEST_CASE("bookkeeping: shipped D&D conditions enforce action restrictions") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity hero(ruleset, "hero");
+  hero.setBaseAttribute("WIS", 10);
+  hero.loadFromArchetype(rpg_os::Json::object()); // initialise the MP pool
+
+  // A healthy hero may act, cast, and move.
+  CHECK(dnd.actionAllowed(hero, "action"));
+  CHECK(dnd.actionAllowed(hero, "cast"));
+  CHECK(dnd.actionAllowed(hero, "move"));
+
+  // Incapacitated: no action / bonus action / reaction — but it can still move.
+  dnd.applyCondition(hero, "incapacitated", 1, 0);
+  CHECK_FALSE(dnd.actionAllowed(hero, "action"));
+  CHECK_FALSE(dnd.actionAllowed(hero, "reaction"));
+  CHECK(dnd.actionAllowed(hero, "move"));
+  CHECK(hero.hasRestriction("no_action"));
+  dnd.removeCondition(hero, "incapacitated");
+
+  // Paralyzed: cannot act, cast, move, or speak.
+  dnd.applyCondition(hero, "paralyzed", 1, 0);
+  CHECK_FALSE(dnd.actionAllowed(hero, "action"));
+  CHECK_FALSE(dnd.actionAllowed(hero, "cast"));
+  CHECK_FALSE(dnd.actionAllowed(hero, "move"));
+  CHECK_FALSE(dnd.actionAllowed(hero, "speak"));
+  CHECK(hero.hasRestriction("no_concentration"));
+  dnd.removeCondition(hero, "paralyzed");
+
+  // Restrained: speed is 0, so it cannot move — but it can still act.
+  dnd.applyCondition(hero, "restrained", 1, 0);
+  CHECK_FALSE(dnd.actionAllowed(hero, "move"));
+  CHECK(dnd.actionAllowed(hero, "action"));
+  dnd.removeCondition(hero, "restrained");
+
+  // The spell-resource ruleset has no spell_resource here, so verify the
+  // restriction is enforced at cast time in the D&D ruleset's own terms:
+  // a paralyzed caster's spell is refused and no resource is spent.
+  dnd.applyCondition(hero, "paralyzed", 1, 0);
+  auto rng = script({});
+  // Paralyzed cannot take actions at all, so casting is refused for that
+  // reason (no explicit no_cast needed — no_action implies it).
+  const auto denied = dnd.castSpell("fireball", hero, nullptr, CheckParams{}, rng);
+  CHECK_FALSE(denied.cast);
+  CHECK(denied.denied == "no_action");
+  CHECK(rng.idx == 0);
 }

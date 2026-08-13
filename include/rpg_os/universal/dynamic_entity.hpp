@@ -257,6 +257,75 @@ public:
     return m_traits;
   }
 
+  /// The restriction and capability tokens contributed by the entity's active
+  /// conditions and traits (deduplicated, source order). Restrictions say what
+  /// the entity *cannot* do ("no_action", "no_bonus_action", "no_reaction",
+  /// "no_move", "no_speak", "no_concentration", "no_cast", ...); capabilities
+  /// say what it *can* do (movement / senses: "swim", "climb", "breath_water",
+  /// "darkvision", ...). Both are declared as string arrays on condition /
+  /// trait records, so any ruleset can express its own action-economy and
+  /// mobility rules without engine changes.
+  [[nodiscard]] std::vector<std::string> collectTokens(std::string_view field) const {
+    std::vector<std::string> out;
+    const auto addToken = [&out](const std::string &token) {
+      if (std::find(out.begin(), out.end(), token) == out.end()) {
+        out.push_back(token);
+      }
+    };
+    for (const auto &[conditionId, stacks] : m_conditions) {
+      if (stacks <= 0) {
+        continue;
+      }
+      const Json *record = findDataRecord("conditions", conditionId);
+      if (record == nullptr || !record->contains(field) || !record->at(field).is_array()) {
+        continue;
+      }
+      for (const Json &token : record->at(field)) {
+        addToken(token.get<std::string>());
+      }
+    }
+    for (const std::string &traitId : m_traits) {
+      const Json *record = findDataRecord("traits", traitId);
+      if (record == nullptr || !record->contains(field) || !record->at(field).is_array()) {
+        continue;
+      }
+      for (const Json &token : record->at(field)) {
+        addToken(token.get<std::string>());
+      }
+    }
+    return out;
+  }
+
+  /// The restriction tokens in effect on the entity (see @ref collectTokens).
+  [[nodiscard]] std::vector<std::string> restrictions() const {
+    return collectTokens("restrictions");
+  }
+
+  /// Whether the entity is under the given restriction (e.g. "no_action").
+  [[nodiscard]] bool hasRestriction(std::string_view token) const {
+    for (const std::string &restriction : restrictions()) {
+      if (restriction == token) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// The capability tokens the entity has (see @ref collectTokens).
+  [[nodiscard]] std::vector<std::string> capabilities() const {
+    return collectTokens("capabilities");
+  }
+
+  /// Whether the entity has the given capability (e.g. "swim").
+  [[nodiscard]] bool hasCapability(std::string_view token) const {
+    for (const std::string &capability : capabilities()) {
+      if (capability == token) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// The effective value of `statId`: the raw value plus every modifier the
   /// sheet's equipped gear and active conditions contribute (through the
   /// shared modifier pipeline in @c core/modifier.hpp), plus any temporary

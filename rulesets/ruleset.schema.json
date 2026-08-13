@@ -333,6 +333,8 @@
               "name": { "type": "string" },
               "description": { "type": "string" },
               "max_stacks": { "type": "integer", "description": "Optional cap on the stack count." },
+              "restrictions": { "type": "array", "items": { "type": "string" }, "description": "Optional action restrictions the condition imposes on the carrier while active, e.g. 'no_action', 'no_bonus_action', 'no_reaction', 'no_move', 'no_speak', 'no_concentration', 'no_cast'. The engine exposes them via DynamicEntity::restrictions()/hasRestriction() and enforces them in castSpell and the combat helpers (actionAllowed)." },
+              "capabilities": { "type": "array", "items": { "type": "string" }, "description": "Optional capabilities the condition grants the carrier while active (movement / senses), e.g. 'swim', 'climb', 'breath_water', 'darkvision', 'see_invisible'. Exposed via DynamicEntity::capabilities()/hasCapability()." },
               "stat_modifiers": {
                 "type": "array",
                 "description": "Optional mechanical effects: each entry modifies a stat, scaled by the condition's stack count. Same shape as item modifiers but with 'stat' instead of 'target_stat'.",
@@ -378,6 +380,8 @@
               "id": { "type": "string" },
               "name": { "type": "string" },
               "description": { "type": "string" },
+              "restrictions": { "type": "array", "items": { "type": "string" }, "description": "Optional action restrictions the trait imposes on the carrier, e.g. 'no_cast' for a mute creature. Exposed via DynamicEntity::hasRestriction() and enforced in castSpell / combat helpers." },
+              "capabilities": { "type": "array", "items": { "type": "string" }, "description": "Optional capabilities the trait grants the carrier (movement / senses), e.g. 'swim', 'climb', 'breath_water', 'darkvision'. Exposed via DynamicEntity::hasCapability()." },
               "stat_modifiers": { "type": "array", "description": "Optional per-stat modifiers (same shape as condition stat_modifiers)." },
               "check_modifiers": { "type": "array", "description": "Optional check modifiers (same shape as condition check_modifiers)." },
               "effects": { "type": "array", "description": "Optional structured effects (same shape as spell effects, e.g. a resist or a recurring regeneration heal), resolved when a creature with the trait is created." }
@@ -616,7 +620,10 @@
       "required": ["kind"],
       "additionalProperties": true,
       "properties": {
-        "kind": { "type": "string", "enum": ["damage", "condition", "heal", "temp_hp", "resist", "stat_bonus", "bonus_die"] },
+        "kind": { "type": "string", "enum": ["damage", "condition", "heal", "temp_hp", "resist", "stat_bonus", "bonus_die", "options"] },
+        "id": { "type": "string", "description": "options: the option-group id a caller uses to select an option (must be unique within the spell/effect list)." },
+        "optional": { "type": "boolean", "description": "options: when true and the caller makes no selection, the group is skipped silently instead of being reported as a required choice." },
+        "options": { "type": "array", "items": { "$ref": "#/definitions/effectRecord" }, "description": "options: the caller-selectable options. Exactly one is resolved per selection; without a selection a required group is reported via the result's choicesRequired and nothing is applied." },
         "dice": { "type": "string", "description": "damage/heal/temp_hp: dice, e.g. '8d6'." },
         "type": { "type": "string", "description": "damage: the damage type (Fire, Psychic, ...)." },
         "add": { "oneOf": [{ "type": "integer" }, { "type": "string" }], "description": "damage/heal/temp_hp: a flat amount (or a formula) added to the rolled dice. A formula is evaluated over the acting entity's stats plus the casting check's quality level, available as 'env.ql' — so '2D6 + QL x 2' is encoded as dice '2d6' with add 'env.ql * 2'. stat_bonus: the bonus value (number or formula) applied to the target's effective stat." },
