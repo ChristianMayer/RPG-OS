@@ -163,10 +163,25 @@ public:
       if (creature.value("id", "") == creatureId) {
         auto entity = std::make_shared<DynamicEntity>(m_ruleset, std::string(creatureId));
         entity->loadFromArchetype(creature, variance, rng);
+        applyTraitEffects(*entity, rng);
         return entity;
       }
     }
     return nullptr;
+  }
+
+  /// Resolves a creature's trait effects (regeneration, damage resistance,
+  /// ...) against the creature itself, so a freshly created creature carries
+  /// its always-on mechanical traits — recurring heals register as ongoing
+  /// effects, resistances are added to the sheet, etc.
+  template <RandomNumberGenerator Rng> void applyTraitEffects(DynamicEntity &entity, Rng &rng) {
+    for (const std::string &traitId : entity.traits()) {
+      const Json *trait = findDataRecord("traits", traitId);
+      if (trait == nullptr || !trait->contains("effects") || !trait->at("effects").is_array()) {
+        continue;
+      }
+      (void)resolveEffects(entity, entity, trait->at("effects"), CheckParams{}, rng);
+    }
   }
 
   /// Calculates a stat (attribute, skill rating, or derived stat) for `entity`.
@@ -207,7 +222,7 @@ public:
   }
 
   /// Folds the check modifiers of `actor`'s and (for target-side entries)
-  /// `target`'s active conditions into a copy of `params`.
+  /// `target`'s active conditions and traits into a copy of `params`.
   ///
   /// @par Why a per-check copy rather than a global flag?
   /// Conditions are per-entity and per-situation: a blinded attacker attacks
@@ -218,8 +233,9 @@ public:
   /// saving throws via @ref resolveSave, skill checks via @ref executeSkillCheck
   /// — and folded into the params (a flat bonus into
   /// @c CheckParams::situationalModifier, advantage into
-  /// @c CheckParams::advantage). Both advantage and disadvantage present on a
-  /// roll cancel each other, matching the D&D rule.
+  /// @c CheckParams::advantage, bonus dice into @c CheckParams::bonusDice,
+  /// automatic failure into @c CheckParams::autoFail). Both advantage and
+  /// disadvantage present on a roll cancel each other, matching the D&D rule.
   [[nodiscard]] CheckParams withConditionModifiers(const DynamicEntity &actor,
                                                    const DynamicEntity *target,
                                                    std::string_view scope,
@@ -227,9 +243,20 @@ public:
     int32_t bonus = 0;
     int advantage = 0;
     int disadvantage = 0;
-    accumulateCheckModifiers(actor, scope, "actor", bonus, advantage, disadvantage);
+    bool autoFail = false;
+    std::vector<std::string> bonusDice;
+    accumulateCheckModifiers(actor, scope, "actor", bonus, advantage, disadvantage, autoFail,
+                             bonusDice);
     if (target != nullptr) {
-      accumulateCheckModifiers(*target, scope, "target", bonus, advantage, disadvantage);
+      accumulateCheckModifiers(*target, scope, "target", bonus, advantage, disadvantage, autoFail,
+                               bonusDice);
+    }
+    // Temporary bonus dice from effects (the `bonus_die` effect kind) apply to
+    // the carrier's own checks of the matching scope.
+    for (const BonusDie &die : actor.effects().bonusDice()) {
+      if (scopeMatches(die.scope, scope)) {
+        bonusDice.push_back(die.dice);
+      }
     }
     params.situationalModifier += bonus;
     if (advantage > 0 && disadvantage > 0) {
@@ -238,6 +265,10 @@ public:
       params.advantage = AdvantageMode::Advantage;
     } else if (disadvantage > 0) {
       params.advantage = AdvantageMode::Disadvantage;
+    }
+    params.autoFail = autoFail;
+    for (const std::string &dice : bonusDice) {
+      params.bonusDice.push_back(DiceExpression(dice));
     }
     return params;
   }
@@ -248,7 +279,8 @@ public:
   /// @ref withConditionModifiers).
   void accumulateCheckModifiers(const DynamicEntity &entity, std::string_view scope,
                                 std::string_view wantedSide, int32_t &bonus, int &advantage,
-                                int &disadvantage) const {
+                                int &disadvantage, bool &autoFail,
+                                std::vector<std::string> &bonusDice) const {
     for (const auto &[conditionId, stacks] : entity.conditions()) {
       const Json *condition = findCondition(conditionId);
       if (condition == nullptr || !condition->contains("check_modifiers")) {
@@ -259,7 +291,8 @@ public:
         continue;
       }
       for (const Json &mod : modifiers) {
-        accumulateModifierEntry(mod, scope, wantedSide, stacks, bonus, advantage, disadvantage);
+        accumulateModifierEntry(mod, scope, wantedSide, stacks, bonus, advantage, disadvantage,
+                                autoFail, bonusDice);
       }
     }
     for (const std::string &traitId : entity.traits()) {
@@ -272,16 +305,18 @@ public:
         continue;
       }
       for (const Json &mod : modifiers) {
-        accumulateModifierEntry(mod, scope, wantedSide, 1, bonus, advantage, disadvantage);
+        accumulateModifierEntry(mod, scope, wantedSide, 1, bonus, advantage, disadvantage, autoFail,
+                                bonusDice);
       }
     }
   }
 
   /// Applies one `check_modifiers` entry: matches its side and scope, counts
-  /// advantage/disadvantage, and folds a (per-stack) bonus into `bonus`.
+  /// advantage/disadvantage, folds a (per-stack) bonus into `bonus`, records
+  /// an `auto_fail` mode and a `bonus_dice`.
   void accumulateModifierEntry(const Json &mod, std::string_view scope, std::string_view wantedSide,
-                               int32_t stacks, int32_t &bonus, int &advantage,
-                               int &disadvantage) const {
+                               int32_t stacks, int32_t &bonus, int &advantage, int &disadvantage,
+                               bool &autoFail, std::vector<std::string> &bonusDice) const {
     const std::string side = mod.value("side", "actor");
     if (side != wantedSide) {
       return;
@@ -294,6 +329,8 @@ public:
       ++advantage;
     } else if (mode == "disadvantage") {
       ++disadvantage;
+    } else if (mode == "auto_fail") {
+      autoFail = true;
     }
     if (mod.contains("bonus")) {
       int32_t modBonus = mod.at("bonus").get<int32_t>();
@@ -301,6 +338,9 @@ public:
         modBonus *= stacks;
       }
       bonus += modBonus;
+    }
+    if (mod.contains("bonus_dice")) {
+      bonusDice.push_back(mod.at("bonus_dice").get<std::string>());
     }
   }
 
@@ -1420,6 +1460,14 @@ public:
         const int32_t duration = effect.value("duration", 0);
         target.effects().addBonus(StatBonus{stat, value, duration, "effect"});
         ++result.statBonusesApplied;
+      } else if (kind == "bonus_die") {
+        const std::string dice = effect.value("dice", "");
+        if (dice.empty()) {
+          continue;
+        }
+        const std::string scope = effect.value("scope", "all");
+        const int32_t duration = effect.value("duration", 0);
+        target.effects().addBonusDie(BonusDie{dice, scope, duration, "effect"});
       }
 
       // Recurring (ongoing) effects: after the base effect resolves and

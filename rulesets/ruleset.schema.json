@@ -350,7 +350,7 @@
               },
               "check_modifiers": {
                 "type": "array",
-                "description": "Optional mechanical effects on checks the carrier makes (or that are made against the carrier): a flat bonus and/or advantage/disadvantage, matched to checks by scope. 'scope' matches a named check type id, a wildcard prefix (e.g. 'dnd5e_attack_*'), a category keyword ('attack', 'save', 'skill', 'check'), or 'all'. 'bonus' is added to the check's roll (additive checks) or pool (pool checks); 'per_stack' multiplies the bonus by the condition's stack count (The Dark Eye's condition levels). 'mode' advantage/disadvantage rolls twice and keeps the better/worse total. 'side' 'actor' (default) applies when the carrier makes the check; 'side' 'target' applies when the carrier is the target of the check (e.g. 'attacks against you have advantage').",
+                "description": "Optional mechanical effects on checks the carrier makes (or that are made against the carrier): a flat bonus, advantage/disadvantage, an automatic failure, and/or a bonus die, matched to checks by scope. 'scope' matches a named check type id, a wildcard prefix (e.g. 'dnd5e_attack_*'), a category keyword ('attack', 'save', 'skill', 'check'), or 'all'. 'bonus' is added to the check's roll (additive checks) or pool (pool checks); 'per_stack' multiplies the bonus by the condition's stack count (The Dark Eye's condition levels). 'mode' 'advantage'/'disadvantage' rolls twice and keeps the better/worse total, 'auto_fail' fails the check outright without rolling. 'bonus_dice' rolls the given die and adds it to the check's total. 'side' 'actor' (default) applies when the carrier makes the check; 'side' 'target' applies when the carrier is the target of the check (e.g. 'attacks against you have advantage').",
                 "items": {
                   "type": "object",
                   "additionalProperties": true,
@@ -358,7 +358,8 @@
                     "scope": { "type": "string", "description": "Check identity this applies to: 'all', a category keyword, a check type id, or a wildcard prefix ending in '*'. Default 'all'." },
                     "bonus": { "type": "integer", "description": "Flat bonus (may be negative) added to the roll/pool." },
                     "per_stack": { "type": "boolean", "description": "Multiply 'bonus' by the condition's stack count." },
-                    "mode": { "type": "string", "enum": ["none", "advantage", "disadvantage"] },
+                    "bonus_dice": { "type": "string", "description": "A die rolled and added to the check's total (e.g. '1d4')." },
+                    "mode": { "type": "string", "enum": ["none", "advantage", "disadvantage", "auto_fail"] },
                     "side": { "type": "string", "enum": ["actor", "target"] }
                   }
                 }
@@ -368,7 +369,7 @@
         },
         "traits": {
           "type": "array",
-          "description": "Optional trait definitions (shared, always-on inherent qualities — a monster's Pack Tactics, a species' Darkvision, ...). Shaped like conditions: they may carry `check_modifiers` (check bonuses/advantage/disadvantage) and `stat_modifiers` (per-stat changes). A creature's `traits` array then references these by id, and the engine applies them to every check the creature makes or is the target of.",
+          "description": "Optional trait definitions (shared, always-on inherent qualities — a monster's Pack Tactics, a species' Darkvision, a troll's Regeneration, ...). Shaped like conditions: they may carry `check_modifiers` (check bonuses/advantage/disadvantage/auto-fail/bonus dice), `stat_modifiers` (per-stat changes), and `effects` (resolved once when a creature carrying the trait is created — resistances, recurring regeneration, ...). A creature's `traits` array then references these by id, and the engine applies them automatically.",
           "items": {
             "type": "object",
             "required": ["id"],
@@ -378,7 +379,8 @@
               "name": { "type": "string" },
               "description": { "type": "string" },
               "stat_modifiers": { "type": "array", "description": "Optional per-stat modifiers (same shape as condition stat_modifiers)." },
-              "check_modifiers": { "type": "array", "description": "Optional check modifiers (same shape as condition check_modifiers)." }
+              "check_modifiers": { "type": "array", "description": "Optional check modifiers (same shape as condition check_modifiers)." },
+              "effects": { "type": "array", "description": "Optional structured effects (same shape as spell effects, e.g. a resist or a recurring regeneration heal), resolved when a creature with the trait is created." }
             }
           }
         },
@@ -614,12 +616,13 @@
       "required": ["kind"],
       "additionalProperties": true,
       "properties": {
-        "kind": { "type": "string", "enum": ["damage", "condition", "heal", "temp_hp", "resist", "stat_bonus"] },
+        "kind": { "type": "string", "enum": ["damage", "condition", "heal", "temp_hp", "resist", "stat_bonus", "bonus_die"] },
         "dice": { "type": "string", "description": "damage/heal/temp_hp: dice, e.g. '8d6'." },
         "type": { "type": "string", "description": "damage: the damage type (Fire, Psychic, ...)." },
         "add": { "oneOf": [{ "type": "integer" }, { "type": "string" }], "description": "damage/heal/temp_hp: a flat amount (or a formula) added to the rolled dice. A formula is evaluated over the acting entity's stats plus the casting check's quality level, available as 'env.ql' — so '2D6 + QL x 2' is encoded as dice '2d6' with add 'env.ql * 2'. stat_bonus: the bonus value (number or formula) applied to the target's effective stat." },
         "stat": { "type": "string", "description": "stat_bonus: the stat the temporary bonus applies to." },
-        "duration": { "type": "integer", "description": "condition/stat_bonus: duration in ticks (0 = permanent until removed)." },
+        "duration": { "type": "integer", "description": "condition/stat_bonus/bonus_die: duration in ticks (0 = permanent until removed)." },
+        "scope": { "type": "string", "description": "bonus_die: which checks the die is rolled for ('all', a category keyword, a check type id, or a wildcard). Default 'all'." },
         "ongoing": {
           "type": "object",
           "description": "Makes the effect recurring: after it resolves and applies once, it is remembered on the target and re-resolved at the declared phase of each of the target's turns until `duration` more applications have fired (e.g. '2d4 at the end of its next turn', a poison's per-round damage, a monster's regeneration). An optional nested `effect` is what actually re-applies — it may differ from the initial effect (an arrow deals 4d4 now and a separate 2d4 later); without it the base effect re-applies.",

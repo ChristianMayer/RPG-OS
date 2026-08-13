@@ -1189,6 +1189,178 @@ TEST_CASE("bookkeeping: migrated D&D creature traits apply via the engine") {
   CHECK_FALSE(miss.isSuccess);
 }
 
+TEST_CASE("bookkeeping: bonus_die effects add a die to matching checks") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  DynamicEntity fighter(ruleset, "fighter");
+  fighter.setBaseAttribute("STR_mod", 3);
+  fighter.setBaseAttribute("proficiency_bonus", 2);
+  DynamicEntity orc(ruleset, "orc");
+  orc.setBaseAttribute("AC", 15);
+
+  // Bless-like: a +1d4 bonus die on attack checks, applied to the roller.
+  const rpg_os::Json effects = rpg_os::Json::parse(R"json([
+    {"kind": "bonus_die", "dice": "1d4", "scope": "attack", "duration": 0}
+  ])json");
+  auto rng0 = script({});
+  (void)dnd.resolveEffects(caster, fighter, effects, CheckParams{}, rng0);
+  CHECK(fighter.effects().bonusDice().size() == 1);
+
+  // d20 8 + 3 + 2 = 13 would miss, but the bonus 1d4 rolls 4 -> 17 >= AC 15.
+  auto rng = script({8, 4});
+  const auto hit = dnd.executeCheck("dnd5e_attack_melee", fighter, &orc, CheckParams{}, rng);
+  CHECK(hit.isSuccess);
+  CHECK(hit.rawDiceRolls == std::vector<int>{8, 4});
+
+  // The bonus die is scoped: a non-attack check does not roll it.
+  DynamicEntity other(ruleset, "other");
+  other.setBaseAttribute("STR_mod", 3);
+  other.setBaseAttribute("proficiency_bonus", 2);
+  CheckParams saveParams;
+  saveParams.difficulty = 15;
+  auto rng2 = script({8});
+  const auto save = dnd.executeCheck("dnd5e_save_str", other, nullptr, saveParams, rng2);
+  CHECK_FALSE(save.isSuccess); // 8 + 5 = 13 < DC 15
+  CHECK(save.rawDiceRolls == std::vector<int>{8});
+}
+
+TEST_CASE("bookkeeping: auto_fail check modifiers fail matching checks") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10}],
+    "derived_stats": [{"id": "STR_mod", "name": "Str Mod", "formula": "floor((STR - 10) / 2)"}],
+    "check_types": {
+      "save_str": {"resolution": "threshold", "dice": "1d20", "comparison": "ge",
+                   "threshold_source": "difficulty", "bonus_stats": ["STR_mod"]},
+      "check_con": {"resolution": "threshold", "dice": "1d20", "comparison": "ge",
+                    "threshold_source": "difficulty", "bonus_stats": ["STR_mod"]}
+    },
+    "data": {
+      "conditions": [
+        {"id": "paralyzed", "name": "Paralyzed",
+         "check_modifiers": [{"scope": "save_str", "mode": "auto_fail"}]}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  const auto &ruleset = engine.ruleset();
+  DynamicEntity hero(ruleset, "hero");
+  hero.setBaseAttribute("STR", 12);
+  engine.applyCondition(hero, "paralyzed", 1, 0);
+
+  CheckParams params;
+  params.difficulty = 15;
+  // The STR save is auto-failed without rolling (RNG index stays 0).
+  auto rng1 = script({20});
+  const auto failed = engine.executeCheck("save_str", hero, nullptr, params, rng1);
+  CHECK_FALSE(failed.isSuccess);
+  CHECK(rng1.idx == 0);
+
+  // An unrelated check is unaffected.
+  auto rng2 = script({20});
+  const auto ok = engine.executeCheck("check_con", hero, nullptr, params, rng2);
+  CHECK(ok.isSuccess);
+}
+
+TEST_CASE("bookkeeping: creature trait effects apply at creation") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10}],
+    "data": {
+      "traits": [
+        {"id": "fire_resistant", "name": "Fire Resistant",
+         "effects": [{"kind": "resist", "types": ["Fire"]}]}
+      ],
+      "creatures": [
+        {"id": "salamander", "name": "Salamander", "traits": ["fire_resistant"],
+         "attributes": {"STR": 12}}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  auto salamander = engine.createCreature("salamander");
+  REQUIRE(salamander != nullptr);
+  CHECK(salamander->hasTrait("fire_resistant"));
+  // The trait's resist effect was applied when the creature was created.
+  CHECK(salamander->hasResistance("Fire"));
+}
+
+TEST_CASE("bookkeeping: bless grants bonus dice on attack and save checks") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  DynamicEntity ally(ruleset, "ally");
+  ally.setBaseAttribute("STR_mod", 3);
+  ally.setBaseAttribute("proficiency_bonus", 2);
+  DynamicEntity orc(ruleset, "orc");
+  orc.setBaseAttribute("AC", 15);
+
+  auto rng0 = script({});
+  const auto cast = dnd.castSpell("bless", caster, &ally, CheckParams{}, rng0);
+  CHECK(cast.cast);
+  CHECK(ally.effects().bonusDice().size() == 2);
+
+  // Attack: d20 8 + 5 + bonus 1d4 (4) = 17 >= AC 15.
+  auto rng1 = script({8, 4});
+  const auto hit = dnd.executeCheck("dnd5e_attack_melee", ally, &orc, CheckParams{}, rng1);
+  CHECK(hit.isSuccess);
+  CHECK(hit.rawDiceRolls == std::vector<int>{8, 4});
+
+  // Save: d20 8 + STR_mod 3 + bonus 1d4 (2) = 13 >= DC 12 (D&D saves use only
+  // the ability modifier).
+  CheckParams sp;
+  sp.difficulty = 12;
+  auto rng2 = script({8, 2});
+  const auto save = dnd.executeCheck("dnd5e_save_str", ally, nullptr, sp, rng2);
+  CHECK(save.isSuccess);
+}
+
+TEST_CASE("bookkeeping: paralyzed creatures auto-fail STR and DEX saves") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity hero(ruleset, "hero");
+  hero.setBaseAttribute("STR_mod", 3);
+  hero.setBaseAttribute("DEX_mod", 3);
+  hero.setBaseAttribute("WIS_mod", 3);
+  hero.setBaseAttribute("proficiency_bonus", 2);
+  dnd.applyCondition(hero, "paralyzed", 1, 0);
+
+  CheckParams params;
+  params.difficulty = 15;
+  // STR and DEX saves auto-fail without rolling (RNG index stays 0).
+  auto rng1 = script({20});
+  CHECK_FALSE(dnd.executeCheck("dnd5e_save_str", hero, nullptr, params, rng1).isSuccess);
+  CHECK(rng1.idx == 0);
+  auto rng2 = script({20});
+  CHECK_FALSE(dnd.executeCheck("dnd5e_save_dex", hero, nullptr, params, rng2).isSuccess);
+  // A non-STR/DEX save is unaffected.
+  auto rng3 = script({20});
+  CHECK(dnd.executeCheck("dnd5e_save_wis", hero, nullptr, params, rng3).isSuccess);
+}
+
+TEST_CASE("bookkeeping: oni regeneration heals at the start of its turns") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  auto oni = dnd.createCreature("oni");
+  REQUIRE(oni != nullptr);
+  CHECK(oni->hasTrait("regeneration_10"));
+  // The recurring heal was registered when the creature was created.
+  CHECK(oni->effects().ongoing().size() == 1);
+
+  // Damage the oni, then its turn heals 10 (a constant "10" die draws no RNG).
+  (void)oni->modifyResource("HP", -15);
+  const int32_t afterDamage = oni->resource("HP");
+  auto rng = script({});
+  dnd.runTurn(*oni, rng);
+  CHECK(oni->resource("HP") == afterDamage + 10);
+}
+
 TEST_CASE("bookkeeping: quality-scaled damage effects add the QL formula (TDE style)") {
   RulesetEngine dnd;
   REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));

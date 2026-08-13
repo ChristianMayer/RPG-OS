@@ -154,20 +154,25 @@ mode:
   level). The bookkeeping layer (inventory, equipment, conditions with
   durations, advancement, rests, curses) is universal and data-driven;
   `data.conditions` may carry `stat_modifiers` (per-stack stat changes) and
-  `check_modifiers` (per-check flat bonuses and/or advantage/disadvantage,
-  matched by scope — a check type id, a wildcard prefix, a category keyword
-  `attack`/`save`/`check`/`skill`, or `all` — and by side: the carrier's own
-  checks or checks *against* the carrier), and `data.curses` is an
+  `check_modifiers` (per-check flat bonuses, advantage/disadvantage,
+  auto-failure, and/or bonus dice, matched by scope — a check type id, a
+  wildcard prefix, a category keyword `attack`/`save`/`check`/`skill`, or
+  `all` — and by side: the carrier's own checks or checks *against* the
+  carrier), and `data.curses` is an
   `afflictionRecord`-shaped section, so everything a rulebook covers is
   modelable without engine changes. Inherent, always-on creature abilities are
   `data.traits`: trait definitions (same `stat_modifiers`/`check_modifiers`
-  vocabulary as conditions) referenced by id from a creature's `traits` array,
+  vocabulary as conditions, plus an `effects` array resolved once when a
+  creature carrying the trait is created — resistances, recurring
+  regeneration) referenced by id from a creature's `traits` array,
   applied to every check the creature makes or is the target of. Spells carry
   a machine-readable `effects`
   array (`effectRecord` in the schema: damage/condition/heal/temp_hp/resist/
   stat_bonus, each optionally gated by a `save` or an `attack`; `stat_bonus`
   applies a temporary `add` to the target's effective `stat` for `duration`
-  ticks; any effect may carry an `ongoing` object (`at` `start_of_turn`/`
+  ticks; `bonus_die` grants a temporary die (`dice` + `scope`) rolled and
+  added to matching checks — D&D's Bless; any effect may carry an `ongoing`
+  object (`at` `start_of_turn`/`
   end_of_turn`, `duration`, optional nested `effect`) to re-apply itself on
   the target's turn — per-round poison damage, regeneration, an arrow's
   4d4-now-2d4-later). Effect dice, `add`

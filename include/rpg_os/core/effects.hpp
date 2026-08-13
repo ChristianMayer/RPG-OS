@@ -33,6 +33,16 @@ struct StatBonus {
   std::string source;   ///< what applied it (spell / item / event id)
 };
 
+/// A temporary die that is rolled and added to checks of a matching scope for
+/// a duration of ticks (D&D's Bless +1d4 to attack rolls and saves, a bardic
+/// inspiration die, ...).
+struct BonusDie {
+  std::string dice;     ///< the die expression, e.g. "1d4"
+  std::string scope;    ///< which checks it applies to (see scope matching)
+  int32_t remaining{0}; ///< remaining ticks; 0 = permanent until removed
+  std::string source;   ///< what applied it (spell / item / event id)
+};
+
 /// A stored effect that re-resolves on its own turn phase — a recurring
 /// (per-round) damage / heal / condition, or a monster's regeneration. The
 /// record is the original effect JSON with the `ongoing` field stripped, so
@@ -83,6 +93,7 @@ public:
   void clear() noexcept {
     m_effects.clear();
     m_statBonuses.clear();
+    m_bonusDice.clear();
     m_ongoing.clear();
   }
 
@@ -152,6 +163,23 @@ public:
     return m_statBonuses;
   }
 
+  /// Adds a temporary bonus die (stacked; each entry rolls and adds).
+  void addBonusDie(const BonusDie &bonus) {
+    m_bonusDice.push_back(bonus);
+  }
+
+  /// Removes every bonus die; returns how many were removed.
+  int32_t removeBonusDice() {
+    const int32_t removed = static_cast<int32_t>(m_bonusDice.size());
+    m_bonusDice.clear();
+    return removed;
+  }
+
+  /// All temporary bonus dice (immutable view).
+  [[nodiscard]] const std::vector<BonusDie> &bonusDice() const noexcept {
+    return m_bonusDice;
+  }
+
   /// Registers a recurring (ongoing) effect to re-apply on `phase`.
   void addOngoing(const OngoingEffect &effect) {
     m_ongoing.push_back(effect);
@@ -176,8 +204,8 @@ public:
     return m_ongoing;
   }
 
-  /// Decrements the remaining duration of every non-permanent condition and
-  /// stat bonus; erases the expired ones; returns how many expired.
+  /// Decrements the remaining duration of every non-permanent condition, stat
+  /// bonus, and bonus die; erases the expired ones; returns how many expired.
   /// Recurring effects are NOT aged here — they age by firing, via
   /// @ref tickPhase (driven by the engine's turn processing).
   int32_t tick() {
@@ -198,6 +226,17 @@ public:
         --it->remaining;
         if (it->remaining == 0) {
           it = m_statBonuses.erase(it);
+          ++expired;
+          continue;
+        }
+      }
+      ++it;
+    }
+    for (auto it = m_bonusDice.begin(); it != m_bonusDice.end();) {
+      if (it->remaining > 0) {
+        --it->remaining;
+        if (it->remaining == 0) {
+          it = m_bonusDice.erase(it);
           ++expired;
           continue;
         }
@@ -244,6 +283,14 @@ public:
                          {"source", bonus.source}});
     }
     out["stat_bonuses"] = bonuses;
+    Json dice = Json::array();
+    for (const BonusDie &entry : m_bonusDice) {
+      dice.push_back({{"dice", entry.dice},
+                      {"scope", entry.scope},
+                      {"remaining", entry.remaining},
+                      {"source", entry.source}});
+    }
+    out["bonus_dice"] = dice;
     Json ongoing = Json::array();
     for (const OngoingEffect &entry : m_ongoing) {
       Json record = {{"effect", entry.effect},
@@ -258,6 +305,7 @@ public:
   void fromJson(const Json &in) {
     m_effects.clear();
     m_statBonuses.clear();
+    m_bonusDice.clear();
     m_ongoing.clear();
     if (!in.is_object()) {
       return;
@@ -286,6 +334,18 @@ public:
         }
       }
     }
+    if (in.contains("bonus_dice") && in.at("bonus_dice").is_array()) {
+      for (const Json &entry : in.at("bonus_dice")) {
+        BonusDie die;
+        die.dice = entry.value("dice", "");
+        die.scope = entry.value("scope", "all");
+        die.remaining = entry.value("remaining", 0);
+        die.source = entry.value("source", "");
+        if (!die.dice.empty()) {
+          m_bonusDice.push_back(std::move(die));
+        }
+      }
+    }
     if (in.contains("ongoing") && in.at("ongoing").is_array()) {
       for (const Json &entry : in.at("ongoing")) {
         OngoingEffect ongoing;
@@ -305,6 +365,7 @@ public:
 private:
   std::vector<ActiveEffect> m_effects;
   std::vector<StatBonus> m_statBonuses;
+  std::vector<BonusDie> m_bonusDice;
   std::vector<OngoingEffect> m_ongoing;
 };
 

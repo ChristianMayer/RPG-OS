@@ -209,6 +209,14 @@ struct CheckParams {
   DifficultyScale difficultyScale{DifficultyScale::Average};
   /// Advantage / disadvantage for this roll (see @ref AdvantageMode).
   AdvantageMode advantage{AdvantageMode::None};
+  /// Bonus dice rolled in addition to the check's dice and added to the
+  /// additive total (a D&D Bless die, a bane penalty die, ...). Aggregated by
+  /// the engine from active conditions / effects / traits; empty means none.
+  std::vector<DiceExpression> bonusDice{};
+  /// Whether the check is automatically a failure (e.g. "you automatically
+  /// fail Strength and Dexterity saving throws"). When true no dice are
+  /// rolled and the result is a failure.
+  bool autoFail{false};
 };
 
 /// The Dark Eye quality level derived from leftover skill points:
@@ -335,12 +343,19 @@ template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
     }
   }
 
-  // Additive checks sum bonus stats and the situational modifier into the
-  // rolled total; roll-under checks compare the bare roll.
+  // Additive checks sum bonus stats, bonus dice, and the situational modifier
+  // into the rolled total; roll-under checks compare the bare roll.
   int total = diceTotal;
   if (recipe.comparison == Comparison::GreaterEqual) {
     for (const std::string &stat : recipe.bonusStats) {
       total += static_cast<int32_t>(actor.getStat(stat));
+    }
+    for (const DiceExpression &bonus : params.bonusDice) {
+      const std::vector<int> rolls = bonus.roll(rng);
+      result.rawDiceRolls.insert(result.rawDiceRolls.end(), rolls.begin(), rolls.end());
+      for (const int die : rolls) {
+        total += die;
+      }
     }
     total += params.situationalModifier;
   }
@@ -558,6 +573,13 @@ template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
 [[nodiscard]] constexpr CheckResult resolveCheck(const Actor &actor, const Target &target,
                                                  const CheckRecipe &recipe,
                                                  const CheckParams &params, Rng &rng) {
+  // An automatic failure ("you automatically fail Strength and Dexterity
+  // saving throws") fails the check outright without consuming any RNG.
+  if (params.autoFail) {
+    CheckResult failed;
+    failed.isSuccess = false;
+    return failed;
+  }
   switch (recipe.resolution) {
   case Resolution::Threshold:
     return resolveThresholdCheck(actor, target, recipe, params, rng);
