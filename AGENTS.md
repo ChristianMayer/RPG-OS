@@ -154,8 +154,29 @@ mode:
   level). The bookkeeping layer (inventory, equipment, conditions with
   durations, advancement, rests, curses) is universal and data-driven;
   `data.conditions` may carry `stat_modifiers` (per-stack stat changes) and
-  `data.curses` is an `afflictionRecord`-shaped section, so everything a
-  rulebook covers is modelable without engine changes.
+  `check_modifiers` (per-check flat bonuses and/or advantage/disadvantage,
+  matched by scope — a check type id, a wildcard prefix, a category keyword
+  `attack`/`save`/`check`/`skill`, or `all` — and by side: the carrier's own
+  checks or checks *against* the carrier), and `data.curses` is an
+  `afflictionRecord`-shaped section, so everything a rulebook covers is
+  modelable without engine changes. Inherent, always-on creature abilities are
+  `data.traits`: trait definitions (same `stat_modifiers`/`check_modifiers`
+  vocabulary as conditions) referenced by id from a creature's `traits` array,
+  applied to every check the creature makes or is the target of. Spells carry
+  a machine-readable `effects`
+  array (`effectRecord` in the schema: damage/condition/heal/temp_hp/resist/
+  stat_bonus, each optionally gated by a `save` or an `attack`; `stat_bonus`
+  applies a temporary `add` to the target's effective `stat` for `duration`
+  ticks; any effect may carry an `ongoing` object (`at` `start_of_turn`/`
+  end_of_turn`, `duration`, optional nested `effect`) to re-apply itself on
+  the target's turn — per-round poison damage, regeneration, an arrow's
+  4d4-now-2d4-later). Effect dice, `add`
+  amounts, condition `stacks`, and roll-under save `dc`s are formulas that may
+  reference the casting check's quality level as `env.ql` (The Dark Eye's
+  QL-scaled spells), and `saveDef.comparison` `"le"` models roll-under
+  resistance (stat − QL) versus the D&D-style roll-over DC. A prose rule that
+  is extracted into these structured fields is removed from the entry's
+  `description`, which the engine never reads.
 - Attribute ids are short uppercase codes (`COU`, `STR`); `name` is the human
   name used to derive C++ identifiers (`"Courage"` → `courage`).
 - Derived-stat `formula` strings use the restricted grammar: arithmetic

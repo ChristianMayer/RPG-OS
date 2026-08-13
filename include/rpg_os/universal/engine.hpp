@@ -176,6 +176,134 @@ public:
     return entity.getStat(statId);
   }
 
+  /// Whether `pattern` selects `scope`: `"all"` matches everything, an exact
+  /// match selects that check, a trailing `*` matches any scope with the given
+  /// prefix (e.g. `"dnd5e_attack_*"`), and a bare category keyword (`"attack"`,
+  /// `"save"`, `"check"`, `"skill"`) matches any scope containing that word as
+  /// one of its underscore-separated segments — so `"attack"` selects both the
+  /// literal attack scope and a check type id like `"dnd5e_attack_melee"`.
+  [[nodiscard]] static bool scopeMatches(std::string_view pattern,
+                                         std::string_view scope) noexcept {
+    if (pattern == "all" || pattern == scope) {
+      return true;
+    }
+    if (!pattern.empty() && pattern.back() == '*') {
+      return scope.starts_with(pattern.substr(0, pattern.size() - 1));
+    }
+    std::size_t begin = 0;
+    while (begin <= scope.size()) {
+      const std::size_t end = scope.find('_', begin);
+      const std::string_view segment =
+          scope.substr(begin, end == std::string_view::npos ? std::string_view::npos : end - begin);
+      if (segment == pattern) {
+        return true;
+      }
+      if (end == std::string_view::npos) {
+        break;
+      }
+      begin = end + 1;
+    }
+    return false;
+  }
+
+  /// Folds the check modifiers of `actor`'s and (for target-side entries)
+  /// `target`'s active conditions into a copy of `params`.
+  ///
+  /// @par Why a per-check copy rather than a global flag?
+  /// Conditions are per-entity and per-situation: a blinded attacker attacks
+  /// with disadvantage (its own condition), while attacks against a blinded
+  /// defender gain advantage (the *target's* condition). Each check resolves
+  /// once, so the modifiers are aggregated at the point the check is made —
+  /// named checks via @ref executeCheck, spell attacks via @ref resolveAttack,
+  /// saving throws via @ref resolveSave, skill checks via @ref executeSkillCheck
+  /// — and folded into the params (a flat bonus into
+  /// @c CheckParams::situationalModifier, advantage into
+  /// @c CheckParams::advantage). Both advantage and disadvantage present on a
+  /// roll cancel each other, matching the D&D rule.
+  [[nodiscard]] CheckParams withConditionModifiers(const DynamicEntity &actor,
+                                                   const DynamicEntity *target,
+                                                   std::string_view scope,
+                                                   CheckParams params) const {
+    int32_t bonus = 0;
+    int advantage = 0;
+    int disadvantage = 0;
+    accumulateCheckModifiers(actor, scope, "actor", bonus, advantage, disadvantage);
+    if (target != nullptr) {
+      accumulateCheckModifiers(*target, scope, "target", bonus, advantage, disadvantage);
+    }
+    params.situationalModifier += bonus;
+    if (advantage > 0 && disadvantage > 0) {
+      params.advantage = AdvantageMode::None;
+    } else if (advantage > 0) {
+      params.advantage = AdvantageMode::Advantage;
+    } else if (disadvantage > 0) {
+      params.advantage = AdvantageMode::Disadvantage;
+    }
+    return params;
+  }
+
+  /// Accumulates the check modifiers contributed by one entity's active
+  /// conditions (scaled by their stacks) and inherent traits, whose declared
+  /// `side` equals `wantedSide` and whose `scope` matches `scope` (see
+  /// @ref withConditionModifiers).
+  void accumulateCheckModifiers(const DynamicEntity &entity, std::string_view scope,
+                                std::string_view wantedSide, int32_t &bonus, int &advantage,
+                                int &disadvantage) const {
+    for (const auto &[conditionId, stacks] : entity.conditions()) {
+      const Json *condition = findCondition(conditionId);
+      if (condition == nullptr || !condition->contains("check_modifiers")) {
+        continue;
+      }
+      const Json &modifiers = condition->at("check_modifiers");
+      if (!modifiers.is_array()) {
+        continue;
+      }
+      for (const Json &mod : modifiers) {
+        accumulateModifierEntry(mod, scope, wantedSide, stacks, bonus, advantage, disadvantage);
+      }
+    }
+    for (const std::string &traitId : entity.traits()) {
+      const Json *trait = findDataRecord("traits", traitId);
+      if (trait == nullptr || !trait->contains("check_modifiers")) {
+        continue;
+      }
+      const Json &modifiers = trait->at("check_modifiers");
+      if (!modifiers.is_array()) {
+        continue;
+      }
+      for (const Json &mod : modifiers) {
+        accumulateModifierEntry(mod, scope, wantedSide, 1, bonus, advantage, disadvantage);
+      }
+    }
+  }
+
+  /// Applies one `check_modifiers` entry: matches its side and scope, counts
+  /// advantage/disadvantage, and folds a (per-stack) bonus into `bonus`.
+  void accumulateModifierEntry(const Json &mod, std::string_view scope, std::string_view wantedSide,
+                               int32_t stacks, int32_t &bonus, int &advantage,
+                               int &disadvantage) const {
+    const std::string side = mod.value("side", "actor");
+    if (side != wantedSide) {
+      return;
+    }
+    if (!scopeMatches(mod.value("scope", "all"), scope)) {
+      return;
+    }
+    const std::string mode = mod.value("mode", "none");
+    if (mode == "advantage") {
+      ++advantage;
+    } else if (mode == "disadvantage") {
+      ++disadvantage;
+    }
+    if (mod.contains("bonus")) {
+      int32_t modBonus = mod.at("bonus").get<int32_t>();
+      if (mod.value("per_stack", false)) {
+        modBonus *= stacks;
+      }
+      bonus += modBonus;
+    }
+  }
+
   /// Resolves a named check type from the ruleset using a caller-supplied RNG
   /// (deterministic tests inject a scripted RNG).
   ///
@@ -184,14 +312,21 @@ public:
   /// or a solo DSA talent check). A `nullptr` target is the "no target" case
   /// and is resolved against @ref NullStatProvider, keeping the common solo
   /// case ergonomic.
+  ///
+  /// The check is resolved through the *effective* stats of both sides and
+  /// with the actors' active-condition check modifiers folded in (a blinded
+  /// attacker attacks at disadvantage; a poisoned spellcaster's attack checks
+  /// are impaired), so conditions that carry `check_modifiers` affect every
+  /// named check automatically.
   template <RandomNumberGenerator Rng>
   [[nodiscard]] CheckResult executeCheck(std::string_view checkTypeId, const DynamicEntity &actor,
                                          const DynamicEntity *target, const CheckParams &params,
                                          Rng &rng) const {
+    const CheckParams adjusted = withConditionModifiers(actor, target, checkTypeId, params);
     if (target != nullptr) {
-      return CheckResolver::resolve(m_ruleset, actor, *target, checkTypeId, params, rng);
+      return CheckResolver::resolve(m_ruleset, actor, *target, checkTypeId, adjusted, rng);
     }
-    return CheckResolver::resolve(m_ruleset, actor, NullStatProvider{}, checkTypeId, params, rng);
+    return CheckResolver::resolve(m_ruleset, actor, NullStatProvider{}, checkTypeId, adjusted, rng);
   }
 
   /// Resolves a named check type using a fresh default RNG. Convenience for
@@ -210,12 +345,13 @@ public:
   [[nodiscard]] CheckResult
   executeCheckEffective(std::string_view checkTypeId, const DynamicEntity &actor,
                         const DynamicEntity *target, const CheckParams &params, Rng &rng) const {
+    const CheckParams adjusted = withConditionModifiers(actor, target, checkTypeId, params);
     if (target != nullptr) {
       return CheckResolver::resolve(m_ruleset, EffectiveStatProvider{actor},
-                                    EffectiveStatProvider{*target}, checkTypeId, params, rng);
+                                    EffectiveStatProvider{*target}, checkTypeId, adjusted, rng);
     }
     return CheckResolver::resolve(m_ruleset, EffectiveStatProvider{actor}, NullStatProvider{},
-                                  checkTypeId, params, rng);
+                                  checkTypeId, adjusted, rng);
   }
 
   /// Resolves a check against effective stats using a fresh default RNG.
@@ -260,7 +396,8 @@ public:
     recipe.fumbleStyle = CriticalStyle::DoubleRoll;
     recipe.grading = Grading::PoolQuality;
     recipe.difficultyMode = DifficultyMode::ToStat;
-    return resolveCheck(actor, NullStatProvider{}, recipe, params, rng);
+    const CheckParams adjusted = withConditionModifiers(actor, nullptr, "skill", params);
+    return resolveCheck(actor, NullStatProvider{}, recipe, adjusted, rng);
   }
 
   /// Resolves a skill check using a fresh default RNG. Convenience overload.
@@ -438,8 +575,12 @@ public:
     // half-on-save damage, conditions, healing, resistances). A spell with no
     // `effects` falls back to the simple damage field.
     if (target != nullptr && spell->contains("effects") && spell->at("effects").is_array()) {
+      // The casting check's quality level (The Dark Eye's QL) is threaded into
+      // the effect formulas so QL-scaled spells ("2D6 + QLx2") resolve from
+      // data alone.
+      const int32_t ql = result.check.qualityLevel;
       const EffectsResult effects =
-          resolveEffects(actor, *target, spell->at("effects"), params, rng);
+          resolveEffects(actor, *target, spell->at("effects"), params, rng, ql);
       result.appliedDamage = effects.damageDealt;
     } else if (target != nullptr && spell->contains("damage")) {
       // `applyDamage` reports the (negative) pool delta, so negate it into the
@@ -936,6 +1077,32 @@ public:
     fireEvent(EventType::OnConditionChanged, data, sheet, nullptr, Json{});
   }
 
+  /// Applies a temporary `value` bonus to `sheet`'s effective `stat` for
+  /// `duration` ticks (0 = permanent until removed). Buffs from spells and
+  /// traits that raise a stat for a while use this (e.g. The Dark Eye's
+  /// Perception-boosting spell).
+  void applyStatBonus(DynamicEntity &sheet, std::string_view stat, int32_t value,
+                      int32_t duration = 0, std::string_view source = {}) {
+    sheet.effects().addBonus(StatBonus{std::string(stat), value, duration, std::string(source)});
+  }
+
+  /// Removes every temporary stat bonus on `stat` (returns how many removed).
+  int32_t removeStatBonus(DynamicEntity &sheet, std::string_view stat) {
+    return sheet.effects().removeBonuses(stat);
+  }
+
+  /// Adds an inherent trait (e.g. a monster's Pack Tactics) to `sheet`. The
+  /// trait must be declared in `data.traits`; its check and stat modifiers
+  /// apply to every check the sheet makes from then on.
+  void applyTrait(DynamicEntity &sheet, std::string_view traitId) {
+    sheet.addTrait(traitId);
+  }
+
+  /// Removes `traitId` from `sheet`'s active traits.
+  void removeTrait(DynamicEntity &sheet, std::string_view traitId) {
+    sheet.removeTrait(traitId);
+  }
+
   /// Advances the sheet's effect timeline: durations tick down, expired
   /// conditions are removed (both from the timeline and the stack map).
   /// Returns how many effects expired.
@@ -953,16 +1120,57 @@ public:
     return expired;
   }
 
-  /// Runs one full turn for `sheet`: fires OnTurnStart, ticks effect
-  /// durations, then fires OnTurnEnd.
-  void runTurn(DynamicEntity &sheet) {
+  /// Runs one full turn for `sheet`: fires OnTurnStart, resolves the
+  /// start-of-turn recurring effects, ticks effect durations, resolves the
+  /// end-of-turn recurring effects, then fires OnTurnEnd.
+  template <RandomNumberGenerator Rng> void runTurn(DynamicEntity &sheet, Rng &rng) {
     EventData start;
     start.payload = {{"actor_id", sheet.id()}};
     fireEvent(EventType::OnTurnStart, start, sheet, nullptr, Json{});
+    (void)processOngoing(sheet, "start_of_turn", rng);
     (void)tickEffects(sheet);
+    (void)processOngoing(sheet, "end_of_turn", rng);
     EventData end;
     end.payload = {{"actor_id", sheet.id()}};
     fireEvent(EventType::OnTurnEnd, end, sheet, nullptr, Json{});
+  }
+
+  /// Runs one full turn using a fresh default RNG (convenience overload).
+  void runTurn(DynamicEntity &sheet) {
+    DefaultRandom rng;
+    runTurn(sheet, rng);
+  }
+
+  /// Re-resolves every recurring (ongoing) effect registered on `sheet` for
+  /// the given `phase` ("start_of_turn" or "end_of_turn"): each stored effect
+  /// fires once, its remaining repetitions decrease, and expired ones are
+  /// removed. Returns how many effects fired.
+  ///
+  /// @par Why resolve against the sheet itself?
+  /// A recurring effect (ongoing damage, regeneration, a poison's per-round
+  /// damage) acts on the sheet on its own turn. The stored effect is resolved
+  /// with the sheet as both source and target: fixed-dice effects are exact;
+  /// a save DC that references the original caster's stats is an approximation
+  /// (the ruleset should use a fixed or target-based DC for recurring effects).
+  template <RandomNumberGenerator Rng>
+  int32_t processOngoing(DynamicEntity &sheet, std::string_view phase, Rng &rng) {
+    int32_t fired = 0;
+    std::vector<Json> toFire;
+    for (const OngoingEffect &ongoing : sheet.effects().ongoing()) {
+      if (ongoing.phase == phase) {
+        toFire.push_back(ongoing.effect);
+      }
+    }
+    for (const Json &effect : toFire) {
+      Json batch = Json::array();
+      batch.push_back(effect);
+      (void)resolveEffects(sheet, sheet, batch, CheckParams{}, rng);
+      ++fired;
+    }
+    if (fired > 0) {
+      (void)sheet.effects().tickPhase(phase);
+    }
+    return fired;
   }
 
   // ------------------------------------------------------------------------
@@ -1056,10 +1264,11 @@ public:
   /// needs to know what actually happened — how much damage landed, whether a
   /// condition was applied, how much was healed — so it can narrate and react.
   struct EffectsResult {
-    int32_t damageDealt{0};       ///< net damage applied to the target
-    int32_t conditionsApplied{0}; ///< how many condition effects landed
-    int32_t healingDone{0};       ///< hit points restored
-    int32_t savesPassed{0};       ///< how many saves the target passed
+    int32_t damageDealt{0};        ///< net damage applied to the target
+    int32_t conditionsApplied{0};  ///< how many condition effects landed
+    int32_t healingDone{0};        ///< hit points restored
+    int32_t savesPassed{0};        ///< how many saves the target passed
+    int32_t statBonusesApplied{0}; ///< how many temporary stat bonuses landed
   };
 
   /// Resolves a batch of structured effects (the `effects` array on spells,
@@ -1075,16 +1284,26 @@ public:
   ///
   /// Supported effect kinds:
   ///   - @c damage: rolls `dice`, applies it through the damage pipeline; an
-  ///     optional `save` halves it (on_success "half") or negates it ("none").
+  ///     optional `save` halves it (on_success "half") or negates it ("none");
+  ///     an optional formula `add` (evaluated over the source's stats and the
+  ///     casting check's quality level via `env.ql`) is added to the roll.
   ///   - @c condition: applies `condition` (stacks, optional `duration` in
   ///     ticks) unless the target passes the optional `save`.
   ///   - @c heal: rolls `dice` (+ optional formula `add`) into the target's
   ///     hit-point pool.
   ///   - @c resist: adds the listed `types` to the target's resistances.
+  ///   - @c stat_bonus: applies a temporary `add` (number or formula) to the
+  ///     target's effective `stat` for `duration` ticks (0 = permanent).
+  ///
+  /// Any effect may additionally carry an `ongoing` object
+  /// (`{"at": "start_of_turn"|"end_of_turn", "duration": N}`) making it
+  /// recurring: after the base effect resolves once, it is remembered on the
+  /// target and re-resolved at the declared phase of each of the target's
+  /// turns until `duration` more applications have fired.
   template <RandomNumberGenerator Rng>
   [[nodiscard]] EffectsResult resolveEffects(DynamicEntity &source, DynamicEntity &target,
                                              const Json &effects, const CheckParams &params,
-                                             Rng &rng) {
+                                             Rng &rng, int32_t qualityLevel = 0) {
     EffectsResult result;
     if (!effects.is_array()) {
       return result;
@@ -1092,21 +1311,35 @@ public:
     const std::string hitPool = resolveHitPointPoolId();
     for (const Json &effect : effects) {
       const std::string kind = effect.value("kind", "");
+      bool applied = true; // whether the base effect actually took effect
       if (kind == "damage") {
         if (!effect.contains("dice")) {
           continue;
         }
         int32_t final =
             static_cast<int32_t>(readVariantValue(effect.at("dice"), Variance::Random, rng));
+        if (effect.contains("add")) {
+          final += evaluateEffectAdd(source, &target, effect.at("add"), qualityLevel);
+        }
         if (effect.contains("save")) {
-          if (resolveSave(source, target, effect.at("save"), params, rng)) {
+          if (resolveSave(source, target, effect.at("save"), params, rng, qualityLevel)) {
             ++result.savesPassed;
-            final = effect.at("save").value("on_success", "none") == "half" ? final / 2 : 0;
+            if (effect.at("save").value("on_success", "none") == "half") {
+              final /= 2;
+            } else {
+              final = 0;
+              applied = false;
+            }
           }
         } else if (effect.contains("attack")) {
           const Json &attack = effect.at("attack");
           if (!resolveAttack(source, target, attack, params, rng)) {
-            final = attack.value("on_miss", "none") == "half" ? final / 2 : 0;
+            if (attack.value("on_miss", "none") == "half") {
+              final /= 2;
+            } else {
+              final = 0;
+              applied = false;
+            }
           }
         }
         if (final > 0 && !hitPool.empty()) {
@@ -1118,9 +1351,8 @@ public:
         if (conditionId.empty()) {
           continue;
         }
-        bool applied = true;
         if (effect.contains("save") &&
-            resolveSave(source, target, effect.at("save"), params, rng)) {
+            resolveSave(source, target, effect.at("save"), params, rng, qualityLevel)) {
           ++result.savesPassed;
           applied = false;
         } else if (effect.contains("attack") &&
@@ -1130,7 +1362,20 @@ public:
         if (!applied) {
           continue;
         }
-        const int32_t stacks = effect.value("stacks", 1);
+        // `stacks` may be a plain number or a formula over the source's stats
+        // and the casting check's quality level (`env.ql`) — the latter lets
+        // QL-scaled conditions ("QL 3: 2 levels of Pain") resolve from data.
+        int32_t stacks = 1;
+        if (effect.contains("stacks")) {
+          const Json &stacksJson = effect.at("stacks");
+          if (stacksJson.is_number()) {
+            stacks = stacksJson.get<int32_t>();
+          } else if (stacksJson.is_string()) {
+            const Json env = {{"ql", qualityLevel}};
+            const EntityContext context(source, &target, env, Json{});
+            stacks = math::toStat(Expression(stacksJson.get<std::string>()).evaluate(context));
+          }
+        }
         target.addCondition(conditionId, stacks);
         const int32_t duration = effect.value("duration", 0);
         if (duration > 0) {
@@ -1144,14 +1389,7 @@ public:
         int32_t amount =
             static_cast<int32_t>(readVariantValue(effect.at("dice"), Variance::Random, rng));
         if (effect.contains("add")) {
-          const Json &add = effect.at("add");
-          if (add.is_number()) {
-            amount += add.get<int32_t>();
-          } else if (add.is_string()) {
-            const Json emptyEnv = Json::object();
-            const EntityContext context(source, &target, emptyEnv, Json{});
-            amount += math::toStat(Expression(add.get<std::string>()).evaluate(context));
-          }
+          amount += evaluateEffectAdd(source, &target, effect.at("add"), qualityLevel);
         }
         result.healingDone += target.modifyResource(hitPool, amount);
       } else if (kind == "temp_hp") {
@@ -1161,14 +1399,7 @@ public:
         int32_t amount =
             static_cast<int32_t>(readVariantValue(effect.at("dice"), Variance::Random, rng));
         if (effect.contains("add")) {
-          const Json &add = effect.at("add");
-          if (add.is_number()) {
-            amount += add.get<int32_t>();
-          } else if (add.is_string()) {
-            const Json emptyEnv = Json::object();
-            const EntityContext context(source, &target, emptyEnv, Json{});
-            amount += math::toStat(Expression(add.get<std::string>()).evaluate(context));
-          }
+          amount += evaluateEffectAdd(source, &target, effect.at("add"), qualityLevel);
         }
         target.addTemporaryHitPoints(amount);
       } else if (kind == "resist") {
@@ -1177,38 +1408,95 @@ public:
             target.addResistance(type.get<std::string>());
           }
         }
+      } else if (kind == "stat_bonus") {
+        const std::string stat = effect.value("stat", "");
+        if (stat.empty()) {
+          continue;
+        }
+        const int32_t value =
+            effect.contains("add")
+                ? evaluateEffectAdd(source, &target, effect.at("add"), qualityLevel)
+                : 0;
+        const int32_t duration = effect.value("duration", 0);
+        target.effects().addBonus(StatBonus{stat, value, duration, "effect"});
+        ++result.statBonusesApplied;
+      }
+
+      // Recurring (ongoing) effects: after the base effect resolves and
+      // *applies* (the attack hit / the save failed / it is unconditional),
+      // remember what to re-apply at the declared phase of the target's turn.
+      // The stored record is the `ongoing.effect` when given (the recurring
+      // part may differ from the initial one — an arrow deals 4d4 now and 2d4
+      // at the end of its next turn), else the base effect with `ongoing`
+      // stripped, so a re-resolution never re-registers.
+      if (applied && effect.contains("ongoing") && effect.at("ongoing").is_object()) {
+        const Json &ongoingJson = effect.at("ongoing");
+        OngoingEffect ongoing;
+        if (ongoingJson.contains("effect")) {
+          ongoing.effect = ongoingJson.at("effect");
+        } else {
+          ongoing.effect = effect;
+          ongoing.effect.erase("ongoing");
+        }
+        ongoing.phase = ongoingJson.value("at", "end_of_turn");
+        ongoing.remaining = ongoingJson.value("duration", 1);
+        ongoing.source = "effect";
+        target.effects().addOngoing(ongoing);
       }
     }
     return result;
   }
 
+  /// Evaluates an effect's `add` amount: a flat integer or a formula over the
+  /// acting entity's stats plus the casting check's quality level (`env.ql`).
+  /// Formula `add` lets a ruleset express quality-scaled effects ("2D6 + QLx2"
+  /// becomes @c dice 2d6 + @c add "env.ql * 2") without engine changes.
+  [[nodiscard]] int32_t evaluateEffectAdd(const DynamicEntity &source, const DynamicEntity *target,
+                                          const Json &add, int32_t qualityLevel) const {
+    if (add.is_number()) {
+      return add.get<int32_t>();
+    }
+    if (add.is_string()) {
+      const Json env = {{"ql", qualityLevel}};
+      const EntityContext context(source, target, env, Json{});
+      return math::toStat(Expression(add.get<std::string>()).evaluate(context));
+    }
+    return 0;
+  }
+
   /// Resolves structured effects using a fresh default RNG (convenience).
   [[nodiscard]] EffectsResult resolveEffects(DynamicEntity &source, DynamicEntity &target,
-                                             const Json &effects, const CheckParams &params) {
+                                             const Json &effects, const CheckParams &params,
+                                             int32_t qualityLevel = 0) {
     DefaultRandom rng;
-    return resolveEffects(source, target, effects, params, rng);
+    return resolveEffects(source, target, effects, params, rng, qualityLevel);
   }
 
   /// The outcome of a structured effect's saving throw.
   ///
   /// @par Why a template returning bool?
-  /// A save is just a threshold check: the target rolls `save.dice` (default
-  /// 1d20), adds its `save.stat`, and succeeds when the total is >= the DC.
-  /// The DC is a fixed number or a formula evaluated against the *source*
-  /// (the caster), so "8 + proficiency + ability modifier" style DCs are
-  /// expressed in the ruleset data rather than in C++. Returns true when the
+  /// A save is a threshold check: with `comparison` "ge" (default, D&D style)
+  /// the target rolls `save.dice` (default 1d20), adds its `save.stat`, and
+  /// succeeds when the total is >= the DC — the DC being a fixed number or a
+  /// formula evaluated against the *source* (the caster), so "8 + proficiency
+  /// + ability modifier" style DCs are expressed in data rather than in C++.
+  /// With `comparison` "le" (The Dark Eye's resistance) the target rolls the
+  /// bare die under stat + dc, where dc is a modifier (typically the caster's
+  /// quality level as a penalty, e.g. "-env.ql"). Returns true when the
   /// target saved.
   template <RandomNumberGenerator Rng>
   [[nodiscard]] bool resolveSave(const DynamicEntity &source, DynamicEntity &target,
-                                 const Json &save, const CheckParams &params, Rng &rng) {
-    int32_t dc = 10;
+                                 const Json &save, const CheckParams &params, Rng &rng,
+                                 int32_t qualityLevel = 0) {
+    const bool rollUnder = save.value("comparison", "ge") == "le";
+    int32_t dc = rollUnder ? 0 : 10;
     if (save.contains("dc")) {
       const Json &dcJson = save.at("dc");
       if (dcJson.is_number()) {
         dc = dcJson.get<int32_t>();
       } else if (dcJson.is_string()) {
-        const Json emptyEnv = Json::object();
-        const EntityContext context(source, &target, emptyEnv, Json{});
+        const Json env = {{"ql", qualityLevel}};
+        const EntityContext context(source, &target, env, Json{});
         dc = math::toStat(Expression(dcJson.get<std::string>()).evaluate(context));
       }
     }
@@ -1216,13 +1504,23 @@ public:
     CheckRecipe recipe;
     recipe.resolution = Resolution::Threshold;
     recipe.dice = DiceExpression(save.value("dice", "1d20"));
-    recipe.comparison = Comparison::GreaterEqual;
-    recipe.thresholdSource = ThresholdSource::Difficulty;
-    recipe.difficultyMode = DifficultyMode::ToThreshold;
-    if (!stat.empty()) {
-      recipe.bonusStats = {stat};
+    if (rollUnder) {
+      // The Dark Eye's resistance: roll the bare die under stat + dc, where
+      // dc is a modifier (the caster's QL applies a penalty, dc = "-env.ql").
+      recipe.comparison = Comparison::LessEqual;
+      recipe.thresholdSource = ThresholdSource::ActorStat;
+      recipe.thresholdStat = stat;
+      recipe.difficultyMode = DifficultyMode::ToStat;
+    } else {
+      // D&D style: roll d20 + stat against the DC (ToThreshold).
+      recipe.comparison = Comparison::GreaterEqual;
+      recipe.thresholdSource = ThresholdSource::Difficulty;
+      recipe.difficultyMode = DifficultyMode::ToThreshold;
+      if (!stat.empty()) {
+        recipe.bonusStats = {stat};
+      }
     }
-    CheckParams adjusted = params;
+    CheckParams adjusted = withConditionModifiers(target, nullptr, "save", params);
     adjusted.difficulty = dc;
     const CheckResult roll = resolveCheck(target, NullStatProvider{}, recipe, adjusted, rng);
     return roll.isSuccess;
@@ -1249,7 +1547,11 @@ public:
         recipe.bonusStats.push_back(stat.get<std::string>());
       }
     }
-    const CheckResult roll = resolveCheck(source, target, recipe, params, rng);
+    // The attacker's own conditions (a blinded caster attacks at disadvantage)
+    // and the target's "attacked" conditions (attacks against a blinded target
+    // gain advantage) both shape the roll.
+    const CheckParams adjusted = withConditionModifiers(source, &target, "attack", params);
+    const CheckResult roll = resolveCheck(source, target, recipe, adjusted, rng);
     return roll.isSuccess;
   }
 

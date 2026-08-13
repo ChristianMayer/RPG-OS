@@ -172,6 +172,22 @@ enum class DifficultyScale : int8_t {
   Difficult = -1 ///< halve the effective reference
 };
 
+/// Whether a check is rolled with advantage or disadvantage (roll twice, keep
+/// the better / worse total).
+///
+/// @par Why a per-call parameter rather than a recipe field?
+/// Advantage is a *situational* quality: it comes from active conditions (a
+/// blinded attacker attacks with disadvantage; attacks against a blinded
+/// defender gain advantage) or from a caller's ruling, never from the shape of
+/// the check itself. Keeping it in @c CheckParams means one recipe serves both
+/// the plain and the advantaged forms of the same check. When both advantage
+/// and disadvantage are present they cancel out and the check rolls once.
+enum class AdvantageMode : int8_t {
+  None,        ///< roll once (no advantage)
+  Advantage,   ///< roll twice, keep the higher total
+  Disadvantage ///< roll twice, keep the lower total
+};
+
 /// Per-call inputs shared by both modes.
 ///
 /// @par Why separate per-call inputs from the recipe?
@@ -191,6 +207,8 @@ struct CheckParams {
   /// reference). Only checks that opt in via @c CheckRecipe::difficultyMultiplier
   /// honour it; see @ref DifficultyScale.
   DifficultyScale difficultyScale{DifficultyScale::Average};
+  /// Advantage / disadvantage for this roll (see @ref AdvantageMode).
+  AdvantageMode advantage{AdvantageMode::None};
 };
 
 /// The Dark Eye quality level derived from leftover skill points:
@@ -298,6 +316,23 @@ template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
   int diceTotal = 0;
   for (const int die : result.rawDiceRolls) {
     diceTotal += die;
+  }
+
+  // Advantage / disadvantage: roll the whole expression a second time and
+  // keep the better (advantage) or worse (disadvantage) total, replacing the
+  // recorded dice so critical detection and callers see the kept roll.
+  if (params.advantage != AdvantageMode::None) {
+    const std::vector<int> second = dice.roll(rng);
+    int secondTotal = 0;
+    for (const int die : second) {
+      secondTotal += die;
+    }
+    const bool keepSecond = params.advantage == AdvantageMode::Advantage ? secondTotal > diceTotal
+                                                                         : secondTotal < diceTotal;
+    if (keepSecond) {
+      result.rawDiceRolls = second;
+      diceTotal = secondTotal;
+    }
   }
 
   // Additive checks sum bonus stats and the situational modifier into the

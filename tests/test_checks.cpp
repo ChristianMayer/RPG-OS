@@ -186,6 +186,35 @@ TEST_CASE("Additive threshold: natural 20 always hits, natural 1 always misses")
   CHECK(fumble.isCriticalFailure);
 }
 
+TEST_CASE("Additive threshold: advantage/disadvantage rolls twice and keeps the better roll") {
+  MockStats fighter;
+  fighter.values = {{"STR_mod", 0}, {"proficiency_bonus", 0}};
+  MockStats orc;
+  orc.values = {{"AC", 15}};
+  const CheckRecipe cfg = additiveConfig();
+
+  CheckParams adv;
+  adv.advantage = rpg_os::AdvantageMode::Advantage;
+  auto r1 = script({8, 17}); // 8 then 17; advantage keeps the higher total -> hit
+  const CheckResult hit = rpg_os::resolveCheck(fighter, orc, cfg, adv, r1);
+  CHECK(hit.isSuccess);
+  CHECK(hit.rawDiceRolls == std::vector<int>{17});
+
+  CheckParams dis;
+  dis.advantage = rpg_os::AdvantageMode::Disadvantage;
+  auto r2 = script({17, 8}); // disadvantage keeps the lower total -> miss
+  const CheckResult miss = rpg_os::resolveCheck(fighter, orc, cfg, dis, r2);
+  CHECK_FALSE(miss.isSuccess);
+  CHECK(miss.rawDiceRolls == std::vector<int>{8});
+
+  // A lone modifier consumes only one roll (no advantage).
+  const CheckParams plain;
+  auto r3 = script({12}); // 12 < 15 -> miss
+  const CheckResult single = rpg_os::resolveCheck(fighter, orc, cfg, plain, r3);
+  CHECK_FALSE(single.isSuccess);
+  CHECK(single.rawDiceRolls == std::vector<int>{12});
+}
+
 TEST_CASE("Additive threshold: uses params.difficulty as DC when no target stat") {
   MockStats rogue;
   rogue.values = {{"DEX_mod", 4}, {"proficiency_bonus", 3}};
