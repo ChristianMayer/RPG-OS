@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['thresholdsource_0',['ThresholdSource',['../namespacerpg__os.html#a031baa10011b869e066dd2a216ce55d4',1,'rpg_os']]]
+  ['resolution_0',['Resolution',['../namespacerpg__os.html#a95eaa793f5aa7a7b28d2851594d614dc',1,'rpg_os']]]
 ];

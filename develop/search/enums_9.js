@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['variance_0',['Variance',['../namespacerpg__os.html#ab870da3d65c79d59dad5920efc43dc65',1,'rpg_os']]]
+  ['successlevel_0',['SuccessLevel',['../namespacerpg__os.html#a0dc66a7ae36ef58a210fec7c99826700',1,'rpg_os']]]
 ];

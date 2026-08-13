@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['eventtype_0',['EventType',['../namespacerpg__os.html#af3060be908d09a6c80aa2f7eb65afc18',1,'rpg_os']]]
+  ['comparison_0',['Comparison',['../namespacerpg__os.html#a4ede194e1af239829344bcfe6bf5791f',1,'rpg_os']]],
+  ['criticalstyle_1',['CriticalStyle',['../namespacerpg__os.html#a475606cc248fcbc80000a0ceb3b8c448',1,'rpg_os']]]
 ];

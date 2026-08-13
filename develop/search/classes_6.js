@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['nullstatprovider_0',['NullStatProvider',['../structrpg__os_1_1NullStatProvider.html',1,'rpg_os']]]
+  ['gamesession_0',['GameSession',['../classrpg__os_1_1GameSession.html',1,'rpg_os']]]
 ];
