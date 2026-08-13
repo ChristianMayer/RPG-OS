@@ -213,7 +213,13 @@ mode:
   QL-scaled spells), and `saveDef.comparison` `"le"` models roll-under
   resistance (stat − QL) versus the D&D-style roll-over DC. A prose rule that
   is extracted into these structured fields is removed from the entry's
-  `description`, which the engine never reads.
+  `description`, which the engine never reads. The D&D ruleset's `data`
+  section carries only the machine-readable sections the engine consumes
+  (`creatures`, `spells`, `items`, `conditions`, `traits`, `poisons`,
+  `weapons`, `armor`); raw SRD reference text (rulebook chapters, class
+  features, magic items, glossary, species, backgrounds, feats) is *not*
+  embedded — it lives in the source `.local_ressources/DnD/` extraction and
+  is modeled as structured rules when the engine gains a mechanism for it.
 - Attribute ids are short uppercase codes (`COU`, `STR`); `name` is the human
   name used to derive C++ identifiers (`"Courage"` → `courage`).
 - Derived-stat `formula` strings use the restricted grammar: arithmetic
