@@ -172,6 +172,22 @@ enum class DifficultyScale : int8_t {
   Difficult = -1 ///< halve the effective reference
 };
 
+/// Whether a check is rolled with advantage or disadvantage (roll twice, keep
+/// the better / worse total).
+///
+/// @par Why a per-call parameter rather than a recipe field?
+/// Advantage is a *situational* quality: it comes from active conditions (a
+/// blinded attacker attacks with disadvantage; attacks against a blinded
+/// defender gain advantage) or from a caller's ruling, never from the shape of
+/// the check itself. Keeping it in @c CheckParams means one recipe serves both
+/// the plain and the advantaged forms of the same check. When both advantage
+/// and disadvantage are present they cancel out and the check rolls once.
+enum class AdvantageMode : int8_t {
+  None,        ///< roll once (no advantage)
+  Advantage,   ///< roll twice, keep the higher total
+  Disadvantage ///< roll twice, keep the lower total
+};
+
 /// Per-call inputs shared by both modes.
 ///
 /// @par Why separate per-call inputs from the recipe?
@@ -191,6 +207,16 @@ struct CheckParams {
   /// reference). Only checks that opt in via @c CheckRecipe::difficultyMultiplier
   /// honour it; see @ref DifficultyScale.
   DifficultyScale difficultyScale{DifficultyScale::Average};
+  /// Advantage / disadvantage for this roll (see @ref AdvantageMode).
+  AdvantageMode advantage{AdvantageMode::None};
+  /// Bonus dice rolled in addition to the check's dice and added to the
+  /// additive total (a D&D Bless die, a bane penalty die, ...). Aggregated by
+  /// the engine from active conditions / effects / traits; empty means none.
+  std::vector<DiceExpression> bonusDice{};
+  /// Whether the check is automatically a failure (e.g. "you automatically
+  /// fail Strength and Dexterity saving throws"). When true no dice are
+  /// rolled and the result is a failure.
+  bool autoFail{false};
 };
 
 /// The Dark Eye quality level derived from leftover skill points:
@@ -300,12 +326,36 @@ template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
     diceTotal += die;
   }
 
-  // Additive checks sum bonus stats and the situational modifier into the
-  // rolled total; roll-under checks compare the bare roll.
+  // Advantage / disadvantage: roll the whole expression a second time and
+  // keep the better (advantage) or worse (disadvantage) total, replacing the
+  // recorded dice so critical detection and callers see the kept roll.
+  if (params.advantage != AdvantageMode::None) {
+    const std::vector<int> second = dice.roll(rng);
+    int secondTotal = 0;
+    for (const int die : second) {
+      secondTotal += die;
+    }
+    const bool keepSecond = params.advantage == AdvantageMode::Advantage ? secondTotal > diceTotal
+                                                                         : secondTotal < diceTotal;
+    if (keepSecond) {
+      result.rawDiceRolls = second;
+      diceTotal = secondTotal;
+    }
+  }
+
+  // Additive checks sum bonus stats, bonus dice, and the situational modifier
+  // into the rolled total; roll-under checks compare the bare roll.
   int total = diceTotal;
   if (recipe.comparison == Comparison::GreaterEqual) {
     for (const std::string &stat : recipe.bonusStats) {
       total += static_cast<int32_t>(actor.getStat(stat));
+    }
+    for (const DiceExpression &bonus : params.bonusDice) {
+      const std::vector<int> rolls = bonus.roll(rng);
+      result.rawDiceRolls.insert(result.rawDiceRolls.end(), rolls.begin(), rolls.end());
+      for (const int die : rolls) {
+        total += die;
+      }
     }
     total += params.situationalModifier;
   }
@@ -523,6 +573,13 @@ template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
 [[nodiscard]] constexpr CheckResult resolveCheck(const Actor &actor, const Target &target,
                                                  const CheckRecipe &recipe,
                                                  const CheckParams &params, Rng &rng) {
+  // An automatic failure ("you automatically fail Strength and Dexterity
+  // saving throws") fails the check outright without consuming any RNG.
+  if (params.autoFail) {
+    CheckResult failed;
+    failed.isSuccess = false;
+    return failed;
+  }
   switch (recipe.resolution) {
   case Resolution::Threshold:
     return resolveThresholdCheck(actor, target, recipe, params, rng);

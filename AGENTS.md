@@ -26,6 +26,10 @@ Both modes share one header-only, template-based core
 
 ## Ground rules
 
+0. **Never commit on the user's behalf.** The human always reviews and commits
+   their own work (`commit.gpgsign=true`; a human quality check is required
+   before any commit). Leave changes staged or in the working tree and hand
+   the commit to the user with a clear summary of what is staged.
 1. **Test-driven development (TDD) is mandatory.** Write a failing test first
    (red), implement the minimal code to pass (green), then refactor. Never add
    functionality without a test that exercises it. Keep the test suite green
@@ -154,8 +158,68 @@ mode:
   level). The bookkeeping layer (inventory, equipment, conditions with
   durations, advancement, rests, curses) is universal and data-driven;
   `data.conditions` may carry `stat_modifiers` (per-stack stat changes) and
-  `data.curses` is an `afflictionRecord`-shaped section, so everything a
-  rulebook covers is modelable without engine changes.
+  `check_modifiers` (per-check flat bonuses, advantage/disadvantage,
+  auto-failure, and/or bonus dice, matched by scope — a check type id, a
+  wildcard prefix, a category keyword `attack`/`save`/`check`/`skill`, or
+  `all` — and by side: the carrier's own checks or checks *against* the
+  carrier), and `data.curses` is an
+  `afflictionRecord`-shaped section, so everything a rulebook covers is
+  modelable without engine changes. Conditions and traits may also carry
+  `restrictions` (what the carrier *cannot* do — `no_action`,
+  `no_bonus_action`, `no_reaction`, `no_move`, `no_speak`, `no_concentration`,
+  `no_cast`; queried via `DynamicEntity::hasRestriction`/`restrictions` and
+  *enforced* by `RulesetEngine::actionAllowed` in `castSpell` and the combat
+  helpers, which refuse the action before any resource is spent) and
+  `capabilities` (what it *can* do — movement/senses like `swim`, `climb`,
+  `breath_water`, `darkvision`, `see_invisible`; queried via
+  `DynamicEntity::hasCapability`/`capabilities`). Casting requires the
+  standard action, so `no_action` also blocks `cast` (an explicit `no_cast`
+  is reported as the reason when present). The shipped D&D conditions carry
+  these restrictions (incapacitated blocks action/bonus/reaction; paralyzed,
+  petrified, unconscious also block move/speak/concentration; restrained and
+  grappled block move). The engine never makes a
+  caller-side choice for the caller: a spell effect of `kind` `options`
+  declares an option group (`id` + `options` array of effect records, each
+  recursively resolvable including its own save/attack/ongoing logic). A
+  required group without a selection is reported on the result's
+  `choicesRequired` (nothing applied) so the caller knows a choice is pending;
+  an `optional` group is skipped silently; with a selection (a map of group id
+  → option index passed to `castSpell`/`resolveEffects`) the chosen option
+  resolves. Inherent, always-on creature abilities are
+  `data.traits`: trait definitions (same `stat_modifiers`/`check_modifiers`
+  vocabulary as conditions, plus an `effects` array resolved once when a
+  creature carrying the trait is created — resistances, recurring
+  regeneration) referenced by id from a creature's `traits` array,
+  applied to every check the creature makes or is the target of. Every
+  creature trait in the shipped rulesets is a trait id (no prose strings left
+  in creature `traits` arrays): movement/senses become `capabilities`,
+  unconditional save/attack edges become `check_modifiers`, regeneration and
+  always-on conditions become `effects`, and anything the engine cannot
+  enforce keeps its full prose as the trait's `description` — the engine
+  exposes `hasTrait`/`traits()` so a caller takes note of the rule while the
+  engine enforces what it can. Spells carry
+  a machine-readable `effects`
+  array (`effectRecord` in the schema: damage/condition/heal/temp_hp/resist/
+  stat_bonus, each optionally gated by a `save` or an `attack`; `stat_bonus`
+  applies a temporary `add` to the target's effective `stat` for `duration`
+  ticks; `bonus_die` grants a temporary die (`dice` + `scope`) rolled and
+  added to matching checks — D&D's Bless; any effect may carry an `ongoing`
+  object (`at` `start_of_turn`/`
+  end_of_turn`, `duration`, optional nested `effect`) to re-apply itself on
+  the target's turn — per-round poison damage, regeneration, an arrow's
+  4d4-now-2d4-later). Effect dice, `add`
+  amounts, condition `stacks`, and roll-under save `dc`s are formulas that may
+  reference the casting check's quality level as `env.ql` (The Dark Eye's
+  QL-scaled spells), and `saveDef.comparison` `"le"` models roll-under
+  resistance (stat − QL) versus the D&D-style roll-over DC. A prose rule that
+  is extracted into these structured fields is removed from the entry's
+  `description`, which the engine never reads. The D&D ruleset's `data`
+  section carries only the machine-readable sections the engine consumes
+  (`creatures`, `spells`, `items`, `conditions`, `traits`, `poisons`,
+  `weapons`, `armor`); raw SRD reference text (rulebook chapters, class
+  features, magic items, glossary, species, backgrounds, feats) is *not*
+  embedded — it lives in the source `.local_ressources/DnD/` extraction and
+  is modeled as structured rules when the engine gains a mechanism for it.
 - Attribute ids are short uppercase codes (`COU`, `STR`); `name` is the human
   name used to derive C++ identifiers (`"Courage"` → `courage`).
 - Derived-stat `formula` strings use the restricted grammar: arithmetic

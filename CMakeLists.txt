@@ -27,6 +27,43 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# --------------------------------------------------------------------------
+# Required C++23 library support
+#
+# The bookkeeping API (engine.hpp, game_session.hpp, ...) is built on
+# std::expected / std::unexpected, so a C++23 <expected> is a hard
+# requirement. Not every "C++23-capable" compiler actually provides it:
+#   * GCC >= 13 (libstdc++ >= 13)                -> OK
+#   * Clang with libc++ >= 17                    -> OK (macOS default; on Linux
+#     pass -stdlib=libc++, as the CI Clang job does)
+#   * Clang >= 19 with libstdc++ >= 13           -> OK
+#   * Clang 17/18 with libstdc++ 13              -> FAILS: libstdc++ 13 gates
+#     <expected> behind __cpp_concepts >= 202002L, but clang 17/18 predefine
+#     __cpp_concepts as 201907L, so the whole header is empty.
+# Check at configure time so a misconfigured toolchain fails with a clear
+# message instead of a wall of "no template named 'expected'" errors.
+# --------------------------------------------------------------------------
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+#include <expected>
+int main() {
+  std::expected<int, int> value{42};
+  std::unexpected<int> error{1};
+  (void)error;
+  return value.value() != 42;
+}
+" RPG_OS_HAVE_STD_EXPECTED)
+if(NOT RPG_OS_HAVE_STD_EXPECTED)
+  message(FATAL_ERROR
+    "C++23 <expected> (std::expected/std::unexpected) is required by the "
+    "bookkeeping API but is not provided by this toolchain. Use GCC >= 13 "
+    "(libstdc++ >= 13), or Clang with libc++ >= 17 (Apple clang on macOS, or "
+    "Linux clang with -stdlib=libc++). Note that clang 17/18 with GNU libstdc++ "
+    "13 does NOT work: libstdc++ 13 hides <expected> behind __cpp_concepts >= "
+    "202002L, which clang 17/18 report as 201907L; use clang >= 19 with "
+    "libstdc++ instead.")
+endif()
+
 # Keep binaries out of the source tree.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

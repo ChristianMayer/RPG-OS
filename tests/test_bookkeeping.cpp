@@ -25,6 +25,7 @@
 #include <rpg_os/core/inventory.hpp>
 #include <rpg_os/core/money.hpp>
 #include <rpg_os/core/spellbook.hpp>
+#include <rpg_os/universal/combat.hpp>
 #include <rpg_os/universal/engine.hpp>
 #include <rpg_os/universal/game_session.hpp>
 #include <string>
@@ -114,6 +115,163 @@ TEST_CASE("bookkeeping: EffectTimeline ticks and expires (phase 0)") {
   timeline.add(rpg_os::ActiveEffect{"blessed", 1, 0, ""});
   CHECK(timeline.tick() == 0);
   CHECK(timeline.has("blessed"));
+}
+
+TEST_CASE("bookkeeping: stat bonuses tick, expire, and survive serialization (phase 0)") {
+  rpg_os::EffectTimeline timeline;
+  timeline.addBonus(rpg_os::StatBonus{"STR", 3, 2, "spell"});
+  timeline.addBonus(rpg_os::StatBonus{"PER", 5, 0, ""});
+  CHECK(timeline.bonusFor("STR") == 3);
+  CHECK(timeline.bonusFor("PER") == 5);
+  CHECK(timeline.bonusFor("DEX") == 0);
+
+  // A permanent bonus survives ticks; the timed one ticks down.
+  CHECK(timeline.tick() == 0); // STR 2 -> 1
+  CHECK(timeline.bonusFor("STR") == 3);
+  CHECK(timeline.bonusFor("PER") == 5);
+  CHECK(timeline.tick() == 1); // STR 1 -> 0: expires
+  CHECK(timeline.bonusFor("STR") == 0);
+  CHECK(timeline.bonusFor("PER") == 5);
+
+  // Serialization round-trip preserves the remaining bonuses.
+  rpg_os::Json saved;
+  timeline.toJson(saved);
+  rpg_os::EffectTimeline restored;
+  restored.fromJson(saved);
+  CHECK(restored.bonusFor("PER") == 5);
+  CHECK(restored.bonusFor("STR") == 0);
+}
+
+TEST_CASE("bookkeeping: stat_bonus effects apply a temporary stat modifier") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("STR", 12);
+  target.setBaseAttribute("HitPoints_Max", 10);
+  target.loadFromArchetype(rpg_os::Json::object());
+
+  // A flat `add` raises the effective stat.
+  const rpg_os::Json flat = rpg_os::Json::parse(R"json([
+    {"kind": "stat_bonus", "stat": "STR", "add": 3}
+  ])json");
+  auto rng = script({});
+  const auto result = dnd.resolveEffects(caster, target, flat, CheckParams{}, rng);
+  CHECK(result.statBonusesApplied == 1);
+  CHECK(target.getEffectiveStat("STR") == 15);
+
+  // A QL-scaled `add` (The Dark Eye style buff) raises it further.
+  const rpg_os::Json ql = rpg_os::Json::parse(R"json([
+    {"kind": "stat_bonus", "stat": "STR", "add": "env.ql * 2"}
+  ])json");
+  auto rng2 = script({});
+  (void)dnd.resolveEffects(caster, target, ql, CheckParams{}, rng2, 3);
+  CHECK(target.getEffectiveStat("STR") == 21); // 12 + 3 + 6
+}
+
+TEST_CASE("bookkeeping: recurring effects re-apply each turn and expire") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("HitPoints_Max", 30);
+  target.loadFromArchetype(rpg_os::Json::object());
+
+  // 2d4 Acid now, then 2d4 again at the end of the target's next turn.
+  const rpg_os::Json effects = rpg_os::Json::parse(R"json([
+    {"kind": "damage", "dice": "2d4", "type": "Acid",
+     "ongoing": {"at": "end_of_turn", "duration": 1}}
+  ])json");
+  auto rng1 = script({1, 1}); // initial 2d4 = 2
+  const auto first = dnd.resolveEffects(caster, target, effects, CheckParams{}, rng1);
+  CHECK(first.damageDealt == 2);
+  CHECK(target.resource("HP") == 28);
+
+  // End of the target's turn: the recurring effect fires once more (2d4 = 2).
+  auto rng2 = script({1, 1});
+  dnd.processOngoing(target, "end_of_turn", rng2);
+  CHECK(target.resource("HP") == 26);
+
+  // Next turn: the recurring effect has expired; no further damage.
+  auto rng3 = script({});
+  dnd.processOngoing(target, "end_of_turn", rng3);
+  CHECK(target.resource("HP") == 26);
+}
+
+TEST_CASE("bookkeeping: runTurn fires recurring effects at the declared phase") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("HitPoints_Max", 30);
+  target.loadFromArchetype(rpg_os::Json::object());
+
+  // A start-of-turn recurring heal (regeneration-style).
+  const rpg_os::Json effects = rpg_os::Json::parse(R"json([
+    {"kind": "heal", "dice": "1d6", "ongoing": {"at": "start_of_turn", "duration": 1}}
+  ])json");
+  // Drop the target low first so heals have room to apply.
+  (void)target.modifyResource("HP", -10);
+  auto rng1 = script({2}); // initial heal 2
+  const auto first = dnd.resolveEffects(caster, target, effects, CheckParams{}, rng1);
+  CHECK(first.healingDone == 2);
+  CHECK(target.resource("HP") == 22); // 20 + 2
+
+  // A runTurn fires the start-of-turn recurring heal once more (4).
+  (void)target.modifyResource("HP", -10); // down to 12
+  auto rng2 = script({4});
+  dnd.runTurn(target, rng2);
+  CHECK(target.resource("HP") == 16); // 12 + 4
+
+  // The second runTurn has no recurring heal left.
+  auto rng3 = script({});
+  dnd.runTurn(target, rng3);
+  CHECK(target.resource("HP") == 16);
+}
+
+TEST_CASE("bookkeeping: ongoing effects can re-apply a different effect (acid arrow)") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  caster.setBaseAttribute("INT_mod", 4);
+  caster.setBaseAttribute("proficiency_bonus", 2);
+  DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("AC", 15);
+  target.setBaseAttribute("HitPoints_Max", 30);
+  target.loadFromArchetype(rpg_os::Json::object());
+
+  // 4d4 Acid on a hit, then 2d4 Acid at the end of the target's next turn.
+  const rpg_os::Json effects = rpg_os::Json::parse(R"json([
+    {"kind": "damage", "dice": "4d4", "type": "Acid",
+     "attack": {"bonus_stats": ["INT_mod", "proficiency_bonus"], "target_stat": "AC"},
+     "ongoing": {"at": "end_of_turn", "duration": 1,
+                 "effect": {"kind": "damage", "dice": "2d4", "type": "Acid"}}}
+  ])json");
+  // Hit: 4d4 all 1s = 4, then the attack d20 15 + 4 + 2 = 21 >= AC 15.
+  auto rng1 = script({1, 1, 1, 1, 15});
+  const auto hit = dnd.resolveEffects(caster, target, effects, CheckParams{}, rng1);
+  CHECK(hit.damageDealt == 4);
+  CHECK(target.resource("HP") == 26);
+  // End of turn: the recurring 2d4 fires (all 1s = 2).
+  auto rng2 = script({1, 1});
+  dnd.processOngoing(target, "end_of_turn", rng2);
+  CHECK(target.resource("HP") == 24);
+
+  // A miss registers no recurring damage: fresh target, miss the attack.
+  DynamicEntity target2(ruleset, "target2");
+  target2.setBaseAttribute("AC", 15);
+  target2.setBaseAttribute("HitPoints_Max", 30);
+  target2.loadFromArchetype(rpg_os::Json::object());
+  auto rng3 = script({1, 1, 1, 1, 5}); // 4d4 rolled, attack 5 + 6 = 11 < 15 miss
+  const auto miss = dnd.resolveEffects(caster, target2, effects, CheckParams{}, rng3);
+  CHECK(miss.damageDealt == 0);
+  auto rng4 = script({});
+  dnd.processOngoing(target2, "end_of_turn", rng4);
+  CHECK(target2.resource("HP") == 30); // no recurring damage on a miss
 }
 
 TEST_CASE("bookkeeping: Spellbook knows, prepares, and tracks slots (phase 0)") {
@@ -308,6 +466,71 @@ TEST_CASE("bookkeeping: a condition's stat modifiers affect effective stats (pha
   CHECK(sheet.getEffectiveStat("STR") == 10);     // -2 per stack
   engine.applyCondition(sheet, "weakened", 2, 0); // 3 stacks total
   CHECK(sheet.getEffectiveStat("STR") == 6);      // 12 - 2*3
+}
+
+TEST_CASE("bookkeeping: a condition's check modifiers shape the carrier's checks") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10}],
+    "derived_stats": [{"id": "STR_mod", "name": "Strength Mod", "formula": "floor((STR - 10) / 2)"}],
+    "check_types": {
+      "mini_attack": {
+        "resolution": "threshold", "dice": "1d20", "comparison": "ge",
+        "threshold_source": "difficulty", "bonus_stats": ["STR_mod"]
+      }
+    },
+    "data": {
+      "conditions": [
+        {
+          "id": "debilitated", "name": "Debilitated",
+          "check_modifiers": [
+            {"scope": "all", "bonus": -2, "per_stack": true},
+            {"scope": "mini_attack", "mode": "disadvantage"}
+          ]
+        },
+        {
+          "id": "exposed", "name": "Exposed",
+          "check_modifiers": [
+            {"scope": "mini_attack", "mode": "advantage", "side": "target"}
+          ]
+        }
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  const auto &ruleset = engine.ruleset();
+  DynamicEntity fighter(ruleset, "fighter");
+  fighter.setBaseAttribute("STR", 12);
+  DynamicEntity other(ruleset, "other");
+
+  CheckParams params;
+  params.difficulty = 15; // DC 15
+
+  // No conditions: 10 + 1 = 11 < 15 -> miss (one d20 consumed).
+  auto r1 = script({10});
+  CHECK_FALSE(engine.executeCheck("mini_attack", fighter, nullptr, params, r1).isSuccess);
+
+  // Debilitated 1 stack: -2 bonus AND disadvantage. Disadvantage keeps 6,
+  // 6 + 1 - 2 = 5 -> miss; the kept roll is recorded.
+  engine.applyCondition(fighter, "debilitated", 1, 0);
+  auto r2 = script({14, 6});
+  const auto poor = engine.executeCheck("mini_attack", fighter, nullptr, params, r2);
+  CHECK_FALSE(poor.isSuccess);
+  CHECK(poor.rawDiceRolls == std::vector<int>{6});
+
+  // Debilitated 2 stacks: the per-stack bonus grows to -4.
+  // Disadvantage keeps 19; 19 + 1 - 4 = 16 >= 15 -> hit.
+  engine.applyCondition(fighter, "debilitated", 1, 0);
+  auto r3 = script({20, 19});
+  CHECK(engine.executeCheck("mini_attack", fighter, nullptr, params, r3).isSuccess);
+
+  // Target-side: when the *other* entity is Exposed, attacks against it gain
+  // advantage for the attacker (18 + 1 = 19 -> hit).
+  engine.removeCondition(fighter, "debilitated");
+  engine.applyCondition(other, "exposed", 1, 0);
+  auto r4 = script({7, 18});
+  CHECK(engine.executeCheck("mini_attack", fighter, &other, params, r4).isSuccess);
 }
 
 TEST_CASE("bookkeeping: prepared pool casting spends the resource (phase 4)") {
@@ -781,4 +1004,849 @@ TEST_CASE("bookkeeping: resolveEffects applies resistances and conditions (magic
   DynamicEntity restored(ruleset, "holder");
   restored.fromJson(saved);
   CHECK(restored.hasResistance("Ranged"));
+}
+
+TEST_CASE("bookkeeping: D&D condition check modifiers shape attack rolls both ways") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity fighter(ruleset, "fighter");
+  fighter.setBaseAttribute("STR_mod", 3);
+  fighter.setBaseAttribute("proficiency_bonus", 2);
+  DynamicEntity orc(ruleset, "orc");
+  orc.setBaseAttribute("AC", 15);
+  const CheckParams params;
+
+  // Blinded fighter: its own attack rolls have Disadvantage.
+  dnd.applyCondition(fighter, "blinded", 1, 0);
+  auto rng1 = script({8, 17}); // would hit on 17, but disadvantage keeps 8
+  const auto poor = dnd.executeCheck("dnd5e_attack_melee", fighter, &orc, params, rng1);
+  CHECK_FALSE(poor.isSuccess);
+  CHECK(poor.rawDiceRolls == std::vector<int>{8});
+
+  // The orc is blinded: attacks against it have Advantage for the fighter.
+  DynamicEntity clean(ruleset, "clean");
+  clean.setBaseAttribute("STR_mod", 3);
+  clean.setBaseAttribute("proficiency_bonus", 2);
+  dnd.applyCondition(orc, "blinded", 1, 0);
+  auto rng2 = script({8, 17}); // advantage keeps 17 -> 17 + 5 = 22 >= 15 hit
+  const auto good = dnd.executeCheck("dnd5e_attack_melee", clean, &orc, params, rng2);
+  CHECK(good.isSuccess);
+  CHECK(good.rawDiceRolls == std::vector<int>{17});
+}
+
+TEST_CASE("bookkeeping: TDE spell effects resolve through castSpell with the cast QL") {
+  RulesetEngine tde;
+  REQUIRE(tde.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  const auto &ruleset = tde.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  // High casting attributes so any 3d20 spell check cannot overshoot.
+  caster.setBaseAttribute("SGC", 15);
+  caster.setBaseAttribute("INT", 15);
+  caster.setBaseAttribute("CON", 15);
+  caster.setBaseAttribute("COU", 15);
+  caster.setBaseAttribute("CHA", 15);
+  caster.loadFromArchetype(rpg_os::Json::object()); // AE pool = 20 + INT = 35
+  DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("CON", 12); // LifePoints_Max = 5 + 2*12 = 29
+  target.loadFromArchetype(rpg_os::Json::object());
+
+  // fulminictus: cast pool check rolls 3d20 (10,10,10 all pass -> QL 1), then
+  // damage 2d6 (1,1 = 2) + env.ql * 2 (QL 1 -> 2) = 4; LP 29 -> 25.
+  auto rng = script({10, 10, 10, 1, 1});
+  const auto result = tde.castSpell("fulminictus", caster, &target, CheckParams{}, rng);
+  CHECK(result.cast);
+  CHECK(result.appliedDamage == 4);
+  CHECK(target.resource("LP") == 25);
+
+  // blinding_flash: cast pool check (10,10,10), then the target resists the
+  // Confusion with Spirit (roll-under Spirit minus QL 1). A roll of 3 <= 11
+  // resists -> no condition; a roll above applies it.
+  DynamicEntity victim(ruleset, "victim");
+  victim.setBaseAttribute("Spirit", 12);
+  victim.loadFromArchetype(rpg_os::Json::object());
+  auto rngResist = script({10, 10, 10, 3});
+  const auto saved = tde.castSpell("blinding_flash", caster, &victim, CheckParams{}, rngResist);
+  CHECK(saved.cast);
+  CHECK_FALSE(victim.hasCondition("confusion"));
+
+  DynamicEntity victim2(ruleset, "victim2");
+  victim2.setBaseAttribute("Spirit", 12);
+  victim2.loadFromArchetype(rpg_os::Json::object());
+  auto rngFail = script({10, 10, 10, 12});
+  const auto hit = tde.castSpell("blinding_flash", caster, &victim2, CheckParams{}, rngFail);
+  CHECK(hit.cast);
+  CHECK(victim2.hasCondition("confusion"));
+  CHECK(victim2.conditionStacks("confusion") == 1);
+}
+
+TEST_CASE("bookkeeping: TDE buff spells apply stat bonuses via castSpell") {
+  RulesetEngine tde;
+  REQUIRE(tde.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  const auto &ruleset = tde.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  caster.setBaseAttribute("SGC", 15);
+  caster.setBaseAttribute("INT", 15);
+  caster.setBaseAttribute("DEX", 15);
+  caster.setBaseAttribute("COU", 15);
+  caster.setBaseAttribute("CHA", 15);
+  caster.loadFromArchetype(rpg_os::Json::object());
+  DynamicEntity ally(ruleset, "ally");
+  ally.setBaseAttribute("perception", 5);
+  ally.loadFromArchetype(rpg_os::Json::object());
+
+  // eagle_eye: cast pool check 3d20 (10,10,10 pass -> QL 1), then the
+  // stat_bonus effect adds env.ql + 3 = 4 to Perception.
+  auto rng = script({10, 10, 10});
+  const auto result = tde.castSpell("eagle_eye", caster, &ally, CheckParams{}, rng);
+  CHECK(result.cast);
+  CHECK(ally.getEffectiveStat("perception") == 9); // 5 + 4
+  // The bonus is a temporary effect: it appears in the sheet's timeline and
+  // survives serialization.
+  CHECK(ally.effects().bonusFor("perception") == 4);
+  rpg_os::Json saved;
+  ally.toJson(saved);
+  DynamicEntity restored(tde.ruleset(), "ally");
+  restored.fromJson(saved);
+  CHECK(restored.getEffectiveStat("perception") == 9);
+}
+
+TEST_CASE("bookkeeping: creature traits contribute check and stat modifiers") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10},
+                   {"id": "WIS", "name": "Wisdom", "min": 1, "max": 30, "default": 10}],
+    "derived_stats": [{"id": "WIS_mod", "name": "Wisdom Mod", "formula": "floor((WIS - 10) / 2)"}],
+    "check_types": {
+      "mini_perception": {
+        "resolution": "threshold", "dice": "1d20", "comparison": "ge",
+        "threshold_source": "difficulty", "bonus_stats": ["WIS_mod"]
+      }
+    },
+    "data": {
+      "traits": [
+        {"id": "keen_smell", "name": "Keen Smell",
+         "check_modifiers": [{"scope": "all", "mode": "advantage"}]},
+        {"id": "mighty", "name": "Mighty",
+         "stat_modifiers": [{"stat": "STR", "type": "add", "value": 2}]}
+      ],
+      "creatures": [
+        {"id": "wolf", "name": "Wolf", "traits": ["keen_smell", "mighty"],
+         "attributes": {"STR": 12, "WIS": 12}}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  auto wolf = engine.createCreature("wolf");
+  REQUIRE(wolf != nullptr);
+  CHECK(wolf->hasTrait("keen_smell"));
+  CHECK(wolf->hasTrait("mighty"));
+  CHECK_FALSE(wolf->hasTrait("nope"));
+
+  // The trait's stat modifier raises the effective stat.
+  CHECK(wolf->getEffectiveStat("STR") == 14);
+
+  // The trait's check modifier gives advantage: roll twice, keep the higher
+  // (17 + WIS_mod 1 = 18 >= DC 15 -> success).
+  CheckParams params;
+  params.difficulty = 15;
+  auto rng = script({3, 17});
+  const auto result = engine.executeCheck("mini_perception", *wolf, nullptr, params, rng);
+  CHECK(result.isSuccess);
+  CHECK(result.rawDiceRolls == std::vector<int>{17});
+
+  // Traits survive serialization.
+  rpg_os::Json saved;
+  wolf->toJson(saved);
+  DynamicEntity restored(engine.ruleset(), "wolf");
+  restored.fromJson(saved);
+  CHECK(restored.hasTrait("keen_smell"));
+  CHECK(restored.getEffectiveStat("STR") == 14);
+}
+
+TEST_CASE("bookkeeping: migrated D&D creature traits apply via the engine") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  auto wolf = dnd.createCreature("wolf");
+  REQUIRE(wolf != nullptr);
+  CHECK(wolf->hasTrait("pack_tactics"));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity orc(ruleset, "orc");
+  orc.setBaseAttribute("AC", 15);
+  CheckParams params;
+
+  // Pack Tactics gives Advantage on attack rolls (wolf STR 14 -> mod +2):
+  // roll twice, keep 17; 17 + 2 = 19 >= AC 15.
+  auto rng = script({3, 17});
+  const auto hit = dnd.executeCheck("dnd5e_attack_melee", *wolf, &orc, params, rng);
+  CHECK(hit.isSuccess);
+  CHECK(hit.rawDiceRolls == std::vector<int>{17});
+
+  // Without the trait, the same roll misses (3 + 2 = 5 < 15).
+  wolf->removeTrait("pack_tactics");
+  auto rng2 = script({3});
+  const auto miss = dnd.executeCheck("dnd5e_attack_melee", *wolf, &orc, params, rng2);
+  CHECK_FALSE(miss.isSuccess);
+}
+
+TEST_CASE("bookkeeping: bonus_die effects add a die to matching checks") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  DynamicEntity fighter(ruleset, "fighter");
+  fighter.setBaseAttribute("STR_mod", 3);
+  fighter.setBaseAttribute("proficiency_bonus", 2);
+  DynamicEntity orc(ruleset, "orc");
+  orc.setBaseAttribute("AC", 15);
+
+  // Bless-like: a +1d4 bonus die on attack checks, applied to the roller.
+  const rpg_os::Json effects = rpg_os::Json::parse(R"json([
+    {"kind": "bonus_die", "dice": "1d4", "scope": "attack", "duration": 0}
+  ])json");
+  auto rng0 = script({});
+  (void)dnd.resolveEffects(caster, fighter, effects, CheckParams{}, rng0);
+  CHECK(fighter.effects().bonusDice().size() == 1);
+
+  // d20 8 + 3 + 2 = 13 would miss, but the bonus 1d4 rolls 4 -> 17 >= AC 15.
+  auto rng = script({8, 4});
+  const auto hit = dnd.executeCheck("dnd5e_attack_melee", fighter, &orc, CheckParams{}, rng);
+  CHECK(hit.isSuccess);
+  CHECK(hit.rawDiceRolls == std::vector<int>{8, 4});
+
+  // The bonus die is scoped: a non-attack check does not roll it.
+  DynamicEntity other(ruleset, "other");
+  other.setBaseAttribute("STR_mod", 3);
+  other.setBaseAttribute("proficiency_bonus", 2);
+  CheckParams saveParams;
+  saveParams.difficulty = 15;
+  auto rng2 = script({8});
+  const auto save = dnd.executeCheck("dnd5e_save_str", other, nullptr, saveParams, rng2);
+  CHECK_FALSE(save.isSuccess); // 8 + 5 = 13 < DC 15
+  CHECK(save.rawDiceRolls == std::vector<int>{8});
+}
+
+TEST_CASE("bookkeeping: auto_fail check modifiers fail matching checks") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10}],
+    "derived_stats": [{"id": "STR_mod", "name": "Str Mod", "formula": "floor((STR - 10) / 2)"}],
+    "check_types": {
+      "save_str": {"resolution": "threshold", "dice": "1d20", "comparison": "ge",
+                   "threshold_source": "difficulty", "bonus_stats": ["STR_mod"]},
+      "check_con": {"resolution": "threshold", "dice": "1d20", "comparison": "ge",
+                    "threshold_source": "difficulty", "bonus_stats": ["STR_mod"]}
+    },
+    "data": {
+      "conditions": [
+        {"id": "paralyzed", "name": "Paralyzed",
+         "check_modifiers": [{"scope": "save_str", "mode": "auto_fail"}]}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  const auto &ruleset = engine.ruleset();
+  DynamicEntity hero(ruleset, "hero");
+  hero.setBaseAttribute("STR", 12);
+  engine.applyCondition(hero, "paralyzed", 1, 0);
+
+  CheckParams params;
+  params.difficulty = 15;
+  // The STR save is auto-failed without rolling (RNG index stays 0).
+  auto rng1 = script({20});
+  const auto failed = engine.executeCheck("save_str", hero, nullptr, params, rng1);
+  CHECK_FALSE(failed.isSuccess);
+  CHECK(rng1.idx == 0);
+
+  // An unrelated check is unaffected.
+  auto rng2 = script({20});
+  const auto ok = engine.executeCheck("check_con", hero, nullptr, params, rng2);
+  CHECK(ok.isSuccess);
+}
+
+TEST_CASE("bookkeeping: creature trait effects apply at creation") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10}],
+    "data": {
+      "traits": [
+        {"id": "fire_resistant", "name": "Fire Resistant",
+         "effects": [{"kind": "resist", "types": ["Fire"]}]}
+      ],
+      "creatures": [
+        {"id": "salamander", "name": "Salamander", "traits": ["fire_resistant"],
+         "attributes": {"STR": 12}}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  auto salamander = engine.createCreature("salamander");
+  REQUIRE(salamander != nullptr);
+  CHECK(salamander->hasTrait("fire_resistant"));
+  // The trait's resist effect was applied when the creature was created.
+  CHECK(salamander->hasResistance("Fire"));
+}
+
+TEST_CASE("bookkeeping: bless grants bonus dice on attack and save checks") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  DynamicEntity ally(ruleset, "ally");
+  ally.setBaseAttribute("STR_mod", 3);
+  ally.setBaseAttribute("proficiency_bonus", 2);
+  DynamicEntity orc(ruleset, "orc");
+  orc.setBaseAttribute("AC", 15);
+
+  auto rng0 = script({});
+  const auto cast = dnd.castSpell("bless", caster, &ally, CheckParams{}, rng0);
+  CHECK(cast.cast);
+  CHECK(ally.effects().bonusDice().size() == 2);
+
+  // Attack: d20 8 + 5 + bonus 1d4 (4) = 17 >= AC 15.
+  auto rng1 = script({8, 4});
+  const auto hit = dnd.executeCheck("dnd5e_attack_melee", ally, &orc, CheckParams{}, rng1);
+  CHECK(hit.isSuccess);
+  CHECK(hit.rawDiceRolls == std::vector<int>{8, 4});
+
+  // Save: d20 8 + STR_mod 3 + bonus 1d4 (2) = 13 >= DC 12 (D&D saves use only
+  // the ability modifier).
+  CheckParams sp;
+  sp.difficulty = 12;
+  auto rng2 = script({8, 2});
+  const auto save = dnd.executeCheck("dnd5e_save_str", ally, nullptr, sp, rng2);
+  CHECK(save.isSuccess);
+}
+
+TEST_CASE("bookkeeping: paralyzed creatures auto-fail STR and DEX saves") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity hero(ruleset, "hero");
+  hero.setBaseAttribute("STR_mod", 3);
+  hero.setBaseAttribute("DEX_mod", 3);
+  hero.setBaseAttribute("WIS_mod", 3);
+  hero.setBaseAttribute("proficiency_bonus", 2);
+  dnd.applyCondition(hero, "paralyzed", 1, 0);
+
+  CheckParams params;
+  params.difficulty = 15;
+  // STR and DEX saves auto-fail without rolling (RNG index stays 0).
+  auto rng1 = script({20});
+  CHECK_FALSE(dnd.executeCheck("dnd5e_save_str", hero, nullptr, params, rng1).isSuccess);
+  CHECK(rng1.idx == 0);
+  auto rng2 = script({20});
+  CHECK_FALSE(dnd.executeCheck("dnd5e_save_dex", hero, nullptr, params, rng2).isSuccess);
+  // A non-STR/DEX save is unaffected.
+  auto rng3 = script({20});
+  CHECK(dnd.executeCheck("dnd5e_save_wis", hero, nullptr, params, rng3).isSuccess);
+}
+
+TEST_CASE("bookkeeping: oni regeneration heals at the start of its turns") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  auto oni = dnd.createCreature("oni");
+  REQUIRE(oni != nullptr);
+  CHECK(oni->hasTrait("regeneration_10"));
+  // The recurring heal was registered when the creature was created.
+  CHECK(oni->effects().ongoing().size() == 1);
+
+  // Damage the oni, then its turn heals 10 (a constant "10" die draws no RNG).
+  (void)oni->modifyResource("HP", -15);
+  const int32_t afterDamage = oni->resource("HP");
+  auto rng = script({});
+  dnd.runTurn(*oni, rng);
+  CHECK(oni->resource("HP") == afterDamage + 10);
+}
+
+TEST_CASE("bookkeeping: quality-scaled damage effects add the QL formula (TDE style)") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("HitPoints_Max", 30);
+  target.loadFromArchetype(rpg_os::Json::object()); // initialise the HP pool
+
+  // "2D6 + QL x 2": dice 2d6 with a formula `add` over the cast's QL (env.ql).
+  const rpg_os::Json effects = rpg_os::Json::parse(R"([
+    {"kind": "damage", "dice": "2d6", "type": "Arcane", "add": "env.ql * 2"}
+  ])");
+  auto rng = script({1, 1}); // 2d6 all 1s = 2
+  const auto result = dnd.resolveEffects(caster, target, effects, CheckParams{}, rng, 4);
+  CHECK(result.damageDealt == 2 + 8); // 2 + 4*2 = 10
+  CHECK(target.resource("HP") == 20);
+
+  // A QL of 1 scales down to the bare roll.
+  DynamicEntity target2(ruleset, "target2");
+  target2.setBaseAttribute("HitPoints_Max", 30);
+  target2.loadFromArchetype(rpg_os::Json::object());
+  auto rng2 = script({2, 2});
+  const auto low = dnd.resolveEffects(caster, target2, effects, CheckParams{}, rng2, 1);
+  CHECK(low.damageDealt == 4 + 2); // 4 + 1*2 = 6
+  CHECK(target2.resource("HP") == 24);
+}
+
+TEST_CASE("bookkeeping: quality-scaled condition stacks resolve the QL formula (TDE style)") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("HitPoints_Max", 10);
+  target.loadFromArchetype(rpg_os::Json::object());
+
+  // QL 4: "QL 3: 2 levels, QL 4: 3 levels" -> clamp(env.ql - 1, 1, 4) = 3.
+  const rpg_os::Json effects = rpg_os::Json::parse(R"json([
+    {"kind": "condition", "condition": "cursed", "stacks": "clamp(env.ql - 1, 1, 4)"}
+  ])json");
+  auto rng = script({});
+  const auto high = dnd.resolveEffects(caster, target, effects, CheckParams{}, rng, 4);
+  CHECK(target.conditionStacks("cursed") == 3);
+  CHECK(high.conditionsApplied == 1);
+
+  // QL 1 resolves to the minimum of 1 stack.
+  DynamicEntity target2(ruleset, "target2");
+  auto rng2 = script({});
+  (void)dnd.resolveEffects(caster, target2, effects, CheckParams{}, rng2, 1);
+  CHECK(target2.conditionStacks("cursed") == 1);
+}
+
+TEST_CASE("bookkeeping: roll-under saves express TDE resistance (stat minus QL)") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("CON", 12);
+  target.setBaseAttribute("HitPoints_Max", 10);
+  target.loadFromArchetype(rpg_os::Json::object());
+
+  // TDE resistance: the target resists when it rolls d20 <= CON - QL.
+  // QL 3 -> threshold 12 - 3 = 9.
+  const rpg_os::Json effects = rpg_os::Json::parse(R"json([
+    {"kind": "condition", "condition": "cursed", "stacks": 1,
+     "save": {"stat": "CON", "comparison": "le", "dc": "-env.ql"}}
+  ])json");
+  // d20 5 <= 9 -> resisted; the condition does not apply.
+  auto rngResist = script({5});
+  const auto resisted = dnd.resolveEffects(caster, target, effects, CheckParams{}, rngResist, 3);
+  CHECK_FALSE(target.hasCondition("cursed"));
+  CHECK(resisted.savesPassed == 1);
+
+  // d20 12 > 9 -> not resisted; the condition applies.
+  auto rngFail = script({12});
+  (void)dnd.resolveEffects(caster, target, effects, CheckParams{}, rngFail, 3);
+  CHECK(target.hasCondition("cursed"));
+}
+
+TEST_CASE("bookkeeping: options effects require a caller choice (choice interface)") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10},
+                   {"id": "WIS", "name": "Wisdom", "min": 1, "max": 30, "default": 10}],
+    "derived_stats": [{"id": "WIS_mod", "name": "Wisdom Mod", "formula": "floor((WIS - 10) / 2)"}],
+    "resource_pools": [{"id": "HP", "name": "Hit Points", "max_stat": "STR", "min": 0}],
+    "data": {
+      "spells": [
+        {"id": "elemental_blast", "name": "Elemental Blast", "level": 1, "effects": [
+          {"kind": "options", "id": "element", "options": [
+            {"kind": "damage", "dice": "1d6", "type": "Fire"},
+            {"kind": "damage", "dice": "1d8", "type": "Cold"}
+          ]}
+        ]}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  const auto &ruleset = engine.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  caster.setBaseAttribute("STR", 10);
+  DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("STR", 20);
+  target.loadFromArchetype(rpg_os::Json::object()); // initialise the HP pool
+
+  // No selection: the required option group is reported in choicesRequired
+  // and nothing is applied (no dice are rolled).
+  auto rng = script({});
+  const auto pending = engine.castSpell("elemental_blast", caster, &target, CheckParams{}, rng);
+  CHECK(pending.cast);
+  CHECK(pending.choicesRequired == std::vector<std::string>{"element"});
+  CHECK(pending.appliedDamage == 0);
+  CHECK(target.resource("HP") == 20);
+  CHECK(rng.idx == 0);
+
+  // Selecting the cold option (index 1) resolves it: 1d8 = 4 damage.
+  const std::unordered_map<std::string, int32_t> selections{{"element", 1}};
+  auto rng2 = script({4});
+  const auto chosen =
+      engine.castSpell("elemental_blast", caster, &target, "", CheckParams{}, rng2, &selections);
+  CHECK(chosen.cast);
+  CHECK(chosen.choicesRequired.empty());
+  CHECK(chosen.appliedDamage == 4);
+  CHECK(target.resource("HP") == 16);
+}
+
+TEST_CASE("bookkeeping: optional option groups are skipped without a choice") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10},
+                   {"id": "WIS", "name": "Wisdom", "min": 1, "max": 30, "default": 10}],
+    "derived_stats": [{"id": "WIS_mod", "name": "Wisdom Mod", "formula": "floor((WIS - 10) / 2)"}],
+    "resource_pools": [{"id": "HP", "name": "Hit Points", "max_stat": "STR", "min": 0}],
+    "data": {
+      "spells": [
+        {"id": "versatile", "name": "Versatile", "level": 1, "effects": [
+          {"kind": "options", "id": "mode", "optional": true, "options": [
+            {"kind": "damage", "dice": "1d4", "type": "Fire"}
+          ]}
+        ]}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  const auto &ruleset = engine.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  caster.setBaseAttribute("STR", 10);
+  DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("STR", 20);
+  target.loadFromArchetype(rpg_os::Json::object());
+
+  // No selection on an optional group is fine: nothing required, nothing applied.
+  auto rng = script({});
+  const auto skipped = engine.castSpell("versatile", caster, &target, CheckParams{}, rng);
+  CHECK(skipped.cast);
+  CHECK(skipped.choicesRequired.empty());
+  CHECK(skipped.appliedDamage == 0);
+  CHECK(target.resource("HP") == 20);
+
+  // With a selection the chosen option resolves.
+  const std::unordered_map<std::string, int32_t> selections{{"mode", 0}};
+  auto rng2 = script({2});
+  const auto chosen =
+      engine.castSpell("versatile", caster, &target, "", CheckParams{}, rng2, &selections);
+  CHECK(chosen.appliedDamage == 2);
+  CHECK(target.resource("HP") == 18);
+}
+
+TEST_CASE("bookkeeping: restrictions are queryable and enforced in castSpell") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10},
+                   {"id": "WIS", "name": "Wisdom", "min": 1, "max": 30, "default": 10}],
+    "resource_pools": [{"id": "MP", "name": "Mana", "max_stat": "WIS", "min": 0}],
+    "spell_resource": "MP",
+    "data": {
+      "conditions": [
+        {"id": "stunned", "name": "Stunned", "restrictions": ["no_action", "no_cast", "no_move"]}
+      ],
+      "spells": [
+        {"id": "cantrip", "name": "Cantrip", "level": 1, "cost": 1}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  const auto &ruleset = engine.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  caster.setBaseAttribute("WIS", 10);
+  caster.loadFromArchetype(rpg_os::Json::object()); // initialise MP pool
+  CHECK(caster.resource("MP") == 10);
+
+  // Without a restriction the spell casts and the cost is paid.
+  auto rngOk = script({});
+  const auto ok = engine.castSpell("cantrip", caster, nullptr, CheckParams{}, rngOk);
+  CHECK(ok.cast);
+  CHECK(caster.resource("MP") == 9);
+
+  // A stunned creature cannot act or cast: the restriction is queryable...
+  engine.applyCondition(caster, "stunned", 1, 0);
+  CHECK(caster.hasRestriction("no_action"));
+  CHECK(caster.hasRestriction("no_cast"));
+  CHECK(caster.hasRestriction("no_move"));
+  CHECK_FALSE(engine.actionAllowed(caster, "action"));
+  CHECK_FALSE(engine.actionAllowed(caster, "cast"));
+  CHECK_FALSE(engine.actionAllowed(caster, "move"));
+  CHECK(engine.actionAllowed(caster, "speak"));
+
+  // ...and enforced: the cast is denied before any resource is spent.
+  auto rngDenied = script({});
+  const auto denied = engine.castSpell("cantrip", caster, nullptr, CheckParams{}, rngDenied);
+  CHECK_FALSE(denied.cast);
+  CHECK(denied.denied == "no_cast");
+  CHECK(caster.resource("MP") == 9); // cost NOT spent
+  CHECK(rngDenied.idx == 0);
+}
+
+TEST_CASE("bookkeeping: restrictions come from traits too and block casting") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10},
+                   {"id": "WIS", "name": "Wisdom", "min": 1, "max": 30, "default": 10}],
+    "resource_pools": [{"id": "MP", "name": "Mana", "max_stat": "WIS", "min": 0}],
+    "spell_resource": "MP",
+    "data": {
+      "traits": [
+        {"id": "mute", "name": "Mute", "restrictions": ["no_cast"]}
+      ],
+      "creatures": [
+        {"id": "mute_being", "name": "Mute Being", "traits": ["mute"],
+         "attributes": {"WIS": 10}}
+      ],
+      "spells": [
+        {"id": "cantrip", "name": "Cantrip", "level": 1, "cost": 1}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  auto being = engine.createCreature("mute_being");
+  REQUIRE(being != nullptr);
+  CHECK(being->hasTrait("mute"));
+  CHECK(being->hasRestriction("no_cast"));
+  CHECK_FALSE(being->hasRestriction("no_action"));
+  CHECK_FALSE(engine.actionAllowed(*being, "cast"));
+  CHECK(engine.actionAllowed(*being, "action"));
+
+  // The trait's restriction is enforced at cast time.
+  auto rng = script({});
+  const auto denied = engine.castSpell("cantrip", *being, nullptr, CheckParams{}, rng);
+  CHECK_FALSE(denied.cast);
+  CHECK(denied.denied == "no_cast");
+  CHECK(rng.idx == 0);
+}
+
+TEST_CASE("bookkeeping: capabilities are queryable on traits and conditions") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10}],
+    "data": {
+      "traits": [
+        {"id": "amphibious", "name": "Amphibious", "capabilities": ["swim", "breath_water"]}
+      ],
+      "conditions": [
+        {"id": "blessed", "name": "Blessed", "capabilities": ["see_invisible"]}
+      ],
+      "creatures": [
+        {"id": "frog", "name": "Frog", "traits": ["amphibious"], "attributes": {"STR": 10}}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  auto frog = engine.createCreature("frog");
+  REQUIRE(frog != nullptr);
+  CHECK(frog->hasCapability("swim"));
+  CHECK(frog->hasCapability("breath_water"));
+  CHECK_FALSE(frog->hasCapability("fly"));
+  const auto caps = frog->capabilities();
+  CHECK(caps == std::vector<std::string>({"swim", "breath_water"}));
+
+  // Conditions contribute capabilities while active.
+  engine.applyCondition(*frog, "blessed", 1, 0);
+  CHECK(frog->hasCapability("see_invisible"));
+  CHECK_FALSE(frog->hasCapability("fly"));
+  engine.removeCondition(*frog, "blessed"); // expires
+  CHECK_FALSE(frog->hasCapability("see_invisible"));
+}
+
+TEST_CASE("bookkeeping: attackOnce enforces the attacker's restrictions") {
+  const std::string rulesetJson = R"json({
+    "schema_version": 1, "ruleset_id": "mini", "licence": "test",
+    "attributes": [{"id": "STR", "name": "Strength", "min": 1, "max": 30, "default": 10},
+                   {"id": "WIS", "name": "Wisdom", "min": 1, "max": 30, "default": 10},
+                   {"id": "AC", "name": "Armor Class", "min": 1, "max": 30, "default": 10}],
+    "derived_stats": [{"id": "WIS_mod", "name": "Wisdom Mod", "formula": "floor((WIS - 10) / 2)"}],
+    "resource_pools": [{"id": "HP", "name": "Hit Points", "max_stat": "STR", "min": 0}],
+    "check_types": {
+      "mini_attack": {
+        "resolution": "threshold", "dice": "1d20", "comparison": "ge",
+        "threshold_source": "target_stat", "threshold_stat": "AC",
+        "bonus_stats": ["WIS_mod"]
+      }
+    },
+    "data": {
+      "conditions": [
+        {"id": "stunned", "name": "Stunned", "restrictions": ["no_action", "no_move"]}
+      ],
+      "creatures": [
+        {"id": "fighter", "name": "Fighter", "attributes": {"STR": 20, "WIS": 14, "AC": 10}}
+      ]
+    }
+  })json";
+  RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(rulesetJson));
+  auto attacker = engine.createCreature("fighter");
+  REQUIRE(attacker != nullptr);
+  attacker->loadFromArchetype(rpg_os::Json::object()); // HP pool = STR 20
+  rpg_os::DynamicEntity defender(engine.ruleset(), "defender");
+  defender.setBaseAttribute("STR", 20);
+  defender.setBaseAttribute("AC", 10);
+  defender.loadFromArchetype(rpg_os::Json::object()); // HP pool
+
+  const rpg_os::DiceExpression damage("1d6");
+  // Unrestricted: the attack resolves (17 + WIS_mod 2 = 19 >= AC 10 -> hit);
+  // 1d6 = 4 damage leaves the defender at 16 HP (not dead, so false).
+  auto rngHit = script({17, 4});
+  CHECK_FALSE(
+      rpg_os::detail::attackOnce(engine, *attacker, damage, defender, "mini_attack", "HP", rngHit));
+  CHECK(defender.resource("HP") == 16);
+  CHECK(attacker->resource("HP") == 20); // attacker unharmed
+
+  // Stunned: no action allowed — the attack is refused and no dice are rolled.
+  engine.applyCondition(*attacker, "stunned", 1, 0);
+  auto rngDenied = script({17, 4});
+  CHECK_FALSE(rpg_os::detail::attackOnce(engine, *attacker, damage, defender, "mini_attack", "HP",
+                                         rngDenied));
+  CHECK(rngDenied.idx == 0);
+}
+
+TEST_CASE("bookkeeping: converted D&D creature traits expose capabilities") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  // Amphibious creatures gained swim + breath_water capabilities.
+  auto frog = dnd.createCreature("giant_frog");
+  REQUIRE(frog != nullptr);
+  CHECK(frog->hasTrait("amphibious"));
+  CHECK(frog->hasCapability("swim"));
+  CHECK(frog->hasCapability("breath_water"));
+  CHECK_FALSE(frog->hasCapability("climb"));
+
+  // Spider Climb grants climb.
+  auto spider = dnd.createCreature("giant_spider");
+  REQUIRE(spider != nullptr);
+  CHECK(spider->hasTrait("spider_climb"));
+  CHECK(spider->hasCapability("climb"));
+
+  // Water Breathing grants breath_water.
+  auto octopus = dnd.createCreature("giant_octopus");
+  REQUIRE(octopus != nullptr);
+  CHECK(octopus->hasCapability("breath_water"));
+  CHECK_FALSE(octopus->hasCapability("swim")); // it does not "swim" in the trait sense
+
+  // A non-amphibious creature has none of these.
+  auto wolf = dnd.createCreature("wolf");
+  REQUIRE(wolf != nullptr);
+  CHECK_FALSE(wolf->hasCapability("swim"));
+  CHECK_FALSE(wolf->hasCapability("breath_water"));
+}
+
+TEST_CASE("bookkeeping: converted regeneration traits heal per amount") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  // The troll regenerates 15 per turn, the oni 10, a severed limb 5.
+  auto troll = dnd.createCreature("troll");
+  REQUIRE(troll != nullptr);
+  CHECK(troll->hasTrait("regeneration_15"));
+  CHECK(troll->effects().ongoing().size() == 1);
+  (void)troll->modifyResource("HP", -30);
+  const int32_t afterDamage = troll->resource("HP");
+  auto rng = script({});
+  dnd.runTurn(*troll, rng);
+  CHECK(troll->resource("HP") == afterDamage + 15);
+
+  auto oni = dnd.createCreature("oni");
+  REQUIRE(oni != nullptr);
+  CHECK(oni->hasTrait("regeneration_10"));
+  (void)oni->modifyResource("HP", -30);
+  const int32_t oniAfter = oni->resource("HP");
+  auto rng2 = script({});
+  dnd.runTurn(*oni, rng2);
+  CHECK(oni->resource("HP") == oniAfter + 10);
+}
+
+TEST_CASE("bookkeeping: converted D&D creature traits keep their prose") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  // Legendary Resistance is a caller-side rule: the trait exists (so a caller
+  // can take note) and its definition preserves the prose.
+  auto balor = dnd.createCreature("balor");
+  REQUIRE(balor != nullptr);
+  CHECK(balor->hasTrait("legendary_resistance_3"));
+  CHECK_FALSE(balor->hasRestriction("no_action")); // not an action restriction
+
+  // The engine exposes the trait's prose through the ruleset's data database.
+  const rpg_os::Json *trait = dnd.findDataRecord("traits", "legendary_resistance_3");
+  REQUIRE(trait != nullptr);
+  const std::string desc = trait->value("description", "");
+  CHECK(desc.find("can choose to succeed instead") != std::string::npos);
+}
+
+TEST_CASE("bookkeeping: converted creature traits shape checks (magic resistance)") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  // A deva has Magic Resistance: Advantage on saving throws against spells,
+  // expressed as save-advantage check modifiers (same trait as the earlier
+  // migrated creatures).
+  auto deva = dnd.createCreature("deva");
+  REQUIRE(deva != nullptr);
+  CHECK(deva->hasTrait("magic_resistance"));
+  const auto &ruleset = dnd.ruleset();
+  rpg_os::DynamicEntity attacker(ruleset, "attacker");
+  attacker.setBaseAttribute("WIS_mod", 3);
+  attacker.setBaseAttribute("proficiency_bonus", 2);
+  rpg_os::DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("AC", 10);
+
+  // A spell attack against the deva's DEX save is rolled with Advantage.
+  CheckParams params;
+  params.difficulty = 15;
+  auto rng = script({2, 18}); // low then high; advantage keeps 18 + 3 = 21
+  const auto result = dnd.executeCheck("dnd5e_save_dex", *deva, nullptr, params, rng);
+  CHECK(result.isSuccess);
+  CHECK(result.rawDiceRolls == std::vector<int>{18});
+}
+
+TEST_CASE("bookkeeping: shipped D&D conditions enforce action restrictions") {
+  RulesetEngine dnd;
+  REQUIRE(dnd.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  const auto &ruleset = dnd.ruleset();
+  DynamicEntity hero(ruleset, "hero");
+  hero.setBaseAttribute("WIS", 10);
+  hero.loadFromArchetype(rpg_os::Json::object()); // initialise the MP pool
+
+  // A healthy hero may act, cast, and move.
+  CHECK(dnd.actionAllowed(hero, "action"));
+  CHECK(dnd.actionAllowed(hero, "cast"));
+  CHECK(dnd.actionAllowed(hero, "move"));
+
+  // Incapacitated: no action / bonus action / reaction — but it can still move.
+  dnd.applyCondition(hero, "incapacitated", 1, 0);
+  CHECK_FALSE(dnd.actionAllowed(hero, "action"));
+  CHECK_FALSE(dnd.actionAllowed(hero, "reaction"));
+  CHECK(dnd.actionAllowed(hero, "move"));
+  CHECK(hero.hasRestriction("no_action"));
+  dnd.removeCondition(hero, "incapacitated");
+
+  // Paralyzed: cannot act, cast, move, or speak.
+  dnd.applyCondition(hero, "paralyzed", 1, 0);
+  CHECK_FALSE(dnd.actionAllowed(hero, "action"));
+  CHECK_FALSE(dnd.actionAllowed(hero, "cast"));
+  CHECK_FALSE(dnd.actionAllowed(hero, "move"));
+  CHECK_FALSE(dnd.actionAllowed(hero, "speak"));
+  CHECK(hero.hasRestriction("no_concentration"));
+  dnd.removeCondition(hero, "paralyzed");
+
+  // Restrained: speed is 0, so it cannot move — but it can still act.
+  dnd.applyCondition(hero, "restrained", 1, 0);
+  CHECK_FALSE(dnd.actionAllowed(hero, "move"));
+  CHECK(dnd.actionAllowed(hero, "action"));
+  dnd.removeCondition(hero, "restrained");
+
+  // The spell-resource ruleset has no spell_resource here, so verify the
+  // restriction is enforced at cast time in the D&D ruleset's own terms:
+  // a paralyzed caster's spell is refused and no resource is spent.
+  dnd.applyCondition(hero, "paralyzed", 1, 0);
+  auto rng = script({});
+  // Paralyzed cannot take actions at all, so casting is refused for that
+  // reason (no explicit no_cast needed — no_action implies it).
+  const auto denied = dnd.castSpell("fireball", hero, nullptr, CheckParams{}, rng);
+  CHECK_FALSE(denied.cast);
+  CHECK(denied.denied == "no_action");
+  CHECK(rng.idx == 0);
 }

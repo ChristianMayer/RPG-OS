@@ -1608,7 +1608,18 @@
         "property": "Influence",
         "traditions": "General",
         "improvement_cost": "B",
-        "description": "This spell confuses and overwhelms the target’s senses (sight, mainly), so that the target has trouble perceiving its surroundings. The target suffers one level of the condition Confusion."
+        "effects": [
+          {
+            "kind": "condition",
+            "condition": "confusion",
+            "stacks": 1,
+            "save": {
+              "stat": "Spirit",
+              "comparison": "le",
+              "dc": "-env.ql"
+            }
+          }
+        ]
       },
       {
         "id": "breathe_water",
@@ -1664,7 +1675,13 @@
         "property": "Healing",
         "traditions": "Elf",
         "improvement_cost": "B",
-        "description": "This spell is the reason people think the elves have supernatural senses. Raise the skill Perception for the duration of the spell by QL +3 of the spell."
+        "effects": [
+          {
+            "kind": "stat_bonus",
+            "stat": "perception",
+            "add": "env.ql + 3"
+          }
+        ]
       },
       {
         "id": "fighting_stick",
@@ -1693,8 +1710,13 @@
         "property": "Transformation",
         "traditions": "Elf",
         "improvement_cost": "C",
-        "description": "This combat spell hits the target automatically—no dodge or parry is possible. The target’s aura is harmed and its body suffers a series of small physical inner wounds. The spell inflicts 2D6 + (QL x 2) damage. Armor does not protect against this spell. The spell hits its target automatically, and the target cannot dodge or parry.",
-        "damage": "2d6"
+        "effects": [
+          {
+            "kind": "damage",
+            "dice": "2d6",
+            "add": "env.ql * 2"
+          }
+        ]
       },
       {
         "id": "harmless_shape",
@@ -1736,7 +1758,18 @@
         "property": "Influence",
         "traditions": "Guild Mage",
         "improvement_cost": "B",
-        "description": "Horriphobus influences the mind, making targets experience terrible nightmares and become fearful. In many cases, targets flee in terror. You appear to the target to be a frightening figure from its nightmares. The strength of the effect depends on the spell’s QL: QL 1: 1 level of Fear , for 2 combat rounds QL 2: 1 level of Fear QL 3: 2 levels of Fear QL 4: 3 levels of Fear"
+        "effects": [
+          {
+            "kind": "condition",
+            "condition": "fear",
+            "stacks": "clamp(env.ql - 1, 1, 3)",
+            "save": {
+              "stat": "Spirit",
+              "comparison": "le",
+              "dc": "-env.ql"
+            }
+          }
+        ]
       },
       {
         "id": "invocatio_minima",
@@ -1862,7 +1895,13 @@
         "property": "Healing",
         "traditions": "General",
         "improvement_cost": "B",
-        "description": "This spell protects you from domination or transformation magic. It’s especially common in protective artifacts. This spell aids in resisting mental manipulation by improving your Spirit stat by QL/2."
+        "effects": [
+          {
+            "kind": "stat_bonus",
+            "stat": "Spirit",
+            "add": "round(env.ql / 2)"
+          }
+        ]
       },
       {
         "id": "respondami",
@@ -2086,7 +2125,18 @@
         "property": "Transformation",
         "traditions": "Guild Mage",
         "improvement_cost": "C",
-        "description": "The target suffers painful muscle weakness, receiving the condition _Pain_ for the duration of the spell. QL 1: 1 level of Pain, for one combat round; QL 2: 1 level of Pain; QL 3: 2 levels of Pain; QL 4: 3 levels of Pain; QL 5: 4 levels of Pain; QL 6: 4 levels of Pain for twice the normal duration."
+        "effects": [
+          {
+            "kind": "condition",
+            "condition": "pain",
+            "stacks": "clamp(env.ql - 1, 1, 4)",
+            "save": {
+              "stat": "Toughness",
+              "comparison": "le",
+              "dc": "-env.ql"
+            }
+          }
+        ]
       },
       {
         "id": "gardianum",
@@ -2142,8 +2192,14 @@
         "property": "Elemental",
         "traditions": "Guild Mage",
         "improvement_cost": "C",
-        "description": "The flame flies in a straight line towards the target. You don’t have to use another action to aim once you cast the spell—aiming is included in the casting time. The target suffers 2D6 + (QL x 2) damage points, applying the target’s PRO as usual. This spell counts as a ranged attack from a missile weapon and can be blocked or dodged. Shields struck by _Ignifaxius_ suffer structure damage. If the opponent doesn’t defend, the lance of flame hits automatically. Flammable targets are set ablaze on a roll of 1-3 on 1D6.",
-        "damage": "2d6"
+        "effects": [
+          {
+            "kind": "damage",
+            "dice": "2d6",
+            "add": "env.ql * 2",
+            "type": "Fire"
+          }
+        ]
       },
       {
         "id": "paralysis",
@@ -2157,7 +2213,18 @@
         "property": "Transformation",
         "traditions": "Guild Mage",
         "improvement_cost": "B",
-        "description": "The target’s body stiffens and hardens. If the paralysis is complete (Level IV), the body transforms into a nearly indestructible substance without changing weight. A body transformed this way cannot be injured by non-magical weapons, fire, or falls. Those affected cannot move, feel, or hear anything, but can see within their field of vision. This spell delays the effects of poisons and diseases, granting more time to obtain treatment. **QL 1:** 1 level of _Paralysis_ , for 2 combat rounds **QL 2:** 1 level of _Paralysis_ **QL 3:** 2 levels of _Paralysis_ **QL 4:** 3 levels of _Paralysis_ **QL 5:** 4 levels of _Paralysis_ **QL 6:** 4 levels of _Paralysis,_ for twice the normal duration"
+        "effects": [
+          {
+            "kind": "condition",
+            "condition": "paralysis",
+            "stacks": "clamp(env.ql - 1, 1, 4)",
+            "save": {
+              "stat": "Toughness",
+              "comparison": "le",
+              "dc": "-env.ql"
+            }
+          }
+        ]
       },
       {
         "id": "penetrizzel",
@@ -2185,7 +2252,18 @@
         "property": "Influence",
         "traditions": "Elf",
         "improvement_cost": "B",
-        "description": "The target is overcome by fatigue. A target that suffers the condition _Stupor_ at level IV falls asleep and only wakes from intense noise, persistent shaking, or similar stimulus, before the spell ends. If not disturbed, the target sleeps until waking naturally. **QL 1:** 1 level of _Stupor_ , for 1 combat round **QL 2:** 1 level of _Stupor_ **QL 3:** 2 levels of _Stupor_ **QL 4:** 3 levels of _Stupor_ **QL 5:** 4 levels of _Stupor_ **QL 6:** 4 levels of _Stupor_ for twice the normal duration"
+        "effects": [
+          {
+            "kind": "condition",
+            "condition": "stupor",
+            "stacks": "clamp(env.ql - 1, 1, 4)",
+            "save": {
+              "stat": "Spirit",
+              "comparison": "le",
+              "dc": "-env.ql"
+            }
+          }
+        ]
       },
       {
         "id": "spider_walk",
@@ -2227,8 +2305,14 @@
         "property": "Transformation",
         "traditions": "Witch",
         "improvement_cost": "B",
-        "description": "Your saliva immediately turns into a corrosive acid that does 1D6 + (QL) damage points to a target you spit at within 3 yards. This acid does not harm the caster. You do not have to use another action to spit after casting the spell (spitting is included in the casting time). If the opponent doesn’t defend, the spitting attack hits automatically. Spitting counts as a ranged attack with a missile weapon and can be blocked or dodged. PRO reduces damage as per the normal combat rules. _Witch’s Bile_ inflicts structure damage on shields and other items it hits.",
-        "damage": "1d6"
+        "effects": [
+          {
+            "kind": "damage",
+            "dice": "1d6",
+            "add": "env.ql",
+            "type": "Acid"
+          }
+        ]
       },
       {
         "id": "witch_s_claws",
@@ -2242,30 +2326,58 @@
         "property": "Transformation",
         "traditions": "Witch",
         "improvement_cost": "A",
-        "description": "Sharp claws grow on both of your hands. They do 1D6+3 DP in close combat and use the combat technique Brawling. Witches using these claws are considered unarmed when brawling. Witch’s Claws are considered a magical weapon.",
-        "damage": "1d6+3"
+        "effects": [
+          {
+            "kind": "damage",
+            "dice": "1d6+3"
+          }
+        ]
       }
     ],
     "conditions": [
       {
         "id": "fear",
         "name": "Fear",
-        "description": "Levels I-IV: -1 to -3 on all checks; IV is Catatonic and therefore incapacitated. While the cause remains close by the effects persist; otherwise Fear lowers by 1 level every 5 minutes."
+        "check_modifiers": [
+          {
+            "scope": "all",
+            "bonus": -1,
+            "per_stack": true
+          }
+        ]
       },
       {
         "id": "confusion",
         "name": "Confusion",
-        "description": "Levels I-IV: -1 to -3 on all checks; III makes complex actions (spellcasting, liturgical chants, lore skills) impossible; IV is Incapacitated. Remove one level every hour unless stated otherwise."
+        "check_modifiers": [
+          {
+            "scope": "all",
+            "bonus": -1,
+            "per_stack": true
+          }
+        ]
       },
       {
         "id": "pain",
         "name": "Pain",
-        "description": "Levels I-IV: -1 to -3 on all checks and MOV; IV is Incapacitated. Gained from LP loss: a level at 75%, 50%, 25% LP and a fourth at 5 LP or less; a level goes away whenever LP rise above the benchmark again."
+        "check_modifiers": [
+          {
+            "scope": "all",
+            "bonus": -1,
+            "per_stack": true
+          }
+        ]
       },
       {
         "id": "paralysis",
         "name": "Paralysis",
-        "description": "Levels I-IV: -1 to -3 on checks involving movement or speech and MOV reduced by 25/50/75%; IV is unable to move. Remove one level every hour unless directed otherwise."
+        "check_modifiers": [
+          {
+            "scope": "skill",
+            "bonus": -1,
+            "per_stack": true
+          }
+        ]
       },
       {
         "id": "rapture",

@@ -2171,7 +2171,12 @@
         "name": "Heal",
         "level": 3,
         "school": "Magic",
-        "description": "Heals 1D6 points of damage per level."
+        "effects": [
+          {
+            "kind": "heal",
+            "dice": "1d6"
+          }
+        ]
       },
       {
         "id": "illusion",

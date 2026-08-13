@@ -45,7 +45,11 @@ Useful options:
 | `RPG_OS_RUN_CODEGEN` | `OFF` | Regenerate `generated/*.hpp` during the build |
 | `RPG_OS_BUILD_DOCS` | `ON` | Render the Doxygen documentation into `html/` (gitignored) |
 
-Requires CMake ≥ 3.24 and a C++23-capable compiler (GCC ≥ 13 or Clang ≥ 17).
+Requires CMake ≥ 3.24 and a C++23-capable toolchain whose standard library
+provides `<expected>`: GCC ≥ 13 (libstdc++ ≥ 13), or Clang ≥ 17 with libc++ ≥ 17
+(Apple clang on macOS, or `-stdlib=libc++` on Linux). Clang 17/18 with GNU
+libstdc++ 13 does not provide `<expected>` — use Clang ≥ 19 with libstdc++
+instead.
 
 ## Documentation
 

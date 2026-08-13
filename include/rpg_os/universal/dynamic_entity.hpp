@@ -236,10 +236,100 @@ public:
     return m_conditions;
   }
 
+  /// Adds `traitId` to the entity's active traits (an always-on, inherent
+  /// quality — a monster's Pack Tactics, a species' Darkvision, ...).
+  void addTrait(std::string_view traitId) {
+    m_traits.insert(std::string(traitId));
+  }
+
+  /// Removes `traitId` from the entity's active traits.
+  void removeTrait(std::string_view traitId) {
+    m_traits.erase(std::string(traitId));
+  }
+
+  /// Whether `traitId` is an active trait of the entity.
+  [[nodiscard]] bool hasTrait(std::string_view traitId) const {
+    return m_traits.find(std::string(traitId)) != m_traits.end();
+  }
+
+  /// The entity's active trait ids (immutable view).
+  [[nodiscard]] const std::unordered_set<std::string> &traits() const noexcept {
+    return m_traits;
+  }
+
+  /// The restriction and capability tokens contributed by the entity's active
+  /// conditions and traits (deduplicated, source order). Restrictions say what
+  /// the entity *cannot* do ("no_action", "no_bonus_action", "no_reaction",
+  /// "no_move", "no_speak", "no_concentration", "no_cast", ...); capabilities
+  /// say what it *can* do (movement / senses: "swim", "climb", "breath_water",
+  /// "darkvision", ...). Both are declared as string arrays on condition /
+  /// trait records, so any ruleset can express its own action-economy and
+  /// mobility rules without engine changes.
+  [[nodiscard]] std::vector<std::string> collectTokens(std::string_view field) const {
+    std::vector<std::string> out;
+    const auto addToken = [&out](const std::string &token) {
+      if (std::find(out.begin(), out.end(), token) == out.end()) {
+        out.push_back(token);
+      }
+    };
+    for (const auto &[conditionId, stacks] : m_conditions) {
+      if (stacks <= 0) {
+        continue;
+      }
+      const Json *record = findDataRecord("conditions", conditionId);
+      if (record == nullptr || !record->contains(field) || !record->at(field).is_array()) {
+        continue;
+      }
+      for (const Json &token : record->at(field)) {
+        addToken(token.get<std::string>());
+      }
+    }
+    for (const std::string &traitId : m_traits) {
+      const Json *record = findDataRecord("traits", traitId);
+      if (record == nullptr || !record->contains(field) || !record->at(field).is_array()) {
+        continue;
+      }
+      for (const Json &token : record->at(field)) {
+        addToken(token.get<std::string>());
+      }
+    }
+    return out;
+  }
+
+  /// The restriction tokens in effect on the entity (see @ref collectTokens).
+  [[nodiscard]] std::vector<std::string> restrictions() const {
+    return collectTokens("restrictions");
+  }
+
+  /// Whether the entity is under the given restriction (e.g. "no_action").
+  [[nodiscard]] bool hasRestriction(std::string_view token) const {
+    for (const std::string &restriction : restrictions()) {
+      if (restriction == token) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// The capability tokens the entity has (see @ref collectTokens).
+  [[nodiscard]] std::vector<std::string> capabilities() const {
+    return collectTokens("capabilities");
+  }
+
+  /// Whether the entity has the given capability (e.g. "swim").
+  [[nodiscard]] bool hasCapability(std::string_view token) const {
+    for (const std::string &capability : capabilities()) {
+      if (capability == token) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// The effective value of `statId`: the raw value plus every modifier the
   /// sheet's equipped gear and active conditions contribute (through the
-  /// shared modifier pipeline in @c core/modifier.hpp). This is the value
-  /// checks and combat should resolve against.
+  /// shared modifier pipeline in @c core/modifier.hpp), plus any temporary
+  /// stat bonuses from active effects (spells, buffs, traits).
   ///
   /// @par Why not replace getStat with this?
   /// Derived-stat formulas evaluate other stats and must not re-apply gear
@@ -247,7 +337,8 @@ public:
   /// feed back). @ref getStat stays the raw, formula-safe value; this is the
   /// gameplay-facing number.
   [[nodiscard]] int32_t getEffectiveStat(std::string_view statId) const {
-    return applyModifierPipeline(getStat(statId), modifiersFor(statId));
+    return applyModifierPipeline(getStat(statId), modifiersFor(statId)) +
+           m_effects.bonusFor(statId);
   }
 
   /// The sheet's owned items (flat inventory).
@@ -366,6 +457,11 @@ public:
     }
     out["resources"] = resources;
     out["conditions"] = m_conditions;
+    Json traits = Json::array();
+    for (const std::string &trait : m_traits) {
+      traits.push_back(trait);
+    }
+    out["traits"] = traits;
     Json inventoryJson;
     m_inventory.toJson(inventoryJson);
     out["inventory"] = inventoryJson;
@@ -407,6 +503,12 @@ public:
     }
     if (in.contains("conditions") && in.at("conditions").is_object()) {
       m_conditions = in.at("conditions").get<std::unordered_map<std::string, int32_t>>();
+    }
+    if (in.contains("traits") && in.at("traits").is_array()) {
+      m_traits.clear();
+      for (const Json &trait : in.at("traits")) {
+        m_traits.insert(trait.get<std::string>());
+      }
     }
     if (in.contains("resources") && in.at("resources").is_object()) {
       for (const auto &[id, value] : in.at("resources").items()) {
@@ -491,6 +593,13 @@ public:
         m_conditions[conditionId] = value.get<int32_t>();
       }
     }
+    if (archetype.contains("traits") && archetype.at("traits").is_array()) {
+      for (const Json &trait : archetype.at("traits")) {
+        if (trait.is_string()) {
+          m_traits.insert(trait.get<std::string>());
+        }
+      }
+    }
     // Bookkeeping fields an archetype (or bestiary entry) may declare. Each is
     // optional: a ruleset without money / gear / spells simply omits them.
     if (archetype.contains("wealth")) {
@@ -567,6 +676,18 @@ private:
         }
       }
     }
+    for (const std::string &traitId : m_traits) {
+      const Json *trait = findDataRecord("traits", traitId);
+      if (trait == nullptr || !trait->contains("stat_modifiers") ||
+          !trait->at("stat_modifiers").is_array()) {
+        continue;
+      }
+      for (const Json &mod : trait->at("stat_modifiers")) {
+        if (mod.value("stat", "") == statId) {
+          result.push_back(parseModifierJson(mod));
+        }
+      }
+    }
     return result;
   }
 
@@ -620,6 +741,7 @@ private:
   std::unordered_map<std::string, int32_t> m_stats;
   std::unordered_map<std::string, ResourcePool> m_resources;
   std::unordered_map<std::string, int32_t> m_conditions;
+  std::unordered_set<std::string> m_traits;
   Inventory m_inventory;
   Equipment m_equipment;
   Money m_money;
