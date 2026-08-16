@@ -303,12 +303,8 @@ public:
 
   /// Whether the entity is under the given restriction (e.g. "no_action").
   [[nodiscard]] bool hasRestriction(std::string_view token) const {
-    for (const std::string &restriction : restrictions()) {
-      if (restriction == token) {
-        return true;
-      }
-    }
-    return false;
+    return std::ranges::any_of(
+        restrictions(), [token](const std::string &restriction) { return restriction == token; });
   }
 
   /// The capability tokens the entity has (see @ref collectTokens).
@@ -318,12 +314,8 @@ public:
 
   /// Whether the entity has the given capability (e.g. "swim").
   [[nodiscard]] bool hasCapability(std::string_view token) const {
-    for (const std::string &capability : capabilities()) {
-      if (capability == token) {
-        return true;
-      }
-    }
-    return false;
+    return std::ranges::any_of(
+        capabilities(), [token](const std::string &capability) { return capability == token; });
   }
 
   /// The effective value of `statId`: the raw value plus every modifier the
@@ -498,64 +490,19 @@ public:
     if (!in.is_object()) {
       return;
     }
-    if (in.contains("stats") && in.at("stats").is_object()) {
-      m_stats = in.at("stats").get<std::unordered_map<std::string, int32_t>>();
-    }
-    if (in.contains("conditions") && in.at("conditions").is_object()) {
-      m_conditions = in.at("conditions").get<std::unordered_map<std::string, int32_t>>();
-    }
-    if (in.contains("traits") && in.at("traits").is_array()) {
-      m_traits.clear();
-      for (const Json &trait : in.at("traits")) {
-        m_traits.insert(trait.get<std::string>());
-      }
-    }
-    if (in.contains("resources") && in.at("resources").is_object()) {
-      for (const auto &[id, value] : in.at("resources").items()) {
-        m_resources[id].current = value.get<int32_t>();
-      }
-    }
-    if (in.contains("inventory")) {
-      m_inventory.fromJson(in.at("inventory"));
-    }
-    if (in.contains("equipment")) {
-      m_equipment.fromJson(in.at("equipment"));
-    }
-    if (in.contains("money") && in.at("money").is_number_integer()) {
-      m_money = Money{in.at("money").get<int64_t>()};
-    }
-    if (in.contains("temp_hp") && in.at("temp_hp").is_number_integer()) {
-      m_tempHp = in.at("temp_hp").get<int32_t>();
-    }
-    if (in.contains("spellbook")) {
-      m_spellbook.fromJson(in.at("spellbook"));
-    }
-    if (in.contains("advancement")) {
-      m_advancement.fromJson(in.at("advancement"));
-    }
-    if (in.contains("effects")) {
-      m_effects.fromJson(in.at("effects"));
-    }
-    if (in.contains("afflictions") && in.at("afflictions").is_array()) {
-      m_afflictions.clear();
-      for (const Json &entry : in.at("afflictions")) {
-        AppliedAffliction aff;
-        aff.section = entry.value("section", "");
-        aff.id = entry.value("id", "");
-        if (entry.contains("conditions") && entry.at("conditions").is_array()) {
-          for (const Json &cond : entry.at("conditions")) {
-            aff.conditions.push_back(cond.get<std::string>());
-          }
-        }
-        m_afflictions.push_back(std::move(aff));
-      }
-    }
-    if (in.contains("resistances") && in.at("resistances").is_array()) {
-      m_resistances.clear();
-      for (const Json &type : in.at("resistances")) {
-        m_resistances.insert(type.get<std::string>());
-      }
-    }
+    restoreStats(in);
+    restoreConditions(in);
+    restoreTraits(in);
+    restoreResources(in);
+    restoreInventory(in);
+    restoreEquipment(in);
+    restoreMoney(in);
+    restoreTempHp(in);
+    restoreSpellbook(in);
+    restoreAdvancement(in);
+    restoreEffects(in);
+    restoreAfflictions(in);
+    restoreResistances(in);
   }
 
   /// Loads attributes, skills, resources, and conditions from an archetype
@@ -572,27 +519,157 @@ public:
   /// can inject a scripted/seeded RNG.
   template <RandomNumberGenerator Rng>
   void loadFromArchetype(const Json &archetype, Variance variance, Rng &rng) {
+    loadAttributes(archetype, variance, rng);
+    loadSkills(archetype, variance, rng);
+    refreshResources();
+    loadResources(archetype, variance, rng);
+    loadConditions(archetype);
+    loadTraits(archetype);
+    loadWealth(archetype);
+    loadEquipment(archetype);
+    loadSpellsKnown(archetype);
+    loadXp(archetype);
+    loadLevel(archetype);
+  }
+
+private:
+  // ---- serialization helpers (see @ref fromJson) ---------------------------
+  /// Restores the stat map from a serialized sheet.
+  void restoreStats(const Json &in) {
+    if (in.contains("stats") && in.at("stats").is_object()) {
+      m_stats = in.at("stats").get<std::unordered_map<std::string, int32_t>>();
+    }
+  }
+  /// Restores the active conditions and their stack counts.
+  void restoreConditions(const Json &in) {
+    if (in.contains("conditions") && in.at("conditions").is_object()) {
+      m_conditions = in.at("conditions").get<std::unordered_map<std::string, int32_t>>();
+    }
+  }
+  /// Restores the trait ids.
+  void restoreTraits(const Json &in) {
+    if (in.contains("traits") && in.at("traits").is_array()) {
+      m_traits.clear();
+      for (const Json &trait : in.at("traits")) {
+        m_traits.insert(trait.get<std::string>());
+      }
+    }
+  }
+  /// Restores the resource pool current values.
+  void restoreResources(const Json &in) {
+    if (in.contains("resources") && in.at("resources").is_object()) {
+      for (const auto &[id, value] : in.at("resources").items()) {
+        m_resources[id].current = value.get<int32_t>();
+      }
+    }
+  }
+  /// Restores the inventory (may be absent).
+  void restoreInventory(const Json &in) {
+    if (in.contains("inventory")) {
+      m_inventory.fromJson(in.at("inventory"));
+    }
+  }
+  /// Restores the equipped items (may be absent).
+  void restoreEquipment(const Json &in) {
+    if (in.contains("equipment")) {
+      m_equipment.fromJson(in.at("equipment"));
+    }
+  }
+  /// Restores the money purse (may be absent).
+  void restoreMoney(const Json &in) {
+    if (in.contains("money") && in.at("money").is_number_integer()) {
+      m_money = Money{in.at("money").get<int64_t>()};
+    }
+  }
+  /// Restores the temporary hit points (may be absent).
+  void restoreTempHp(const Json &in) {
+    if (in.contains("temp_hp") && in.at("temp_hp").is_number_integer()) {
+      m_tempHp = in.at("temp_hp").get<int32_t>();
+    }
+  }
+  /// Restores the spellbook (may be absent).
+  void restoreSpellbook(const Json &in) {
+    if (in.contains("spellbook")) {
+      m_spellbook.fromJson(in.at("spellbook"));
+    }
+  }
+  /// Restores the advancement record (may be absent).
+  void restoreAdvancement(const Json &in) {
+    if (in.contains("advancement")) {
+      m_advancement.fromJson(in.at("advancement"));
+    }
+  }
+  /// Restores the effect timeline (may be absent).
+  void restoreEffects(const Json &in) {
+    if (in.contains("effects")) {
+      m_effects.fromJson(in.at("effects"));
+    }
+  }
+  /// Restores the applied afflictions.
+  void restoreAfflictions(const Json &in) {
+    if (in.contains("afflictions") && in.at("afflictions").is_array()) {
+      m_afflictions.clear();
+      for (const Json &entry : in.at("afflictions")) {
+        AppliedAffliction aff;
+        aff.section = entry.value("section", "");
+        aff.id = entry.value("id", "");
+        if (entry.contains("conditions") && entry.at("conditions").is_array()) {
+          for (const Json &cond : entry.at("conditions")) {
+            aff.conditions.push_back(cond.get<std::string>());
+          }
+        }
+        m_afflictions.push_back(std::move(aff));
+      }
+    }
+  }
+  /// Restores the damage-type resistances.
+  void restoreResistances(const Json &in) {
+    if (in.contains("resistances") && in.at("resistances").is_array()) {
+      m_resistances.clear();
+      for (const Json &type : in.at("resistances")) {
+        m_resistances.insert(type.get<std::string>());
+      }
+    }
+  }
+
+  // ---- archetype-loading helpers (see @ref loadFromArchetype) ---------------
+  /// Loads attribute values (ranged values picked per `variance`).
+  template <RandomNumberGenerator Rng>
+  void loadAttributes(const Json &archetype, Variance variance, Rng &rng) {
     if (archetype.contains("attributes")) {
       for (const auto &[statId, value] : archetype.at("attributes").items()) {
         m_stats[statId] = readVariantValue(value, variance, rng);
       }
     }
+  }
+  /// Loads skill values (ranged values picked per `variance`).
+  template <RandomNumberGenerator Rng>
+  void loadSkills(const Json &archetype, Variance variance, Rng &rng) {
     if (archetype.contains("skills")) {
       for (const auto &[skillId, value] : archetype.at("skills").items()) {
         m_stats[skillId] = readVariantValue(value, variance, rng);
       }
     }
-    refreshResources();
+  }
+  /// Loads resource pool current values (ranged values picked per `variance`).
+  template <RandomNumberGenerator Rng>
+  void loadResources(const Json &archetype, Variance variance, Rng &rng) {
     if (archetype.contains("resources")) {
       for (const auto &[resourceId, value] : archetype.at("resources").items()) {
         m_resources[resourceId].current = readVariantValue(value, variance, rng);
       }
     }
+  }
+  /// Loads the starting conditions and their stack counts.
+  void loadConditions(const Json &archetype) {
     if (archetype.contains("conditions")) {
       for (const auto &[conditionId, value] : archetype.at("conditions").items()) {
         m_conditions[conditionId] = value.get<int32_t>();
       }
     }
+  }
+  /// Loads the starting trait ids.
+  void loadTraits(const Json &archetype) {
     if (archetype.contains("traits") && archetype.at("traits").is_array()) {
       for (const Json &trait : archetype.at("traits")) {
         if (trait.is_string()) {
@@ -600,8 +677,10 @@ public:
         }
       }
     }
-    // Bookkeeping fields an archetype (or bestiary entry) may declare. Each is
-    // optional: a ruleset without money / gear / spells simply omits them.
+  }
+  /// Bookkeeping fields an archetype (or bestiary entry) may declare. Each is
+  /// optional: a ruleset without money / gear / spells simply omits them.
+  void loadWealth(const Json &archetype) {
     if (archetype.contains("wealth")) {
       const Json &wealth = archetype.at("wealth");
       if (wealth.is_object() && !m_ruleset->currencySystem.id.empty()) {
@@ -614,6 +693,9 @@ public:
         m_money = Money{wealth.get<int64_t>()};
       }
     }
+  }
+  /// Loads starting equipment (either a slot->item map or a list of entries).
+  void loadEquipment(const Json &archetype) {
     if (archetype.contains("equipment")) {
       const Json &equip = archetype.at("equipment");
       if (equip.is_object()) {
@@ -626,20 +708,51 @@ public:
         }
       }
     }
+  }
+  /// Loads the spells the character knows.
+  void loadSpellsKnown(const Json &archetype) {
     if (archetype.contains("spells_known")) {
       for (const Json &spellId : archetype.at("spells_known")) {
         m_spellbook.learn(spellId.get<std::string>());
       }
     }
+  }
+  /// Loads the starting experience points.
+  void loadXp(const Json &archetype) {
     if (archetype.contains("xp")) {
       m_advancement.gainXp(archetype.at("xp").get<int64_t>());
     }
+  }
+  /// Loads the starting level.
+  void loadLevel(const Json &archetype) {
     if (archetype.contains("level")) {
       m_advancement.level = archetype.at("level").get<int32_t>();
     }
   }
 
-private:
+  /// Appends the modifiers a single data record contributes to `statId`: gear
+  /// `modifiers` (stat field `target_stat`) and condition / trait
+  /// `stat_modifiers` (stat field `stat`) share one shape — an array of
+  /// modifier objects — so one helper serves all three. `stackScale` multiplies
+  /// Add modifiers (a condition's per-stack modifiers scale with its stacks).
+  static void appendRecordModifiers(std::vector<Modifier> &result, const Json *record,
+                                    std::string_view arrayField, std::string_view statField,
+                                    std::string_view statId, int32_t stackScale = 1) {
+    if (record == nullptr || !record->contains(arrayField) || !record->at(arrayField).is_array()) {
+      return;
+    }
+    for (const Json &mod : record->at(arrayField)) {
+      if (mod.value(statField, "") != statId) {
+        continue;
+      }
+      Modifier parsed = parseModifierJson(mod);
+      if (stackScale != 1 && parsed.type == ModifierType::Add) {
+        parsed.value *= stackScale;
+      }
+      result.push_back(parsed);
+    }
+  }
+
   /// Collects the modifier steps affecting `statId` from the sheet's equipped
   /// items and active conditions. Gear modifiers apply once per equipped item;
   /// a condition's per-stack modifiers scale additively with its stack count
@@ -647,46 +760,19 @@ private:
   [[nodiscard]] std::vector<Modifier> modifiersFor(std::string_view statId) const {
     std::vector<Modifier> result;
     for (const auto &[slot, itemId] : m_equipment.slots()) {
-      const Json *item = findDataRecord("items", itemId);
-      if (item == nullptr || !item->contains("modifiers") || !item->at("modifiers").is_array()) {
-        continue;
-      }
-      for (const Json &mod : item->at("modifiers")) {
-        if (mod.value("target_stat", "") == statId) {
-          result.push_back(parseModifierJson(mod));
-        }
-      }
+      appendRecordModifiers(result, findDataRecord("items", itemId), "modifiers", "target_stat",
+                            statId);
     }
     for (const auto &[conditionId, stacks] : m_conditions) {
       if (stacks <= 0) {
         continue;
       }
-      const Json *cond = findDataRecord("conditions", conditionId);
-      if (cond == nullptr || !cond->contains("stat_modifiers") ||
-          !cond->at("stat_modifiers").is_array()) {
-        continue;
-      }
-      for (const Json &mod : cond->at("stat_modifiers")) {
-        if (mod.value("stat", "") == statId) {
-          Modifier parsed = parseModifierJson(mod);
-          if (parsed.type == ModifierType::Add) {
-            parsed.value *= stacks;
-          }
-          result.push_back(parsed);
-        }
-      }
+      appendRecordModifiers(result, findDataRecord("conditions", conditionId), "stat_modifiers",
+                            "stat", statId, stacks);
     }
     for (const std::string &traitId : m_traits) {
-      const Json *trait = findDataRecord("traits", traitId);
-      if (trait == nullptr || !trait->contains("stat_modifiers") ||
-          !trait->at("stat_modifiers").is_array()) {
-        continue;
-      }
-      for (const Json &mod : trait->at("stat_modifiers")) {
-        if (mod.value("stat", "") == statId) {
-          result.push_back(parseModifierJson(mod));
-        }
-      }
+      appendRecordModifiers(result, findDataRecord("traits", traitId), "stat_modifiers", "stat",
+                            statId);
     }
     return result;
   }
