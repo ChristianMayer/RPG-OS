@@ -54,6 +54,20 @@ struct OngoingEffect {
   std::string source;   ///< what applied it (spell / item / event id)
 };
 
+/// A record of a poison / disease / curse applied to a sheet — bookkeeping
+/// for "this affliction is active, and these conditions its effects applied".
+///
+/// @par Why in the shared core?
+/// @c DynamicEntity nests its own copy of this record; sharing the value type
+/// here (and aliasing it there) lets the generated specific-mode characters
+/// serialize the exact same save-state shape without depending on the
+/// universal mode.
+struct AppliedAffliction {
+  std::string section;                 ///< "poisons" / "diseases" / "curses"
+  std::string id;                      ///< affliction record id
+  std::vector<std::string> conditions; ///< condition ids its effects applied
+};
+
 /// The active-effect timeline of a sheet: a list of @ref ActiveEffect with
 /// stack-aware queries and a ticking step that decrements durations, plus the
 /// sheet's temporary stat bonuses and recurring (ongoing) effects — all three

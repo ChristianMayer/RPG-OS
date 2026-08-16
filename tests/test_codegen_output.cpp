@@ -344,9 +344,11 @@ TEST_CASE("generated characters store narrow stat types (no wasted int32)") {
                 "spells use the shared Spellbook type");
 
   // The byte-sized storage keeps the hot stat block small; the sheet
-  // bookkeeping members (inventory/equipment/spellbook/money/advancement) are
-  // fixed-size handles over heap state, so the whole object stays compact.
-  CHECK(sizeof(TdeCharacter) <= 512);
+  // bookkeeping members (inventory/equipment/spellbook/money/advancement) and
+  // the living-sheet runtime state (conditions map, effect timeline,
+  // resistances, traits, afflictions) are all fixed-size handles over heap
+  // state, so the whole object stays compact.
+  CHECK(sizeof(TdeCharacter) <= 1024);
 }
 
 TEST_CASE("generated tde5e: wealth and starting gear load from the archetype (parity)") {
@@ -396,4 +398,74 @@ TEST_CASE("generated code: data section loaders expose spells/poisons/etc.") {
   CHECK(DndCharacter::loadSpells(dnd).size() >= 300);
   CHECK(DndCharacter::loadPoisons(dnd).size() >= 10);
   CHECK(DndCharacter::loadConditions(dnd).size() >= 10);
+}
+
+TEST_CASE("generated tde5e: toJson/restoreFromJson round-trips living state") {
+  const rpg_os::Json ruleset = loadRuleset("tde5e_core.json");
+  TdeCharacter geron = TdeCharacter::fromArchetype(ruleset, "geron");
+  REQUIRE(geron.courage == 12);
+
+  // Put the character into a non-default living state: spent pools, temp HP,
+  // a timed condition, resistances, inventory, wealth, and a known spell.
+  geron.lifePoints = 20;
+  geron.arcaneEnergy = 11;
+  geron.tempHitPoints = 5;
+  geron.conditions["pain"] = 2;
+  geron.resistances.insert("Fire");
+  geron.effects.add(rpg_os::ActiveEffect{"pain", 1, 2, "test"});
+  geron.inventory.add(rpg_os::ItemInstance{"dagger", 2, {}});
+  geron.money = rpg_os::Money{1000};
+  geron.spellbook.learn("fulminictus");
+
+  rpg_os::Json save;
+  geron.toJson(save);
+  CHECK(save["resources"]["LP"] == 20);
+  CHECK(save["conditions"]["pain"] == 2);
+  CHECK(save["temp_hp"] == 5);
+
+  // A fresh character restores the exact living state.
+  TdeCharacter restored;
+  restored.restoreFromJson(save);
+  CHECK(restored.courage == 12);
+  CHECK(restored.lifePoints == 20);
+  CHECK(restored.arcaneEnergy == 11);
+  CHECK(restored.tempHitPoints == 5);
+  CHECK(restored.conditions["pain"] == 2);
+  CHECK(restored.resistances.count("Fire") == 1);
+  CHECK(restored.inventory.count("dagger") == 2);
+  CHECK(restored.money.baseUnits() == 1000);
+  CHECK(restored.spellbook.knows("fulminictus"));
+  bool painDuration = false;
+  for (const rpg_os::ActiveEffect &effect : restored.effects.effects()) {
+    if (effect.conditionId == "pain" && effect.remaining == 2) {
+      painDuration = true;
+    }
+  }
+  CHECK(painDuration);
+}
+
+TEST_CASE("generated tde5e: generated save restores into the universal engine (parity)") {
+  const rpg_os::Json ruleset = loadRuleset("tde5e_core.json");
+  TdeCharacter geron = TdeCharacter::fromArchetype(ruleset, "geron");
+  geron.lifePoints = 20;
+  geron.tempHitPoints = 5;
+  geron.conditions["pain"] = 2;
+  geron.resistances.insert("Fire");
+  rpg_os::Json save;
+  geron.toJson(save);
+
+  // The same save state restores into a universal DynamicEntity: the save
+  // format is portable between the two modes.
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromJson(readFile("tde5e_core.json")));
+  auto universal = engine.createEntity("geron");
+  REQUIRE(universal != nullptr);
+  universal->setEventsSuppressed(true);
+  universal->fromJson(save);
+  universal->setEventsSuppressed(false);
+  CHECK(universal->resource("LP") == 20);
+  CHECK(universal->temporaryHitPoints() == 5);
+  CHECK(universal->conditionStacks("pain") == 2);
+  CHECK(universal->hasResistance("Fire"));
+  CHECK(universal->getStat("COU") == 12);
 }

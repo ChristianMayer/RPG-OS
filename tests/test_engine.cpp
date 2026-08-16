@@ -84,6 +84,13 @@ constexpr std::string_view kRuleset = R"json(
       { "id": "geron", "name": "Geron",
         "attributes": { "COU": 12, "AGI": 13, "STR": 11, "CN": 12, "Armor_Rating": 3 },
         "skills": { "climbing": 7 } }
+    ],
+    "conditions": [
+      { "id": "blinded", "name": "Blinded" }
+    ],
+    "spells": [
+      { "id": "blinding_bolt", "name": "Blinding Bolt", "level": 1,
+        "effects": [ { "kind": "condition", "condition": "blinded", "stacks": 1, "duration": 3 } ] }
     ]
   }
 }
@@ -240,4 +247,198 @@ TEST_CASE("Engine: loadRulesetFromFile") {
   CHECK(engine.loadRulesetFromFile(path));
   CHECK(engine.ruleset().id == "dsa_demo");
   std::remove(path.c_str());
+}
+
+TEST_CASE("Engine: OnCheckResolved fires for success and failure") {
+  RulesetEngine engine = makeEngine();
+  auto geron = engine.createEntity("geron");
+  REQUIRE(geron != nullptr);
+
+  int resolved = 0;
+  int before = 0;
+  int after = 0;
+  bool lastSuccess = false;
+  uint64_t lastInstance = 0;
+  (void)engine.registerEventListener(
+      rpg_os::EventType::OnCheckResolved, [&](const rpg_os::EventData &data) {
+        ++resolved;
+        lastSuccess = data.getBool("is_success");
+        lastInstance = static_cast<uint64_t>(data.getInt("instance_id"));
+      });
+  (void)engine.registerEventListener(rpg_os::EventType::OnBeforeCheckRoll,
+                                     [&](const rpg_os::EventData &) { ++before; });
+  (void)engine.registerEventListener(rpg_os::EventType::OnAfterCheckRoll,
+                                     [&](const rpg_os::EventData &) { ++after; });
+
+  auto rng = script({14, 12, 11});
+  const rpg_os::CheckResult ok =
+      engine.executeCheck("dsa4_talent", *geron, nullptr, CheckParams{}, rng);
+  CHECK(ok.isSuccess);
+  CHECK(resolved == 1);
+  CHECK(lastSuccess);
+  CHECK(before == 1);
+  CHECK(after == 1);
+  CHECK(lastInstance == geron->entityId().toUint64());
+
+  CheckParams penalty;
+  penalty.difficulty = -4;
+  auto rngPenalty = script({14, 12, 11});
+  const rpg_os::CheckResult failed =
+      engine.executeCheck("dsa4_talent", *geron, nullptr, penalty, rngPenalty);
+  CHECK_FALSE(failed.isSuccess);
+  CHECK(resolved == 2);
+  CHECK_FALSE(lastSuccess);
+}
+
+TEST_CASE("Engine: OnStatChanged fires from a stat bonus and a direct set") {
+  RulesetEngine engine = makeEngine();
+  auto geron = engine.createEntity("geron");
+  REQUIRE(geron != nullptr);
+
+  int statEvents = 0;
+  std::string lastStat;
+  (void)engine.registerEventListener(rpg_os::EventType::OnStatChanged,
+                                     [&](const rpg_os::EventData &data) {
+                                       ++statEvents;
+                                       lastStat = data.getString("stat", "");
+                                     });
+
+  engine.applyStatBonus(*geron, "COU", 3);
+  CHECK(statEvents == 1);
+  CHECK(lastStat == "COU");
+
+  // A direct sheet mutation also reaches the bus via the entity's sink.
+  geron->setBaseAttribute("STR", 14);
+  CHECK(statEvents == 2);
+  CHECK(lastStat == "STR");
+}
+
+TEST_CASE("Engine: OnResourceChanged and OnTempHpChanged fire via the entity sink") {
+  RulesetEngine engine = makeEngine();
+  auto geron = engine.createEntity("geron");
+  REQUIRE(geron != nullptr);
+
+  int resourceEvents = 0;
+  int tempEvents = 0;
+  uint64_t lastInstance = 0;
+  int32_t lastDelta = 0;
+  (void)engine.registerEventListener(
+      rpg_os::EventType::OnResourceChanged, [&](const rpg_os::EventData &data) {
+        ++resourceEvents;
+        lastInstance = static_cast<uint64_t>(data.getInt("instance_id"));
+        lastDelta = data.getInt("delta");
+      });
+  (void)engine.registerEventListener(rpg_os::EventType::OnTempHpChanged,
+                                     [&](const rpg_os::EventData &) { ++tempEvents; });
+
+  CHECK(geron->modifyResource("VP", -5) == -5);
+  CHECK(resourceEvents == 1);
+  CHECK(lastInstance == geron->entityId().toUint64());
+  CHECK(lastDelta == -5);
+  geron->addTemporaryHitPoints(7);
+  CHECK(geron->temporaryHitPoints() == 7);
+  CHECK(tempEvents == 1);
+}
+
+TEST_CASE("Engine: OnConditionChanged fires from every condition path") {
+  RulesetEngine engine = makeEngine();
+  auto geron = engine.createEntity("geron");
+  REQUIRE(geron != nullptr);
+
+  int applied = 0;
+  int removed = 0;
+  int expired = 0;
+  (void)engine.registerEventListener(rpg_os::EventType::OnConditionChanged,
+                                     [&](const rpg_os::EventData &data) {
+                                       const std::string action = data.getString("action", "");
+                                       if (action == "applied") {
+                                         ++applied;
+                                       } else if (action == "removed") {
+                                         ++removed;
+                                       } else if (action == "expired") {
+                                         ++expired;
+                                       }
+                                     });
+
+  // facade wrapper validates and fires "applied".
+  engine.applyCondition(*geron, "blinded", 1, 1);
+  CHECK(applied == 1);
+  CHECK(geron->hasCondition("blinded"));
+
+  // Duration expiry after a tick fires "expired".
+  engine.tickEffects(*geron);
+  CHECK(expired == 1);
+  CHECK_FALSE(geron->hasCondition("blinded"));
+
+  // The spell-effect path applies a condition through castSpell -> resolveEffects.
+  auto victim = engine.createEntity("geron");
+  REQUIRE(victim != nullptr);
+  auto rng = script({});
+  const rpg_os::RulesetEngine::SpellResult cast =
+      engine.castSpell("blinding_bolt", *geron, victim.get(), CheckParams{}, rng);
+  CHECK(cast.cast);
+  CHECK(victim->hasCondition("blinded"));
+  CHECK(applied == 2);
+
+  // Removal fires "removed".
+  engine.removeCondition(*victim, "blinded");
+  CHECK(removed == 1);
+  CHECK_FALSE(victim->hasCondition("blinded"));
+}
+
+TEST_CASE("Engine: OnSpellCast fires from the plain castSpell path") {
+  RulesetEngine engine = makeEngine();
+  auto geron = engine.createEntity("geron");
+  auto victim = engine.createEntity("geron");
+  REQUIRE(geron != nullptr);
+  REQUIRE(victim != nullptr);
+
+  int casts = 0;
+  bool lastCast = false;
+  (void)engine.registerEventListener(rpg_os::EventType::OnSpellCast,
+                                     [&](const rpg_os::EventData &data) {
+                                       ++casts;
+                                       lastCast = data.getBool("cast");
+                                     });
+
+  auto rng = script({});
+  const rpg_os::RulesetEngine::SpellResult cast =
+      engine.castSpell("blinding_bolt", *geron, victim.get(), CheckParams{}, rng);
+  CHECK(cast.cast);
+  CHECK(casts == 1);
+  CHECK(lastCast);
+}
+
+TEST_CASE("Engine: entity event sink honours suppression") {
+  RulesetEngine engine = makeEngine();
+  auto geron = engine.createEntity("geron");
+  REQUIRE(geron != nullptr);
+
+  int resourceEvents = 0;
+  (void)engine.registerEventListener(rpg_os::EventType::OnResourceChanged,
+                                     [&](const rpg_os::EventData &) { ++resourceEvents; });
+
+  geron->setEventsSuppressed(true);
+  CHECK(geron->modifyResource("VP", -5) == -5);
+  CHECK(resourceEvents == 0);
+
+  geron->setEventsSuppressed(false);
+  CHECK(geron->modifyResource("VP", 5) == 5);
+  CHECK(resourceEvents == 1);
+}
+
+TEST_CASE("Engine: damage payloads carry per-instance ids") {
+  RulesetEngine engine = makeEngine();
+  auto geron = engine.createEntity("geron");
+  auto attacker = engine.createEntity("geron");
+  REQUIRE(geron != nullptr);
+  REQUIRE(attacker != nullptr);
+
+  uint64_t targetInstance = 0;
+  (void)engine.registerEventListener(
+      rpg_os::EventType::OnDamageTaken, [&](const rpg_os::EventData &data) {
+        targetInstance = static_cast<uint64_t>(data.getInt("target_instance_id"));
+      });
+  engine.applyDamage(*attacker, *geron, "VP", 5);
+  CHECK(targetInstance == geron->entityId().toUint64());
 }

@@ -25,10 +25,12 @@
  */
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <rpg_os/common/event_system.hpp>
 #include <rpg_os/universal/engine.hpp>
+#include <rpg_os/universal/entity_registry.hpp>
 #include <rpg_os/universal/world_state.hpp>
 #include <string>
 #include <string_view>
@@ -74,6 +76,38 @@ public:
   /// Creates a creature sheet from a bestiary entry and takes ownership.
   [[nodiscard]] DynamicEntity &createCreature(std::string_view creatureId) {
     return adopt(m_engine.createCreature(creatureId));
+  }
+
+  /// Creates a character and returns a stable @ref EntityHandle to it (see
+  /// @ref createCharacter for the owning-reference variant).
+  [[nodiscard]] EntityHandle createCharacterHandle(std::string_view archetypeId) {
+    return adoptHandle(m_engine.createEntity(archetypeId));
+  }
+  /// Creates a creature and returns a stable @ref EntityHandle to it.
+  [[nodiscard]] EntityHandle createCreatureHandle(std::string_view creatureId) {
+    return adoptHandle(m_engine.createCreature(creatureId));
+  }
+
+  // ---- entity registry --------------------------------------------------
+  /// Looks up a live entity by its unique instance id; @c nullptr when absent.
+  [[nodiscard]] DynamicEntity *findEntity(EntityId id) const {
+    return m_registry.get(id);
+  }
+  /// A non-owning handle to the entity with `id` (null handle when absent).
+  [[nodiscard]] EntityHandle entity(EntityId id) const {
+    return m_registry.handle(id);
+  }
+  /// Removes an entity from the session (destroying the last owner).
+  [[nodiscard]] bool removeEntity(EntityId id) {
+    return m_registry.remove(id);
+  }
+  /// Number of entities the session currently owns.
+  [[nodiscard]] std::size_t entityCount() const noexcept {
+    return m_registry.size();
+  }
+  /// All live entities, in unspecified order.
+  [[nodiscard]] std::vector<DynamicEntity *> entities() const {
+    return m_registry.all();
   }
 
   /// The shared world bookkeeping (treasury, day counter).
@@ -166,6 +200,83 @@ public:
     m_engine.runTurn(sheet);
   }
 
+  // ---- time --------------------------------------------------------------
+  /// Advances game time by `days`: increments the world day counter, fires
+  /// @c OnTimePassed (elapsed + new day in the payload), and ticks every owned
+  /// sheet's effect durations once, so day-scale durations decay and expired
+  /// effects are stripped. Returns the new day.
+  int32_t advanceTime(int32_t days = 1) {
+    m_world.advanceDays(days);
+    const int32_t newDay = m_world.day;
+    m_engine.announceTimePassed(days, newDay);
+    for (DynamicEntity *sheet : m_registry.all()) {
+      (void)m_engine.tickEffects(*sheet);
+    }
+    return newDay;
+  }
+
+  // ---- save / load ------------------------------------------------------
+  /// Snapshots the whole session — every owned sheet (via @c toJson) plus the
+  /// shared @ref WorldState — into one JSON save state. Per-instance entity
+  /// ids are preserved, so @ref loadState restores the same living characters.
+  [[nodiscard]] Json saveState() const {
+    Json out = Json::object();
+    Json worldJson;
+    m_world.toJson(worldJson);
+    out["world"] = std::move(worldJson);
+    Json sheets = Json::array();
+    for (const DynamicEntity *sheet : m_registry.all()) {
+      Json sheetJson;
+      sheet->toJson(sheetJson);
+      sheets.push_back(std::move(sheetJson));
+    }
+    out["sheets"] = sheets;
+    return out;
+  }
+
+  /// Restores a state produced by @c saveState: replaces every owned sheet
+  /// and the shared world. Each sheet is recreated from its archetype /
+  /// creature record (so resource-pool bounds are rebuilt from the ruleset)
+  /// and its saved living state — current pools, conditions with remaining
+  /// durations, inventory, spell slots, effect timeline — is then applied,
+  /// with events suppressed during the restore. Returns how many sheets were
+  /// restored (a sheet whose type is absent from the ruleset is skipped).
+  std::size_t loadState(const Json &in) {
+    if (!in.is_object()) {
+      return 0;
+    }
+    m_registry.clear();
+    if (in.contains("world") && in.at("world").is_object()) {
+      m_world.fromJson(in.at("world"));
+    }
+    if (!in.contains("sheets") || !in.at("sheets").is_array()) {
+      return 0;
+    }
+    std::size_t restored = 0;
+    for (const Json &sheetJson : in.at("sheets")) {
+      if (!sheetJson.is_object()) {
+        continue;
+      }
+      const std::string typeId = sheetJson.value("id", "");
+      if (typeId.empty()) {
+        continue;
+      }
+      std::shared_ptr<DynamicEntity> sheet = m_engine.createEntity(typeId);
+      if (sheet == nullptr) {
+        sheet = m_engine.createCreature(typeId);
+      }
+      if (sheet == nullptr) {
+        continue; // type not present in this ruleset
+      }
+      sheet->setEventsSuppressed(true);
+      sheet->fromJson(sheetJson);
+      sheet->setEventsSuppressed(false);
+      (void)m_registry.add(std::move(sheet));
+      ++restored;
+    }
+    return restored;
+  }
+
   // ---- magic ------------------------------------------------------------
   [[nodiscard]] bool prepareSpell(DynamicEntity &sheet, std::string_view spellId) const {
     return m_engine.prepareSpell(sheet, spellId);
@@ -221,12 +332,17 @@ private:
   /// Takes ownership of a freshly created sheet; returns the reference.
   [[nodiscard]] DynamicEntity &adopt(std::shared_ptr<DynamicEntity> sheet) {
     DynamicEntity *raw = sheet.get();
-    m_sheets.push_back(std::move(sheet));
+    (void)m_registry.add(std::move(sheet));
     return *raw;
+  }
+  /// Takes ownership of a freshly created sheet and returns a stable handle.
+  [[nodiscard]] EntityHandle adoptHandle(std::shared_ptr<DynamicEntity> sheet) {
+    const EntityId id = m_registry.add(std::move(sheet));
+    return m_registry.handle(id);
   }
 
   RulesetEngine m_engine;
-  std::vector<std::shared_ptr<DynamicEntity>> m_sheets;
+  EntityRegistry m_registry;
   WorldState m_world;
 };
 

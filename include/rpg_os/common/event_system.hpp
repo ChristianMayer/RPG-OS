@@ -83,6 +83,16 @@ enum class EventType {
   OnLevelUp,
   /// An affliction (poison / disease / curse) was applied.
   OnAfflictionApplied,
+  /// A base attribute or effective stat changed (a sheet's raw value was set,
+  /// a temporary stat bonus was applied or expired).
+  OnStatChanged,
+  /// A check / save / attack was resolved (carries success and quality, so UI
+  /// can hook "the hero failed the Climb check" without polling the sheet).
+  OnCheckResolved,
+  /// A resource pool changed (damage, healing, a spell's cost, a rest).
+  OnResourceChanged,
+  /// Temporary hit points changed.
+  OnTempHpChanged,
   /// Game time advanced (calendar / duration ticking).
   OnTimePassed,
 };

@@ -21,6 +21,7 @@
 #include <rpg_os/core/checks.hpp>
 #include <rpg_os/core/cost_table.hpp>
 #include <rpg_os/core/dice_engine.hpp>
+#include <rpg_os/core/effects.hpp>
 #include <rpg_os/core/equipment.hpp>
 #include <rpg_os/core/inventory.hpp>
 #include <rpg_os/core/math.hpp>
@@ -29,6 +30,8 @@
 #include <rpg_os/core/variance.hpp>
 #include <string>
 #include <string_view>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -112,6 +115,190 @@ public:
   /// How many whole `denomId` coins the wealth equals (floor).
   [[nodiscard]] int64_t coinAmount(std::string_view denomId) const {
     return money.in(currencySystem(), denomId);
+  }
+
+  // ---- living-sheet runtime state (save/load) ----
+  std::unordered_map<std::string, int32_t> conditions; // condition id -> stacks
+  rpg_os::EffectTimeline effects;                      // timed conditions + temporary modifiers
+  int32_t tempHitPoints{0};
+  std::unordered_set<std::string> resistances;
+  std::vector<rpg_os::AppliedAffliction> afflictions;
+  std::unordered_set<std::string> traits;
+
+  // ---- save / load (snapshot the living sheet, not a ruleset record) ----
+  /// Serializes the character's current living state — attributes, skills,
+  /// resource current values, conditions with durations, the effect timeline,
+  /// temp HP, resistances, afflictions, traits, inventory, equipment, money,
+  /// spell slots, and advancement — in the same save-state shape as the
+  /// universal @c rpg_os::DynamicEntity::toJson.
+  void toJson(rpg_os::Json &out) const {
+    out = rpg_os::Json::object();
+    rpg_os::Json stats = rpg_os::Json::object();
+    stats["STR"] = static_cast<int32_t>(strength);
+    stats["DEX"] = static_cast<int32_t>(dexterity);
+    stats["CON"] = static_cast<int32_t>(constitution);
+    stats["INT"] = static_cast<int32_t>(intelligence);
+    stats["WIS"] = static_cast<int32_t>(wisdom);
+    stats["CHA"] = static_cast<int32_t>(charisma);
+    stats["proficiency_bonus"] = static_cast<int32_t>(proficiencyBonus);
+    stats["level"] = static_cast<int32_t>(level);
+    stats["HitPoints_Max"] = static_cast<int32_t>(maxHitPoints);
+    stats["acrobatics"] = static_cast<int32_t>(acrobatics);
+    stats["animal_handling"] = static_cast<int32_t>(animalHandling);
+    stats["arcana"] = static_cast<int32_t>(arcana);
+    stats["athletics"] = static_cast<int32_t>(athletics);
+    stats["deception"] = static_cast<int32_t>(deception);
+    stats["history"] = static_cast<int32_t>(history);
+    stats["insight"] = static_cast<int32_t>(insight);
+    stats["intimidation"] = static_cast<int32_t>(intimidation);
+    stats["investigation"] = static_cast<int32_t>(investigation);
+    stats["medicine"] = static_cast<int32_t>(medicine);
+    stats["nature"] = static_cast<int32_t>(nature);
+    stats["perception"] = static_cast<int32_t>(perception);
+    stats["performance"] = static_cast<int32_t>(performance);
+    stats["persuasion"] = static_cast<int32_t>(persuasion);
+    stats["religion"] = static_cast<int32_t>(religion);
+    stats["sleight_of_hand"] = static_cast<int32_t>(sleightOfHand);
+    stats["stealth"] = static_cast<int32_t>(stealth);
+    stats["survival"] = static_cast<int32_t>(survival);
+    out["stats"] = stats;
+    rpg_os::Json resources = rpg_os::Json::object();
+    resources["HP"] = hitPoints;
+    out["resources"] = resources;
+    out["conditions"] = conditions;
+    rpg_os::Json traitsJson = rpg_os::Json::array();
+    for (const auto &traitId : traits) {
+      traitsJson.push_back(traitId);
+    }
+    out["traits"] = traitsJson;
+    rpg_os::Json inventoryJson;
+    inventory.toJson(inventoryJson);
+    out["inventory"] = inventoryJson;
+    rpg_os::Json equipmentJson;
+    equipment.toJson(equipmentJson);
+    out["equipment"] = equipmentJson;
+    out["money"] = money.baseUnits();
+    out["temp_hp"] = tempHitPoints;
+    rpg_os::Json spellbookJson;
+    spellbook.toJson(spellbookJson);
+    out["spellbook"] = spellbookJson;
+    rpg_os::Json advancementJson;
+    advancement.toJson(advancementJson);
+    out["advancement"] = advancementJson;
+    rpg_os::Json effectsJson;
+    effects.toJson(effectsJson);
+    out["effects"] = effectsJson;
+    rpg_os::Json afflictionsJson = rpg_os::Json::array();
+    for (const auto &affliction : afflictions) {
+      rpg_os::Json entry;
+      entry["section"] = affliction.section;
+      entry["id"] = affliction.id;
+      entry["conditions"] = affliction.conditions;
+      afflictionsJson.push_back(std::move(entry));
+    }
+    out["afflictions"] = afflictionsJson;
+    rpg_os::Json resistancesJson = rpg_os::Json::array();
+    for (const auto &type : resistances) {
+      resistancesJson.push_back(type);
+    }
+    out["resistances"] = resistancesJson;
+  }
+
+  /// Restores the living state written by @ref toJson. State absent from `in` is
+  /// left unchanged. Distinct from @ref fromJson, which loads a *ruleset*
+  /// archetype / creature record from scratch.
+  void restoreFromJson(const rpg_os::Json &in) {
+    if (!in.is_object()) {
+      return;
+    }
+    if (in.contains("stats") && in.at("stats").is_object()) {
+      const rpg_os::Json &stats = in.at("stats");
+      strength = static_cast<uint8_t>(stats.value("STR", static_cast<int32_t>(strength)));
+      dexterity = static_cast<uint8_t>(stats.value("DEX", static_cast<int32_t>(dexterity)));
+      constitution = static_cast<uint8_t>(stats.value("CON", static_cast<int32_t>(constitution)));
+      intelligence = static_cast<uint8_t>(stats.value("INT", static_cast<int32_t>(intelligence)));
+      wisdom = static_cast<uint8_t>(stats.value("WIS", static_cast<int32_t>(wisdom)));
+      charisma = static_cast<uint8_t>(stats.value("CHA", static_cast<int32_t>(charisma)));
+      proficiencyBonus = static_cast<int32_t>(
+          stats.value("proficiency_bonus", static_cast<int32_t>(proficiencyBonus)));
+      level = static_cast<int32_t>(stats.value("level", static_cast<int32_t>(level)));
+      maxHitPoints =
+          static_cast<int32_t>(stats.value("HitPoints_Max", static_cast<int32_t>(maxHitPoints)));
+      acrobatics =
+          static_cast<uint8_t>(stats.value("acrobatics", static_cast<int32_t>(acrobatics)));
+      animalHandling = static_cast<uint8_t>(
+          stats.value("animal_handling", static_cast<int32_t>(animalHandling)));
+      arcana = static_cast<uint8_t>(stats.value("arcana", static_cast<int32_t>(arcana)));
+      athletics = static_cast<uint8_t>(stats.value("athletics", static_cast<int32_t>(athletics)));
+      deception = static_cast<uint8_t>(stats.value("deception", static_cast<int32_t>(deception)));
+      history = static_cast<uint8_t>(stats.value("history", static_cast<int32_t>(history)));
+      insight = static_cast<uint8_t>(stats.value("insight", static_cast<int32_t>(insight)));
+      intimidation =
+          static_cast<uint8_t>(stats.value("intimidation", static_cast<int32_t>(intimidation)));
+      investigation =
+          static_cast<uint8_t>(stats.value("investigation", static_cast<int32_t>(investigation)));
+      medicine = static_cast<uint8_t>(stats.value("medicine", static_cast<int32_t>(medicine)));
+      nature = static_cast<uint8_t>(stats.value("nature", static_cast<int32_t>(nature)));
+      perception =
+          static_cast<uint8_t>(stats.value("perception", static_cast<int32_t>(perception)));
+      performance =
+          static_cast<uint8_t>(stats.value("performance", static_cast<int32_t>(performance)));
+      persuasion =
+          static_cast<uint8_t>(stats.value("persuasion", static_cast<int32_t>(persuasion)));
+      religion = static_cast<uint8_t>(stats.value("religion", static_cast<int32_t>(religion)));
+      sleightOfHand =
+          static_cast<uint8_t>(stats.value("sleight_of_hand", static_cast<int32_t>(sleightOfHand)));
+      stealth = static_cast<uint8_t>(stats.value("stealth", static_cast<int32_t>(stealth)));
+      survival = static_cast<uint8_t>(stats.value("survival", static_cast<int32_t>(survival)));
+    }
+    if (in.contains("resources") && in.at("resources").is_object()) {
+      const rpg_os::Json &resources = in.at("resources");
+      hitPoints = resources.value("HP", hitPoints);
+    }
+    if (in.contains("conditions") && in.at("conditions").is_object()) {
+      conditions = in.at("conditions").get<std::unordered_map<std::string, int32_t>>();
+    }
+    if (in.contains("traits") && in.at("traits").is_array()) {
+      traits.clear();
+      for (const auto &traitId : in.at("traits")) {
+        traits.insert(traitId.get<std::string>());
+      }
+    }
+    if (in.contains("inventory")) {
+      inventory.fromJson(in.at("inventory"));
+    }
+    if (in.contains("equipment")) {
+      equipment.fromJson(in.at("equipment"));
+    }
+    if (in.contains("money") && in.at("money").is_number_integer()) {
+      money = rpg_os::Money{in.at("money").get<int64_t>()};
+    }
+    if (in.contains("temp_hp") && in.at("temp_hp").is_number_integer()) {
+      tempHitPoints = in.at("temp_hp").get<int32_t>();
+    }
+    if (in.contains("spellbook")) {
+      spellbook.fromJson(in.at("spellbook"));
+    }
+    if (in.contains("advancement")) {
+      advancement.fromJson(in.at("advancement"));
+    }
+    if (in.contains("effects")) {
+      effects.fromJson(in.at("effects"));
+    }
+    if (in.contains("afflictions") && in.at("afflictions").is_array()) {
+      afflictions.clear();
+      for (const auto &aff : in.at("afflictions")) {
+        afflictions.push_back(
+            rpg_os::AppliedAffliction{aff.value("section", ""), aff.value("id", ""),
+                                      aff.value("conditions", std::vector<std::string>{})});
+      }
+    }
+    if (in.contains("resistances") && in.at("resistances").is_array()) {
+      resistances.clear();
+      for (const auto &type : in.at("resistances")) {
+        resistances.insert(type.get<std::string>());
+      }
+    }
   }
 
   // ---- derived stats (compiled formulas) ----

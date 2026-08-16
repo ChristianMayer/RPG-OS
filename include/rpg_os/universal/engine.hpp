@@ -131,6 +131,7 @@ public:
       if (archetype.value("id", "") == archetypeId) {
         auto entity = std::make_shared<DynamicEntity>(m_ruleset, std::string(archetypeId));
         entity->loadFromArchetype(archetype, variance, rng);
+        attachEntityEvents(*entity);
         return entity;
       }
     }
@@ -164,6 +165,7 @@ public:
         auto entity = std::make_shared<DynamicEntity>(m_ruleset, std::string(creatureId));
         entity->loadFromArchetype(creature, variance, rng);
         applyTraitEffects(*entity, rng);
+        attachEntityEvents(*entity);
         return entity;
       }
     }
@@ -363,10 +365,16 @@ public:
                                          const DynamicEntity *target, const CheckParams &params,
                                          Rng &rng) const {
     const CheckParams adjusted = withConditionModifiers(actor, target, checkTypeId, params);
+    announceCheckStart(checkTypeId, actor);
+    CheckResult result;
     if (target != nullptr) {
-      return CheckResolver::resolve(m_ruleset, actor, *target, checkTypeId, adjusted, rng);
+      result = CheckResolver::resolve(m_ruleset, actor, *target, checkTypeId, adjusted, rng);
+    } else {
+      result =
+          CheckResolver::resolve(m_ruleset, actor, NullStatProvider{}, checkTypeId, adjusted, rng);
     }
-    return CheckResolver::resolve(m_ruleset, actor, NullStatProvider{}, checkTypeId, adjusted, rng);
+    announceCheckResult(checkTypeId, actor, result);
+    return result;
   }
 
   /// Resolves a named check type using a fresh default RNG. Convenience for
@@ -386,12 +394,17 @@ public:
   executeCheckEffective(std::string_view checkTypeId, const DynamicEntity &actor,
                         const DynamicEntity *target, const CheckParams &params, Rng &rng) const {
     const CheckParams adjusted = withConditionModifiers(actor, target, checkTypeId, params);
+    announceCheckStart(checkTypeId, actor);
+    CheckResult result;
     if (target != nullptr) {
-      return CheckResolver::resolve(m_ruleset, EffectiveStatProvider{actor},
-                                    EffectiveStatProvider{*target}, checkTypeId, adjusted, rng);
+      result = CheckResolver::resolve(m_ruleset, EffectiveStatProvider{actor},
+                                      EffectiveStatProvider{*target}, checkTypeId, adjusted, rng);
+    } else {
+      result = CheckResolver::resolve(m_ruleset, EffectiveStatProvider{actor}, NullStatProvider{},
+                                      checkTypeId, adjusted, rng);
     }
-    return CheckResolver::resolve(m_ruleset, EffectiveStatProvider{actor}, NullStatProvider{},
-                                  checkTypeId, adjusted, rng);
+    announceCheckResult(checkTypeId, actor, result);
+    return result;
   }
 
   /// Resolves a check against effective stats using a fresh default RNG.
@@ -437,7 +450,10 @@ public:
     recipe.grading = Grading::PoolQuality;
     recipe.difficultyMode = DifficultyMode::ToStat;
     const CheckParams adjusted = withConditionModifiers(actor, nullptr, "skill", params);
-    return resolveCheck(actor, NullStatProvider{}, recipe, adjusted, rng);
+    announceCheckStart(skillId, actor);
+    const CheckResult result = resolveCheck(actor, NullStatProvider{}, recipe, adjusted, rng);
+    announceCheckResult(skillId, actor, result);
+    return result;
   }
 
   /// Resolves a skill check using a fresh default RNG. Convenience overload.
@@ -463,10 +479,9 @@ public:
   int32_t applyDamage(DynamicEntity &actor, DynamicEntity &target, std::string_view resourceId,
                       int32_t rawDamage, const Json &env = {}) {
     EventData data;
-    data.payload = {{"damage", rawDamage},
-                    {"raw_damage", rawDamage},
-                    {"attacker_id", actor.id()},
-                    {"target_id", target.id()}};
+    data.payload = {{"damage", rawDamage},       {"raw_damage", rawDamage},
+                    {"attacker_id", actor.id()}, {"attacker_instance_id", actor.entityId().value},
+                    {"target_id", target.id()},  {"target_instance_id", target.entityId().value}};
     fireEvent(EventType::OnDamageCalculated, data, actor, &target, env);
     int32_t finalDamage = data.getInt("damage", rawDamage);
     if (finalDamage < 0) {
@@ -664,6 +679,17 @@ public:
         result.appliedDamage = -applyDamage(actor, *target, hitPool, damage);
       }
     }
+
+    // Announce the cast attempt (cast = true when it went off). Refused casts
+    // (not allowed to act / not enough resource) return before reaching here
+    // and are not announced; a failed casting check still announces with
+    // cast = false so UI can narrate the fizzle.
+    EventData data;
+    data.payload = {{"spell", std::string(spellId)},
+                    {"actor_id", actor.id()},
+                    {"instance_id", actor.entityId().value},
+                    {"cast", result.cast}};
+    fireEvent(EventType::OnSpellCast, data, actor, target, Json{});
     return result;
   }
 
@@ -1119,8 +1145,18 @@ public:
       }
       if (static_cast<int32_t>(i) == *level) {
         sheet.addCondition(cfg.levels[i].conditionId, 1);
+        dispatchEvent(EventType::OnConditionChanged, Json{{"condition", cfg.levels[i].conditionId},
+                                                          {"stacks", 1},
+                                                          {"action", "applied"},
+                                                          {"actor_id", sheet.id()},
+                                                          {"instance_id", sheet.entityId().value}});
       } else {
         sheet.removeCondition(cfg.levels[i].conditionId);
+        dispatchEvent(EventType::OnConditionChanged, Json{{"condition", cfg.levels[i].conditionId},
+                                                          {"stacks", 0},
+                                                          {"action", "removed"},
+                                                          {"actor_id", sheet.id()},
+                                                          {"instance_id", sheet.entityId().value}});
       }
     }
     return {};
@@ -1141,10 +1177,7 @@ public:
     sheet.addCondition(conditionId, stacks);
     sheet.effects().add(
         ActiveEffect{std::string(conditionId), stacks, duration, std::string(source)});
-    EventData data;
-    data.payload = {
-        {"condition", std::string(conditionId)}, {"stacks", stacks}, {"actor_id", sheet.id()}};
-    fireEvent(EventType::OnConditionChanged, data, sheet, nullptr, Json{});
+    fireConditionChanged(sheet, conditionId, stacks, "applied");
   }
 
   /// Removes `conditionId` entirely (stacks and effect timeline). Fires
@@ -1152,8 +1185,23 @@ public:
   void removeCondition(DynamicEntity &sheet, std::string_view conditionId) {
     sheet.removeCondition(conditionId);
     (void)sheet.effects().remove(conditionId);
+    fireConditionChanged(sheet, conditionId, 0, "removed");
+  }
+
+  /// Fires @c OnConditionChanged for `sheet`, announcing `action`
+  /// ("applied"/"removed"/"expired"). Centralised so every condition path —
+  /// the facade wrappers, structured effects, encumbrance, and duration
+  /// expiry — reports the same payload shape (`condition`, `stacks`, `action`,
+  /// `actor_id`, `instance_id`). Runs the ruleset's JSON triggers first, then
+  /// notifies user listeners.
+  void fireConditionChanged(DynamicEntity &sheet, std::string_view conditionId, int32_t stacks,
+                            std::string_view action) {
     EventData data;
-    data.payload = {{"condition", std::string(conditionId)}, {"actor_id", sheet.id()}};
+    data.payload = {{"condition", std::string(conditionId)},
+                    {"stacks", stacks},
+                    {"action", std::string(action)},
+                    {"actor_id", sheet.id()},
+                    {"instance_id", sheet.entityId().value}};
     fireEvent(EventType::OnConditionChanged, data, sheet, nullptr, Json{});
   }
 
@@ -1164,6 +1212,13 @@ public:
   void applyStatBonus(DynamicEntity &sheet, std::string_view stat, int32_t value,
                       int32_t duration = 0, std::string_view source = {}) {
     sheet.effects().addBonus(StatBonus{std::string(stat), value, duration, std::string(source)});
+    EventData data;
+    data.payload = {{"stat", std::string(stat)},
+                    {"value", value},
+                    {"duration", duration},
+                    {"actor_id", sheet.id()},
+                    {"instance_id", sheet.entityId().value}};
+    fireEvent(EventType::OnStatChanged, data, sheet, nullptr, Json{});
   }
 
   /// Removes every temporary stat bonus on `stat` (returns how many removed).
@@ -1194,6 +1249,9 @@ public:
     const int32_t expired = sheet.effects().tick();
     for (const std::string &conditionId : hadTimers) {
       if (sheet.effects().stacks(conditionId) <= 0) {
+        if (sheet.hasCondition(conditionId)) {
+          fireConditionChanged(sheet, conditionId, 0, "expired");
+        }
         sheet.removeCondition(conditionId);
       }
     }
@@ -1317,11 +1375,6 @@ public:
       }
     } else {
       result = castSpell(spellId, actor, target, params, rng);
-    }
-    if (result.cast) {
-      EventData data;
-      data.payload = {{"spell", std::string(spellId)}, {"actor_id", actor.id()}};
-      fireEvent(EventType::OnSpellCast, data, actor, target, Json{});
     }
     return result;
   }
@@ -1468,6 +1521,7 @@ public:
           }
         }
         target.addCondition(conditionId, stacks);
+        fireConditionChanged(target, conditionId, stacks, "applied");
         const int32_t duration = effect.value("duration", 0);
         if (duration > 0) {
           target.effects().add(ActiveEffect{conditionId, stacks, duration, "effect"});
@@ -1656,7 +1710,9 @@ public:
     }
     CheckParams adjusted = withConditionModifiers(target, nullptr, "save", params);
     adjusted.difficulty = dc;
+    announceCheckStart("save", target);
     const CheckResult roll = resolveCheck(target, NullStatProvider{}, recipe, adjusted, rng);
+    announceCheckResult("save", target, roll);
     return roll.isSuccess;
   }
 
@@ -1685,7 +1741,9 @@ public:
     // and the target's "attacked" conditions (attacks against a blinded target
     // gain advantage) both shape the roll.
     const CheckParams adjusted = withConditionModifiers(source, &target, "attack", params);
+    announceCheckStart("attack", source);
     const CheckResult roll = resolveCheck(source, target, recipe, adjusted, rng);
+    announceCheckResult("attack", source, roll);
     return roll.isSuccess;
   }
 
@@ -1787,6 +1845,27 @@ public:
     return m_eventBus.removeListener(listenerId);
   }
 
+  /// Wires `entity`'s granular state-change events (stat / resource / temp-HP
+  /// changes) to this engine's event bus, so an application observes both
+  /// engine-driven and direct sheet mutations without polling. The engine
+  /// calls this for every entity it creates; the entity must not outlive the
+  /// engine (the same lifetime rule as its ruleset reference).
+  void attachEntityEvents(DynamicEntity &entity) {
+    entity.setEventSink([this, entityId = entity.entityId()](EventType type, const Json &payload) {
+      EventData data;
+      data.payload = payload;
+      data.payload["instance_id"] = entityId.value;
+      m_eventBus.dispatch(type, data);
+    });
+  }
+
+  /// Announces that game time advanced — used by @ref GameSession::advanceTime,
+  /// which owns the world clock. Dispatches @c OnTimePassed with the elapsed
+  /// and resulting day (listener-only; no ruleset triggers exist for it).
+  void announceTimePassed(int32_t days, int32_t newDay) {
+    dispatchEvent(EventType::OnTimePassed, Json{{"days", days}, {"day", newDay}});
+  }
+
   /// The loaded ruleset (only valid when `loaded()` is true).
   [[nodiscard]] const Ruleset &ruleset() const noexcept {
     return m_ruleset;
@@ -1845,6 +1924,49 @@ private:
       }
     }
     return std::unexpected(BookkeepingError::UnknownDenomination);
+  }
+
+  /// Dispatches `type` with `payload` to user listeners only (no ruleset JSON
+  /// triggers). Used by the @c const check paths and by @ref updateEncumbrance,
+  /// where the engine must not mutate through rule actions. The granular event
+  /// types dispatched here (@c OnBeforeCheckRoll, @c OnAfterCheckRoll,
+  /// @c OnCheckResolved, and @c OnConditionChanged from encumbrance) have no
+  /// JSON triggers in any shipped ruleset, so listener-only dispatch is
+  /// equivalent to @ref fireEvent for them.
+  void dispatchEvent(EventType type, Json payload) const {
+    EventData data;
+    data.payload = std::move(payload);
+    m_eventBus.dispatch(type, data);
+  }
+
+  /// Fires @c OnBeforeCheckRoll just before a check's dice land, naming the
+  /// actor so UI can show "X is rolling &lt;check&gt;" without polling.
+  void announceCheckStart(std::string_view checkTypeId, const DynamicEntity &actor) const {
+    dispatchEvent(EventType::OnBeforeCheckRoll, Json{{"check_type", std::string(checkTypeId)},
+                                                     {"actor_id", actor.id()},
+                                                     {"instance_id", actor.entityId().value}});
+  }
+
+  /// Announces a resolved check: @c OnAfterCheckRoll with the raw dice, then
+  /// @c OnCheckResolved with the interpreted outcome (success, success level,
+  /// quality level, margin). Both name the rolling entity via @c actor_id and
+  /// @c instance_id, so UI can hook "the hero failed the Climb check" (a
+  /// resolved check with @c is_success false) without polling the sheet.
+  void announceCheckResult(std::string_view checkTypeId, const DynamicEntity &actor,
+                           const CheckResult &result) const {
+    dispatchEvent(EventType::OnAfterCheckRoll, Json{{"check_type", std::string(checkTypeId)},
+                                                    {"actor_id", actor.id()},
+                                                    {"instance_id", actor.entityId().value},
+                                                    {"raw_dice", result.rawDiceRolls}});
+    dispatchEvent(EventType::OnCheckResolved,
+                  Json{{"check_type", std::string(checkTypeId)},
+                       {"actor_id", actor.id()},
+                       {"instance_id", actor.entityId().value},
+                       {"is_success", result.isSuccess},
+                       {"success_level", static_cast<int32_t>(result.successLevel)},
+                       {"quality_level", result.qualityLevel},
+                       {"margin_of_success", result.marginOfSuccess},
+                       {"raw_dice", result.rawDiceRolls}});
   }
 
   /// Runs the ruleset's JSON-driven triggers for `type` (mutating `data`), then
@@ -1973,7 +2095,10 @@ private:
       }
       begin = end;
     }
-    return resolveCheck(actor, NullStatProvider{}, recipe, params, rng);
+    announceCheckStart("spell", actor);
+    const CheckResult result = resolveCheck(actor, NullStatProvider{}, recipe, params, rng);
+    announceCheckResult("spell", actor, result);
+    return result;
   }
 
   Ruleset m_ruleset;

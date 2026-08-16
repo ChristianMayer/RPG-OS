@@ -712,6 +712,74 @@ TEST_CASE("bookkeeping: GameSession facade owns sheets, world, and events") {
   CHECK(geron.advancement().xp() == 300);
 }
 
+TEST_CASE("bookkeeping: advanceTime ticks durations and fires OnTimePassed") {
+  rpg_os::GameSession session;
+  REQUIRE(session.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  auto &geron = session.createCharacter("geron");
+
+  // A short-lived condition decays once per day.
+  session.applyCondition(geron, "pain", 1, 2);
+  CHECK(geron.conditionStacks("pain") == 1);
+
+  int timeEvents = 0;
+  int32_t lastDay = -1;
+  (void)session.onEvent(rpg_os::EventType::OnTimePassed, [&](const rpg_os::EventData &data) {
+    ++timeEvents;
+    lastDay = data.getInt("day");
+  });
+
+  const int32_t newDay = session.advanceTime(1);
+  CHECK(newDay == 1);
+  CHECK(session.world().day == 1);
+  CHECK(timeEvents == 1);
+  CHECK(lastDay == 1);
+
+  // Second day: the 2-tick pain condition expires and is stripped.
+  session.advanceTime(1);
+  CHECK(timeEvents == 2);
+  CHECK_FALSE(geron.hasCondition("pain"));
+  CHECK(geron.conditionStacks("pain") == 0);
+}
+
+TEST_CASE("bookkeeping: GameSession save/load round-trips living state") {
+  rpg_os::GameSession session;
+  REQUIRE(session.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  auto &geron = session.createCharacter("geron");
+  const rpg_os::EntityId geronId = geron.entityId();
+
+  // Put the character into a non-default living state: spent pool, a timed
+  // condition, and extra inventory.
+  CHECK(geron.modifyResource("LP", -5) == -5);
+  session.applyCondition(geron, "pain", 1, 3);
+  REQUIRE(session.engine().addItem(geron, "dagger", 2).has_value());
+  session.world().addToTreasury(Money{500});
+  const int32_t lpAfterDamage = geron.resource("LP");
+  const int32_t painStacks = geron.conditionStacks("pain");
+
+  const rpg_os::Json save = session.saveState();
+  CHECK(save.contains("sheets"));
+  CHECK(save.at("sheets").size() == 1);
+  CHECK(save.at("sheets")[0]["entity_id"] == geronId.toUint64());
+
+  // Loading over the same session replaces the sheet and restores living state
+  // under the original instance id.
+  CHECK(session.loadState(save) == 1);
+  CHECK(session.entityCount() == 1);
+  rpg_os::DynamicEntity *restored = session.findEntity(geronId);
+  REQUIRE(restored != nullptr);
+  CHECK(restored->resource("LP") == lpAfterDamage);
+  CHECK(restored->conditionStacks("pain") == painStacks);
+  CHECK(restored->inventory().count("dagger") == 2);
+  bool painHasDuration = false;
+  for (const auto &effect : restored->effects().effects()) {
+    if (effect.conditionId == "pain" && effect.remaining == 3) {
+      painHasDuration = true;
+    }
+  }
+  CHECK(painHasDuration);
+  CHECK(session.world().treasury.baseUnits() == 500);
+}
+
 TEST_CASE("bookkeeping: containers hold items (bag-in-bags)") {
   const std::string rulesetJson = R"({
     "schema_version": 1, "ruleset_id": "mini", "licence": "test",
