@@ -22,10 +22,50 @@
  */
 #pragma once
 
+#include <atomic>
 #include <cstdint>
+#include <functional>
 #include <rpg_os/core/math.hpp>
 
 namespace rpg_os {
+
+/**
+ * A unique, stable identifier for a live entity *instance*.
+ *
+ * @par Why an explicit id type instead of a raw integer?
+ * A raw @c uint64_t is already copyable, comparable, and hashable, but it is
+ * also silently convertible to and from every other integer in the codebase.
+ * A dedicated type makes "this is an entity id" visible at the type level, so
+ * a function cannot accidentally accept a damage value where an id belongs.
+ * A @c DynamicEntity keeps both its archetype @c id() (a string shared by
+ * every instance of a kind) and an @ref EntityId (unique per living
+ * instance); the two answer different questions.
+ */
+struct EntityId {
+  uint64_t value{0}; ///< Raw id; 0 is reserved and means "none".
+  /// Whether this is a real (non-zero) id.
+  [[nodiscard]] constexpr bool valid() const noexcept {
+    return value != 0;
+  }
+  /// The raw id as an integer.
+  [[nodiscard]] constexpr uint64_t toUint64() const noexcept {
+    return value;
+  }
+  [[nodiscard]] constexpr bool operator==(const EntityId &) const noexcept = default;
+};
+
+/// Returns a fresh, never-reused @ref EntityId.
+///
+/// @par Why a process-global counter?
+/// Entities are created by the engine, by a @ref GameSession, or directly by
+/// application code; no single factory sees all of them. A monotonic counter
+/// is the simplest way to guarantee that two live entities never collide no
+/// matter who created them. The counter lives inside an @c inline function so
+/// the header-only library keeps exactly one instance per process.
+[[nodiscard]] inline EntityId nextEntityId() noexcept {
+  static std::atomic<uint64_t> counter{1};
+  return EntityId{counter.fetch_add(1, std::memory_order_relaxed)};
+}
 
 /**
  * A tracked value clamped to [min, max], e.g. Hit Points, Astral Energy, or
@@ -58,3 +98,12 @@ struct ResourcePool {
 };
 
 } // namespace rpg_os
+
+namespace std {
+/// Enables @c EntityId as an @c unordered_map / @c unordered_set key.
+template <> struct hash<rpg_os::EntityId> {
+  [[nodiscard]] std::size_t operator()(const rpg_os::EntityId &id) const noexcept {
+    return std::hash<uint64_t>{}(id.value);
+  }
+};
+} // namespace std

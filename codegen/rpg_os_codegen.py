@@ -577,6 +577,8 @@ class Generator:
         lines.append("#include <cstdint>")
         lines.append("#include <string>")
         lines.append("#include <string_view>")
+        lines.append("#include <unordered_map>")
+        lines.append("#include <unordered_set>")
         lines.append("#include <utility>")
         lines.append("#include <vector>")
         lines.append("")
@@ -586,6 +588,7 @@ class Generator:
         lines.append("#include <rpg_os/core/checks.hpp>")
         lines.append("#include <rpg_os/core/cost_table.hpp>")
         lines.append("#include <rpg_os/core/dice_engine.hpp>")
+        lines.append("#include <rpg_os/core/effects.hpp>")
         lines.append("#include <rpg_os/core/equipment.hpp>")
         lines.append("#include <rpg_os/core/inventory.hpp>")
         lines.append("#include <rpg_os/core/math.hpp>")
@@ -607,6 +610,8 @@ class Generator:
         lines.extend(self._skill_members_block())
         lines.extend(self._resource_members())
         lines.extend(self._bookkeeping_members())
+        lines.extend(self._runtime_state_members())
+        lines.extend(self._save_load_methods())
         lines.extend(self._derived_getters())
         lines.extend(self._get_stat())
         lines.extend(self._check_methods())
@@ -715,6 +720,150 @@ class Generator:
         lines.append("  [[nodiscard]] int64_t coinAmount(std::string_view denomId) const {")
         lines.append("    return money.in(currencySystem(), denomId);")
         lines.append("  }")
+        return lines
+
+    def _runtime_state_members(self) -> list[str]:
+        """Living-sheet runtime state (save/load), distinct from the static
+        ruleset-record members above: active conditions with stack counts, the
+        effect timeline (timed conditions, temporary stat bonuses, bonus dice,
+        recurring effects), temp HP, resistances, afflictions, and traits."""
+        return [
+            "",
+            "  // ---- living-sheet runtime state (save/load) ----",
+            "  std::unordered_map<std::string, int32_t> conditions;  // condition id -> stacks",
+            "  rpg_os::EffectTimeline effects;  // timed conditions + temporary modifiers",
+            "  int32_t tempHitPoints{0};",
+            "  std::unordered_set<std::string> resistances;",
+            "  std::vector<rpg_os::AppliedAffliction> afflictions;",
+            "  std::unordered_set<std::string> traits;",
+        ]
+
+    def _save_load_methods(self) -> list[str]:
+        """Save/load for the living sheet, distinct from the ruleset-record
+        loader (@ref _data_loaders): `toJson` snapshots the current state and
+        `restoreFromJson` puts it back, matching the universal
+        DynamicEntity::toJson/fromJson save-state shape so a save file is
+        portable between the two modes."""
+        lines = [
+            "",
+            "  // ---- save / load (snapshot the living sheet, not a ruleset record) ----",
+            "  /// Serializes the character's current living state — attributes, skills,",
+            "  /// resource current values, conditions with durations, the effect timeline,",
+            "  /// temp HP, resistances, afflictions, traits, inventory, equipment, money,",
+            "  /// spell slots, and advancement — in the same save-state shape as the",
+            "  /// universal @c rpg_os::DynamicEntity::toJson.",
+            "  void toJson(rpg_os::Json& out) const {",
+            "    out = rpg_os::Json::object();",
+        ]
+        if self.attrs or self.skills:
+            lines.append("    rpg_os::Json stats = rpg_os::Json::object();")
+            for a in self.attrs:
+                lines.append(f'    stats["{a["id"]}"] = static_cast<int32_t>({self.attr_members[a["id"]]});')
+            for s in self.skills:
+                lines.append(f'    stats["{s["id"]}"] = static_cast<int32_t>({self.skill_members[s["id"]]});')
+            lines.append('    out["stats"] = stats;')
+        if self.resources:
+            lines.append("    rpg_os::Json resources = rpg_os::Json::object();")
+            for r in self.resources:
+                lines.append(f'    resources["{r["id"]}"] = {self._member(r["id"], r.get("name"))};')
+            lines.append('    out["resources"] = resources;')
+        lines += [
+            '    out["conditions"] = conditions;',
+            "    rpg_os::Json traitsJson = rpg_os::Json::array();",
+            "    for (const auto& traitId : traits) { traitsJson.push_back(traitId); }",
+            '    out["traits"] = traitsJson;',
+            "    rpg_os::Json inventoryJson;",
+            "    inventory.toJson(inventoryJson);",
+            '    out["inventory"] = inventoryJson;',
+            "    rpg_os::Json equipmentJson;",
+            "    equipment.toJson(equipmentJson);",
+            '    out["equipment"] = equipmentJson;',
+        ]
+        if self.currency:
+            lines.append('    out["money"] = money.baseUnits();')
+        lines += [
+            '    out["temp_hp"] = tempHitPoints;',
+            "    rpg_os::Json spellbookJson;",
+            "    spellbook.toJson(spellbookJson);",
+            '    out["spellbook"] = spellbookJson;',
+            "    rpg_os::Json advancementJson;",
+            "    advancement.toJson(advancementJson);",
+            '    out["advancement"] = advancementJson;',
+            "    rpg_os::Json effectsJson;",
+            "    effects.toJson(effectsJson);",
+            '    out["effects"] = effectsJson;',
+            "    rpg_os::Json afflictionsJson = rpg_os::Json::array();",
+            "    for (const auto& affliction : afflictions) {",
+            "      rpg_os::Json entry;",
+            "      entry[\"section\"] = affliction.section;",
+            "      entry[\"id\"] = affliction.id;",
+            "      entry[\"conditions\"] = affliction.conditions;",
+            "      afflictionsJson.push_back(std::move(entry));",
+            "    }",
+            '    out["afflictions"] = afflictionsJson;',
+            "    rpg_os::Json resistancesJson = rpg_os::Json::array();",
+            "    for (const auto& type : resistances) { resistancesJson.push_back(type); }",
+            '    out["resistances"] = resistancesJson;',
+            "  }",
+            "",
+            "  /// Restores the living state written by @ref toJson. State absent from `in` is",
+            "  /// left unchanged. Distinct from @ref fromJson, which loads a *ruleset*",
+            "  /// archetype / creature record from scratch.",
+            "  void restoreFromJson(const rpg_os::Json& in) {",
+            "    if (!in.is_object()) { return; }",
+        ]
+        if self.attrs or self.skills:
+            lines.append("    if (in.contains(\"stats\") && in.at(\"stats\").is_object()) {")
+            lines.append("      const rpg_os::Json& stats = in.at(\"stats\");")
+            for a in self.attrs:
+                cpp_type = self.attr_types[a["id"]]
+                lines.append(f'      {self.attr_members[a["id"]]} = static_cast<{cpp_type}>(stats.value("{a["id"]}", static_cast<int32_t>({self.attr_members[a["id"]]})));')
+            for s in self.skills:
+                cpp_type = self.skill_types[s["id"]]
+                lines.append(f'      {self.skill_members[s["id"]]} = static_cast<{cpp_type}>(stats.value("{s["id"]}", static_cast<int32_t>({self.skill_members[s["id"]]})));')
+            lines.append("    }")
+        if self.resources:
+            lines.append("    if (in.contains(\"resources\") && in.at(\"resources\").is_object()) {")
+            lines.append("      const rpg_os::Json& resources = in.at(\"resources\");")
+            for r in self.resources:
+                lines.append(f'      {self._member(r["id"], r.get("name"))} = resources.value("{r["id"]}", {self._member(r["id"], r.get("name"))});')
+            lines.append("    }")
+        lines += [
+            "    if (in.contains(\"conditions\") && in.at(\"conditions\").is_object()) {",
+            "      conditions = in.at(\"conditions\").get<std::unordered_map<std::string, int32_t>>();",
+            "    }",
+            "    if (in.contains(\"traits\") && in.at(\"traits\").is_array()) {",
+            "      traits.clear();",
+            "      for (const auto& traitId : in.at(\"traits\")) { traits.insert(traitId.get<std::string>()); }",
+            "    }",
+            "    if (in.contains(\"inventory\")) { inventory.fromJson(in.at(\"inventory\")); }",
+            "    if (in.contains(\"equipment\")) { equipment.fromJson(in.at(\"equipment\")); }",
+        ]
+        if self.currency:
+            lines.append("    if (in.contains(\"money\") && in.at(\"money\").is_number_integer()) {")
+            lines.append("      money = rpg_os::Money{in.at(\"money\").get<int64_t>()};")
+            lines.append("    }")
+        lines += [
+            "    if (in.contains(\"temp_hp\") && in.at(\"temp_hp\").is_number_integer()) {",
+            "      tempHitPoints = in.at(\"temp_hp\").get<int32_t>();",
+            "    }",
+            "    if (in.contains(\"spellbook\")) { spellbook.fromJson(in.at(\"spellbook\")); }",
+            "    if (in.contains(\"advancement\")) { advancement.fromJson(in.at(\"advancement\")); }",
+            "    if (in.contains(\"effects\")) { effects.fromJson(in.at(\"effects\")); }",
+            "    if (in.contains(\"afflictions\") && in.at(\"afflictions\").is_array()) {",
+            "      afflictions.clear();",
+            "      for (const auto& aff : in.at(\"afflictions\")) {",
+            "        afflictions.push_back(rpg_os::AppliedAffliction{",
+            "          aff.value(\"section\", \"\"), aff.value(\"id\", \"\"),",
+            "          aff.value(\"conditions\", std::vector<std::string>{})});",
+            "      }",
+            "    }",
+            "    if (in.contains(\"resistances\") && in.at(\"resistances\").is_array()) {",
+            "      resistances.clear();",
+            "      for (const auto& type : in.at(\"resistances\")) { resistances.insert(type.get<std::string>()); }",
+            "    }",
+            "  }",
+        ]
         return lines
 
     def _derived_getters(self) -> list[str]:

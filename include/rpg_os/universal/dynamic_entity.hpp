@@ -28,6 +28,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
+#include <rpg_os/common/event_system.hpp>
 #include <rpg_os/common/json.hpp>
 #include <rpg_os/core/advancement.hpp>
 #include <rpg_os/core/effects.hpp>
@@ -144,12 +146,46 @@ public:
   /// Creates an empty entity bound to `ruleset`. Entities start statless and
   /// are typically populated via @ref loadFromArchetype afterwards.
   DynamicEntity(const Ruleset &ruleset, std::string id)
-      : m_ruleset(&ruleset), m_id(std::move(id)) {}
+      : m_ruleset(&ruleset), m_id(std::move(id)), m_entityId(nextEntityId()) {}
 
   /// The entity's identifier (e.g. the archetype id). Kept for diagnostics
   /// and for payloads that need to name the actor (e.g. @c attacker_id).
   [[nodiscard]] const std::string &id() const noexcept {
     return m_id;
+  }
+
+  /// The entity's unique *instance* id, distinct from @ref id (which names
+  /// the archetype or creature type shared by every instance of that kind).
+  /// Assigned at construction and never reused, so it can address one living
+  /// character in a registry, a @ref EntityHandle, or an event payload.
+  [[nodiscard]] EntityId entityId() const noexcept {
+    return m_entityId;
+  }
+
+  /// Signature of a per-entity state-change callback (see @ref setEventSink).
+  using EventSink = std::function<void(EventType, const Json &)>;
+
+  /// Sets (or clears, with an empty sink) the per-entity event sink. When
+  /// set, the state-changing mutators emit granular events through it
+  /// (@c OnStatChanged, @c OnResourceChanged, @c OnTempHpChanged). The engine
+  /// wires this to its event bus for every entity it creates, so applications
+  /// observe both engine-driven and direct sheet mutations without polling.
+  ///
+  /// @par Why not emit from every mutator?
+  /// Conditions are announced by the engine's @c applyCondition /
+  /// @c removeCondition (which fire @c OnConditionChanged with a rich payload
+  /// and keep the timeline in sync); direct @c addCondition / @c removeCondition
+  /// calls on the sheet deliberately do not emit, so the engine stays the
+  /// single source of condition events.
+  void setEventSink(EventSink sink) {
+    m_eventSink = std::move(sink);
+  }
+
+  /// Suppresses event emission while true. The engine sets this while
+  /// restoring a saved state via @ref fromJson so a load does not replay every
+  /// state change as an event (no listener spam on a fresh session).
+  void setEventsSuppressed(bool suppressed) noexcept {
+    m_suppressEvents = suppressed;
   }
 
   /// StatProvider: returns an attribute, skill, or derived stat value.
@@ -170,9 +206,16 @@ public:
     return 0;
   }
 
-  /// Sets a base attribute (or skill rating) value.
+  /// Sets a base attribute (or skill rating) value. Emits @c OnStatChanged
+  /// through the entity's event sink when the value actually changes.
   void setBaseAttribute(std::string_view attrId, int32_t value) {
+    const auto it = m_stats.find(std::string(attrId));
+    const int32_t old = it == m_stats.end() ? 0 : it->second;
     m_stats[std::string(attrId)] = value;
+    if (old != value) {
+      emitEvent(EventType::OnStatChanged,
+                Json{{"stat", std::string(attrId)}, {"old_value", old}, {"new_value", value}});
+    }
   }
 
   /// Returns a base attribute (or skill rating) value, or 0 when unset.
@@ -197,10 +240,22 @@ public:
   /// Applies `delta` to a resource pool (clamped to its bounds); returns the
   /// amount actually applied (see @ref ResourcePool::modify). Missing pools
   /// are a no-op returning 0, so damage against an undeclared resource cannot
-  /// crash a caller.
+  /// crash a caller. Emits @c OnResourceChanged through the entity's event
+  /// sink when the pool actually moves.
   [[nodiscard]] int32_t modifyResource(std::string_view resourceId, int32_t delta) {
     const auto it = m_resources.find(std::string(resourceId));
-    return it == m_resources.end() ? 0 : it->second.modify(delta);
+    if (it == m_resources.end()) {
+      return 0;
+    }
+    const int32_t old = it->second.current;
+    const int32_t applied = it->second.modify(delta);
+    if (applied != 0) {
+      emitEvent(EventType::OnResourceChanged, Json{{"resource", std::string(resourceId)},
+                                                   {"delta", applied},
+                                                   {"old_value", old},
+                                                   {"new_value", it->second.current}});
+    }
+    return applied;
   }
 
   /// Adds `stacks` of a condition (stacks accumulate).
@@ -362,15 +417,27 @@ public:
   [[nodiscard]] int32_t temporaryHitPoints() const noexcept {
     return m_tempHp;
   }
-  /// Replaces the Temporary Hit Points with `value` (never below 0).
+  /// Replaces the Temporary Hit Points with `value` (never below 0). Emits
+  /// @c OnTempHpChanged through the entity's event sink on a change.
   void setTemporaryHitPoints(int32_t value) {
+    const int32_t old = m_tempHp;
     m_tempHp = value > 0 ? value : 0;
+    if (m_tempHp != old) {
+      emitEvent(EventType::OnTempHpChanged,
+                Json{{"delta", m_tempHp - old}, {"old_value", old}, {"new_value", m_tempHp}});
+    }
   }
   /// Adds `delta` to Temporary Hit Points (clamped at 0; a positive delta
   /// keeps the higher of the current and new pool, matching "they don't
-  /// stack, you keep the higher" D&D rule).
+  /// stack, you keep the higher" D&D rule). Emits @c OnTempHpChanged through
+  /// the entity's event sink on a change.
   void addTemporaryHitPoints(int32_t delta) {
+    const int32_t old = m_tempHp;
     m_tempHp = std::max<int32_t>(0, m_tempHp + delta);
+    if (m_tempHp != old) {
+      emitEvent(EventType::OnTempHpChanged,
+                Json{{"delta", m_tempHp - old}, {"old_value", old}, {"new_value", m_tempHp}});
+    }
   }
 
   /// The sheet's known / prepared spells.
@@ -398,11 +465,9 @@ public:
   }
 
   /// Active afflictions (poisons / diseases / curses) applied to the sheet.
-  struct AppliedAffliction {
-    std::string section;                 ///< "poisons" / "diseases" / "curses"
-    std::string id;                      ///< affliction record id
-    std::vector<std::string> conditions; ///< condition ids its effects applied
-  };
+  /// Shared value type (see @c rpg_os::AppliedAffliction) so the generated
+  /// characters can round-trip the same save-state shape.
+  using AppliedAffliction = rpg_os::AppliedAffliction;
 
   [[nodiscard]] std::vector<AppliedAffliction> &afflictions() noexcept {
     return m_afflictions;
@@ -442,6 +507,7 @@ public:
   void toJson(Json &out) const {
     out = Json::object();
     out["id"] = m_id;
+    out["entity_id"] = m_entityId.value;
     out["stats"] = m_stats;
     Json resources = Json::object();
     for (const auto &[id, pool] : m_resources) {
@@ -489,6 +555,9 @@ public:
   void fromJson(const Json &in) {
     if (!in.is_object()) {
       return;
+    }
+    if (in.contains("entity_id") && in.at("entity_id").is_number_unsigned()) {
+      m_entityId = EntityId{in.at("entity_id").get<uint64_t>()};
     }
     restoreStats(in);
     restoreConditions(in);
@@ -822,8 +891,20 @@ private:
     return math::toStat(def->expression.evaluate(context));
   }
 
+  /// Emits `payload` for `type` through the entity's event sink, unless event
+  /// emission is suppressed (restoring a saved state) or no sink is set.
+  void emitEvent(EventType type, const Json &payload) const {
+    if (m_suppressEvents || m_eventSink == nullptr) {
+      return;
+    }
+    m_eventSink(type, payload);
+  }
+
   const Ruleset *m_ruleset;
   std::string m_id;
+  EntityId m_entityId{};
+  EventSink m_eventSink; // empty by default (no per-entity events until set)
+  bool m_suppressEvents{false};
   std::unordered_map<std::string, int32_t> m_stats;
   std::unordered_map<std::string, ResourcePool> m_resources;
   std::unordered_map<std::string, int32_t> m_conditions;

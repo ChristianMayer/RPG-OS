@@ -16,6 +16,16 @@ as an executable in the build.
   ELO ranking that runs many fights in parallel lives in
   `scripts/elo_ranking.py`. A spellcaster (e.g. the TDE Magister) fights with
   magic by default; `--no-magic` forces a pure weapon fight.
+- `ecs_registry/` — the entity-component-system **pattern** with no third-party
+  dependency: entities are live `DynamicEntity` sheets addressed by a stable
+  `EntityId`/`EntityHandle`, components are plain id-keyed structs, and systems
+  are plain functions over `GameSession::entities()`. Shows the observer
+  events (`OnResourceChanged`) driving an HP-bar component and a
+  `CombatSession` decaying a timed condition across turns.
+- `ecs_entt/` — the same idea with **EnTT** (vendored single header) as the
+  storage layer: each EnTT entity carries a `Sheet` component owning a
+  `DynamicEntity`, and an `OnResourceChanged` listener updates an EnTT
+  `HpBar` component without polling.
 
 Build:
 
@@ -28,6 +38,8 @@ cmake -S . -B build -G Ninja && cmake --build build
 ./build/bin/rpg_os_example_fight . --list          # all combatants
 ./build/bin/rpg_os_example_fight . --csv --batch 20 irrhalk toad
 ./build/bin/rpg_os_example_fight . magister toad   # a mage fights with magic
+./build/bin/rpg_os_example_ecs_registry .          # ECS pattern, no deps
+./build/bin/rpg_os_example_ecs_entt .              # ECS pattern with EnTT
 ```
 
 Not part of the library itself and not installed.

@@ -20,12 +20,14 @@ add_executable(rpg_os_tests
   test_modifier.cpp
   test_checks.cpp
   test_entity.cpp
+  test_entity_registry.cpp
   test_expression.cpp
   test_ruleset_loader.cpp
   test_engine.cpp
   test_rulesets.cpp
   test_variance.cpp
   test_combat.cpp
+  test_combat_session.cpp
   test_codegen_output.cpp
   test_data_api.cpp
   test_bookkeeping.cpp
