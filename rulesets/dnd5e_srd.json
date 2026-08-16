@@ -323,6 +323,22 @@
       "grading": "none",
       "difficulty_mode": "to_threshold"
     },
+    "dnd5e_attack": {
+      "resolution": "threshold",
+      "dice": "1d20",
+      "comparison": "ge",
+      "threshold_source": "target_stat",
+      "threshold_stat": "AC",
+      "bonus_stats": [
+        "Attack"
+      ],
+      "critical_style": "face",
+      "critical_face": 20,
+      "fumble_style": "face",
+      "fumble_face": 1,
+      "grading": "none",
+      "difficulty_mode": "to_threshold"
+    },
     "dnd5e_check_str": {
       "resolution": "threshold",
       "dice": "1d20",

@@ -9,9 +9,10 @@
  * attack-vs-defence check and the event-driven damage pipeline (armour
  * absorption, wound checks). Both archetypes and bestiary entries can fight:
  * bestiary fields (@c attacks[].to_hit, @c attacks[].damage, @c dodge,
- * @c armor_rating) are promoted into stats so the shared check algorithms and
- * the damage pipeline see them, while archetypes rely on their derived
- * @c Attack / @c Parry values plus a weapon damage expression.
+ * @c armor_rating, and for D&D-style systems @c ac and @c initiative) are
+ * promoted into stats so the shared check algorithms and the damage pipeline
+ * see them, while archetypes rely on their derived @c Attack / @c Parry
+ * values plus a weapon damage expression.
  *
  * @par Why a combat simulator in the engine at all?
  * Combat is where the engine's pieces meet: checks, damage, resources, and
@@ -27,6 +28,7 @@
  */
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -59,6 +61,8 @@ struct CombatantSpec {
   int32_t attackValue{0};            ///< to-hit value (Attack / bestiary `to_hit`)
   int32_t defenseValue{0};           ///< parry / bestiary `dodge`
   int32_t armorRating{0};            ///< Armor_Rating (bestiary `armor_rating`)
+  int32_t acValue{0};                ///< bestiary `ac` (D&D armor class; 0 when absent)
+  int32_t initiativeValue{0};        ///< bestiary `initiative` (0 when absent)
   std::string damageExpression;      ///< dice expression, e.g. "2d6+4"
   std::vector<std::string> spellIds; ///< spells the combatant can cast (empty = pure melee)
 };
@@ -89,6 +93,17 @@ struct FightOutcome {
   }
   for (const CheckTypeDef &def : ruleset.checkTypes) {
     if (def.recipe.resolution == Resolution::Opposed) {
+      return def.id;
+    }
+  }
+  // D&D-style attack-vs-AC: a threshold check rolled against a *target* stat
+  // (e.g. AC) whose bonus comes from the combatant's promoted `Attack` stat
+  // (the bestiary `to_hit`). Systems without an opposed parry roll (D&D)
+  // use this instead of the opposed resolution above.
+  for (const CheckTypeDef &def : ruleset.checkTypes) {
+    if (def.recipe.resolution == Resolution::Threshold &&
+        def.recipe.thresholdSource == ThresholdSource::TargetStat &&
+        std::ranges::contains(def.recipe.bonusStats, "Attack")) {
       return def.id;
     }
   }
@@ -138,8 +153,8 @@ namespace detail {
 }
 
 /// Fills `out` from a bestiary record (a probe creature at average variance),
-/// promoting its `to_hit` / `dodge` / `armor_rating` fields; false when the
-/// creature cannot be created.
+/// promoting its `to_hit` / `dodge` / `armor_rating` / `ac` / `initiative`
+/// fields; false when the creature cannot be created.
 [[nodiscard]] inline bool fillCreatureSpec(RulesetEngine &engine, const Json &entry,
                                            std::string_view id, CombatantSpec &out,
                                            std::string_view weaponDamage, DefaultRandom &probeRng) {
@@ -152,6 +167,8 @@ namespace detail {
   out.isArchetype = false;
   out.defenseValue = entry.value("dodge", 0);
   out.armorRating = entry.value("armor_rating", 0);
+  out.acValue = entry.value("ac", 0);
+  out.initiativeValue = entry.value("initiative", 0);
   out.attackValue = 0;
   out.damageExpression = std::string(weaponDamage);
   if (entry.contains("attacks") && entry.at("attacks").is_array()) {
@@ -236,6 +253,17 @@ template <RandomNumberGenerator Rng>
     entity->setBaseAttribute("Attack", spec.attackValue);
     entity->setBaseAttribute("Parry", spec.defenseValue);
     entity->setBaseAttribute("Armor_Rating", spec.armorRating);
+    // D&D-style systems promote the bestiary's real AC and initiative into
+    // base attributes: the derived `AC = 10 + DEX_mod` does not match a
+    // creature's stat block, and `Initiative` has no derived stat at all.
+    // Skipping a zero value keeps rulesets without those fields (TDE, BRP)
+    // on their derived stats.
+    if (spec.acValue != 0) {
+      entity->setBaseAttribute("AC", spec.acValue);
+    }
+    if (spec.initiativeValue != 0) {
+      entity->setBaseAttribute("Initiative", spec.initiativeValue);
+    }
   }
   return entity;
 }

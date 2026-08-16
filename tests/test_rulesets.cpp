@@ -31,7 +31,7 @@ TEST_CASE("dnd5e_srd: loads and resolves real SRD values") {
   REQUIRE(engine.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
   CHECK(engine.ruleset().attributes.size() == 9); // 6 abilities + prof + level + HP max
   CHECK(engine.ruleset().skills.size() == 18);
-  CHECK(engine.ruleset().checkTypes.size() == 14);
+  CHECK(engine.ruleset().checkTypes.size() == 15); // + dnd5e_attack (combat sim)
   CHECK(engine.ruleset().costTables.size() == 1);
 
   // The SRD ruleset stores text descriptions (classes/species/backgrounds/feats)

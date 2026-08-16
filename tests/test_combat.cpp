@@ -253,3 +253,58 @@ TEST_CASE("combat: magic can be disabled for a pure weapon comparison") {
   CHECK(outcome.rounds == 1);
   CHECK(outcome.remainingLp[1] <= 0);
 }
+
+TEST_CASE("combat: dnd5e attack check type and hit-point pool are resolved") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  CHECK(rpg_os::resolveAttackCheckType(engine.ruleset()) == "dnd5e_attack");
+  CHECK(rpg_os::resolveHitPointPool(engine.ruleset()) == "HP");
+}
+
+TEST_CASE("combat: dnd5e creature spec promotes ac, initiative, and its best attack") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  rpg_os::CombatantSpec spec;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "goblin_warrior", spec));
+  CHECK_FALSE(spec.isArchetype);
+  CHECK(spec.attackValue == 4);            // best `to_hit` (Scimitar / Shortbow)
+  CHECK(spec.damageExpression == "1d6+2"); // its attack damage
+  CHECK(spec.acValue == 15);               // bestiary `ac`
+  CHECK(spec.initiativeValue == 2);        // bestiary `initiative`
+}
+
+TEST_CASE("combat: dnd5e fighter promotes real AC and initiative over the derived stats") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  rpg_os::CombatantSpec goblin;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "goblin_warrior", goblin));
+  rpg_os::DefaultRandom rng(1);
+  auto fighter = rpg_os::createFighter(engine, goblin, rng);
+  REQUIRE(fighter != nullptr);
+  // The real bestiary AC (15) overrides the derived 10 + DEX_mod (= 12);
+  // initiative exists only via promotion (D&D has no derived Initiative stat).
+  CHECK(fighter->getStat("AC") == 15);
+  CHECK(fighter->getStat("Initiative") == 2);
+  CHECK(fighter->getStat("Attack") == 4); // best `to_hit`
+}
+
+TEST_CASE("combat: dnd5e attack-vs-AC resolves to the end") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  rpg_os::CombatantSpec a;
+  rpg_os::CombatantSpec b;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "goblin_warrior", a));
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "goblin_warrior", b));
+
+  // Scripted RNG: both goblins roll the minimum average hit points (8), A
+  // wins initiative (2 + 6 vs 2 + 3), lands its +4 attack (11 + 4 >= AC 15)
+  // and rolls maximum damage (1d6+2 = 8) — killing B in one round. Two RNG
+  // values are consumed up front for the creatures' average hit-point picks.
+  auto rng = script({0, 0, 6, 3, 11, 6});
+  const rpg_os::FightOutcome outcome =
+      rpg_os::runFight(engine, a, b, "dnd5e_attack", "HP", 100, rng);
+  CHECK(outcome.winnerIndex == 0);
+  CHECK(outcome.rounds == 1);
+  CHECK(outcome.remainingLp[0] == 8); // the winner's 8 HP untouched
+  CHECK(outcome.remainingLp[1] == 0); // the loser at 0 HP
+}
