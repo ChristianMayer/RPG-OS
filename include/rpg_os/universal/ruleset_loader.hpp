@@ -916,37 +916,45 @@ inline void RulesetLoader::validate(const Ruleset &ruleset) {
     }
   }
 
-  // Check type recipe references must exist.
+  // Check type recipe references must exist. The combat simulator promotes a
+  // bestiary entry's attack/defence fields into the stats "Attack", "Parry",
+  // "Armor_Rating", "AC", and "Initiative" (see combat.hpp), so a check type
+  // may reference those names even when the ruleset has no such stat of its
+  // own — that is how a D&D-style ruleset declares its attack-vs-AC recipe.
+  const auto knownStat = [&ruleset](const std::string &stat) {
+    return ruleset.hasStat(stat) || stat == "Attack" || stat == "Parry" || stat == "Armor_Rating" ||
+           stat == "AC" || stat == "Initiative";
+  };
   for (const CheckTypeDef &def : ruleset.checkTypes) {
     const CheckRecipe &recipe = def.recipe;
     for (const std::string &stat : recipe.bonusStats) {
-      require(ruleset.hasStat(stat),
+      require(knownStat(stat),
               "check type '" + def.id + "' references unknown bonus stat '" + stat + "'");
     }
     if (recipe.thresholdSource == ThresholdSource::TargetStat ||
         recipe.thresholdSource == ThresholdSource::ActorStat) {
-      require(ruleset.hasStat(recipe.thresholdStat), "check type '" + def.id +
-                                                         "' references unknown threshold stat '" +
-                                                         recipe.thresholdStat + "'");
+      require(knownStat(recipe.thresholdStat), "check type '" + def.id +
+                                                   "' references unknown threshold stat '" +
+                                                   recipe.thresholdStat + "'");
     }
     if (!recipe.poolStat.empty()) {
-      require(ruleset.hasStat(recipe.poolStat),
+      require(knownStat(recipe.poolStat),
               "check type '" + def.id + "' references unknown pool stat '" + recipe.poolStat + "'");
     }
     if (!recipe.attackStat.empty()) {
-      require(ruleset.hasStat(recipe.attackStat), "check type '" + def.id +
-                                                      "' references unknown attack stat '" +
-                                                      recipe.attackStat + "'");
+      require(knownStat(recipe.attackStat), "check type '" + def.id +
+                                                "' references unknown attack stat '" +
+                                                recipe.attackStat + "'");
     }
     if (!recipe.parryStat.empty()) {
-      require(ruleset.hasStat(recipe.parryStat), "check type '" + def.id +
-                                                     "' references unknown parry stat '" +
-                                                     recipe.parryStat + "'");
+      require(knownStat(recipe.parryStat), "check type '" + def.id +
+                                               "' references unknown parry stat '" +
+                                               recipe.parryStat + "'");
     }
     for (std::size_t i = 0; i < recipe.numPoolAttributes; ++i) {
-      require(ruleset.hasStat(recipe.poolAttributes[i]),
-              "check type '" + def.id + "' references unknown pool attribute '" +
-                  recipe.poolAttributes[i] + "'");
+      require(knownStat(recipe.poolAttributes[i]), "check type '" + def.id +
+                                                       "' references unknown pool attribute '" +
+                                                       recipe.poolAttributes[i] + "'");
     }
     // A pool check needs as many dice as attributes.
     if (recipe.resolution == Resolution::Pool) {

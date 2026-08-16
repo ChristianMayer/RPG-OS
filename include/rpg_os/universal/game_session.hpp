@@ -26,7 +26,6 @@
 #pragma once
 
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <rpg_os/common/event_system.hpp>
 #include <rpg_os/universal/engine.hpp>

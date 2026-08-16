@@ -260,6 +260,28 @@ public:
     return rpg_os::resolveCheck(*this, target, recipe, params, rng);
   }
 
+  /// Named check 'dnd5e_attack' (see the ruleset's check_types).
+  template <rpg_os::StatProvider Target, rpg_os::RandomNumberGenerator Rng>
+  [[nodiscard]] rpg_os::CheckResult dnd5eAttack(const Target &target,
+                                                const rpg_os::CheckParams &params, Rng &rng) const {
+    static const rpg_os::CheckRecipe recipe{
+        .resolution = rpg_os::Resolution::Threshold,
+        .dice = 1_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::TargetStat,
+        .thresholdStat = "AC",
+        .bonusStats = {"Attack"},
+        .criticalStyle = rpg_os::CriticalStyle::Face,
+        .criticalFace = 20,
+        .fumbleStyle = rpg_os::CriticalStyle::Face,
+        .fumbleFace = 1,
+        .grading = rpg_os::Grading::None,
+        .difficultyMode = rpg_os::DifficultyMode::ToThreshold,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
+    };
+    return rpg_os::resolveCheck(*this, target, recipe, params, rng);
+  }
+
   /// Named check 'dnd5e_check_str' (see the ruleset's check_types).
   template <rpg_os::RandomNumberGenerator Rng>
   [[nodiscard]] rpg_os::CheckResult dnd5eCheckStr(const rpg_os::CheckParams &params,

@@ -30,6 +30,7 @@
 #include <rpg_os/core/dice_engine.hpp>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace rpg_os {
@@ -212,7 +213,7 @@ struct CheckParams {
   /// Bonus dice rolled in addition to the check's dice and added to the
   /// additive total (a D&D Bless die, a bane penalty die, ...). Aggregated by
   /// the engine from active conditions / effects / traits; empty means none.
-  std::vector<DiceExpression> bonusDice{};
+  std::vector<DiceExpression> bonusDice;
   /// Whether the check is automatically a failure (e.g. "you automatically
   /// fail Strength and Dexterity saving throws"). When true no dice are
   /// rolled and the result is a failure.
@@ -279,6 +280,109 @@ template <RandomNumberGenerator Rng> constexpr int rollDie(int sides, Rng &rng) 
   return value;
 }
 
+/// Derives the reference value a threshold check is rolled against, applying
+/// the recipe's difficulty mode and multiplicative scale.
+template <StatProvider Actor, StatProvider Target>
+[[nodiscard]] constexpr int32_t thresholdReference(const Actor &actor, const Target &target,
+                                                   const CheckRecipe &recipe,
+                                                   const CheckParams &params) {
+  int32_t reference = 0;
+  if (recipe.thresholdSource == ThresholdSource::TargetStat) {
+    reference = static_cast<int32_t>(target.getStat(recipe.thresholdStat));
+  } else if (recipe.thresholdSource == ThresholdSource::ActorStat) {
+    reference = static_cast<int32_t>(actor.getStat(recipe.thresholdStat));
+  }
+  if (recipe.difficultyMode == DifficultyMode::ToStat) {
+    reference += params.difficulty;
+  } else if (recipe.difficultyMode == DifficultyMode::ToThreshold &&
+             recipe.thresholdSource == ThresholdSource::Difficulty) {
+    reference = params.difficulty;
+  }
+  if (recipe.difficultyMultiplier == DifficultyMultiplier::DoubleHalve) {
+    reference = scaleByDifficulty(reference, params.difficultyScale);
+  }
+  return reference;
+}
+
+/// Rolls a dice expression once, returning the recorded faces and their sum.
+template <RandomNumberGenerator Rng>
+[[nodiscard]] constexpr std::pair<std::vector<int>, int> rollWithTotal(const DiceExpression &dice,
+                                                                       Rng &rng) {
+  std::vector<int> rolls = dice.roll(rng);
+  int total = 0;
+  for (const int die : rolls) {
+    total += die;
+  }
+  return {std::move(rolls), total};
+}
+
+/// Rolls the expression a second time and keeps the better (advantage) or
+/// worse (disadvantage) total, replacing the recorded rolls.
+template <RandomNumberGenerator Rng>
+constexpr void applyAdvantage(std::vector<int> &rawDiceRolls, int &diceTotal,
+                              const DiceExpression &dice, AdvantageMode advantage, Rng &rng) {
+  auto [second, secondTotal] = rollWithTotal(dice, rng);
+  const bool keepSecond =
+      advantage == AdvantageMode::Advantage ? secondTotal > diceTotal : secondTotal < diceTotal;
+  if (keepSecond) {
+    rawDiceRolls = std::move(second);
+    diceTotal = secondTotal;
+  }
+}
+
+/// Sums the actor's bonus stats, bonus dice, and the situational modifier into
+/// an additive total, recording any bonus dice faces in `rawDiceRolls`.
+template <StatProvider Actor, RandomNumberGenerator Rng>
+[[nodiscard]] constexpr int additiveBonuses(const Actor &actor, const CheckRecipe &recipe,
+                                            const CheckParams &params,
+                                            std::vector<int> &rawDiceRolls, Rng &rng) {
+  int total = 0;
+  for (const std::string &stat : recipe.bonusStats) {
+    total += static_cast<int32_t>(actor.getStat(stat));
+  }
+  for (const DiceExpression &bonus : params.bonusDice) {
+    auto [rolls, bonusTotal] = rollWithTotal(bonus, rng);
+    rawDiceRolls.insert(rawDiceRolls.end(), rolls.begin(), rolls.end());
+    total += bonusTotal;
+  }
+  total += params.situationalModifier;
+  return total;
+}
+
+/// Grades a threshold check's outcome: criticals, fumbles, percentile success
+/// levels, or a plain pass / fail.
+template <RandomNumberGenerator Rng>
+constexpr void gradeThresholdResult(CheckResult &result, int roll, int total, int32_t reference,
+                                    const CheckRecipe &recipe, Rng &rng) {
+  if (recipe.criticalStyle == CriticalStyle::Face && roll == recipe.criticalFace) {
+    result.isSuccess = true;
+    if (recipe.criticalConfirm) {
+      const int confirm = recipe.dice.rollSum(rng);
+      result.rawDiceRolls.push_back(confirm);
+      result.isCriticalSuccess = confirm <= reference;
+    } else {
+      result.isCriticalSuccess = true;
+    }
+  } else if (recipe.fumbleStyle == CriticalStyle::Face && roll == recipe.fumbleFace) {
+    result.isSuccess = false;
+    if (recipe.fumbleConfirm) {
+      const int confirm = recipe.dice.rollSum(rng);
+      result.rawDiceRolls.push_back(confirm);
+      result.isCriticalFailure = confirm > reference || confirm == recipe.fumbleFace;
+    } else {
+      result.isCriticalFailure = true;
+    }
+  } else if (recipe.grading == Grading::Percentile) {
+    result.successLevel = successLevelFor(reference, roll);
+    result.isCriticalSuccess = result.successLevel == SuccessLevel::Critical;
+    result.isCriticalFailure = result.successLevel == SuccessLevel::Fumble;
+    result.isSuccess = result.successLevel >= SuccessLevel::Success;
+  } else {
+    result.isSuccess =
+        recipe.comparison == Comparison::GreaterEqual ? total >= reference : roll <= reference;
+  }
+}
+
 } // namespace detail
 
 /// Threshold resolution: roll the recipe's dice and compare the result
@@ -298,21 +402,7 @@ template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
   const DiceExpression &dice = recipe.dice;
 
   // Derive the reference value the roll is compared against.
-  int32_t reference = 0;
-  if (recipe.thresholdSource == ThresholdSource::TargetStat) {
-    reference = static_cast<int32_t>(target.getStat(recipe.thresholdStat));
-  } else if (recipe.thresholdSource == ThresholdSource::ActorStat) {
-    reference = static_cast<int32_t>(actor.getStat(recipe.thresholdStat));
-  }
-  if (recipe.difficultyMode == DifficultyMode::ToStat) {
-    reference += params.difficulty;
-  } else if (recipe.difficultyMode == DifficultyMode::ToThreshold &&
-             recipe.thresholdSource == ThresholdSource::Difficulty) {
-    reference = params.difficulty;
-  }
-  if (recipe.difficultyMultiplier == DifficultyMultiplier::DoubleHalve) {
-    reference = detail::scaleByDifficulty(reference, params.difficultyScale);
-  }
+  const int32_t reference = detail::thresholdReference(actor, target, recipe, params);
   // Roll-under checks fail outright when the reference is below the minimum
   // rollable value (1): no die can possibly meet it, so no RNG is consumed.
   if (recipe.comparison == Comparison::LessEqual && reference < 1) {
@@ -320,77 +410,28 @@ template <StatProvider Actor, StatProvider Target, RandomNumberGenerator Rng>
     return result;
   }
 
-  result.rawDiceRolls = dice.roll(rng);
-  int diceTotal = 0;
-  for (const int die : result.rawDiceRolls) {
-    diceTotal += die;
-  }
+  auto [rolls, diceTotal] = detail::rollWithTotal(dice, rng);
+  result.rawDiceRolls = std::move(rolls);
 
   // Advantage / disadvantage: roll the whole expression a second time and
   // keep the better (advantage) or worse (disadvantage) total, replacing the
   // recorded dice so critical detection and callers see the kept roll.
   if (params.advantage != AdvantageMode::None) {
-    const std::vector<int> second = dice.roll(rng);
-    int secondTotal = 0;
-    for (const int die : second) {
-      secondTotal += die;
-    }
-    const bool keepSecond = params.advantage == AdvantageMode::Advantage ? secondTotal > diceTotal
-                                                                         : secondTotal < diceTotal;
-    if (keepSecond) {
-      result.rawDiceRolls = second;
-      diceTotal = secondTotal;
-    }
+    detail::applyAdvantage(result.rawDiceRolls, diceTotal, dice, params.advantage, rng);
   }
 
   // Additive checks sum bonus stats, bonus dice, and the situational modifier
   // into the rolled total; roll-under checks compare the bare roll.
-  int total = diceTotal;
-  if (recipe.comparison == Comparison::GreaterEqual) {
-    for (const std::string &stat : recipe.bonusStats) {
-      total += static_cast<int32_t>(actor.getStat(stat));
-    }
-    for (const DiceExpression &bonus : params.bonusDice) {
-      const std::vector<int> rolls = bonus.roll(rng);
-      result.rawDiceRolls.insert(result.rawDiceRolls.end(), rolls.begin(), rolls.end());
-      for (const int die : rolls) {
-        total += die;
-      }
-    }
-    total += params.situationalModifier;
-  }
-
   const int roll = diceTotal;
+  const int total =
+      recipe.comparison == Comparison::GreaterEqual
+          ? diceTotal + detail::additiveBonuses(actor, recipe, params, result.rawDiceRolls, rng)
+          : diceTotal;
+
   result.marginOfSuccess = static_cast<int32_t>(
       recipe.comparison == Comparison::GreaterEqual ? total - reference : reference - roll);
 
-  if (recipe.criticalStyle == CriticalStyle::Face && roll == recipe.criticalFace) {
-    result.isSuccess = true;
-    if (recipe.criticalConfirm) {
-      const int confirm = dice.rollSum(rng);
-      result.rawDiceRolls.push_back(confirm);
-      result.isCriticalSuccess = confirm <= reference;
-    } else {
-      result.isCriticalSuccess = true;
-    }
-  } else if (recipe.fumbleStyle == CriticalStyle::Face && roll == recipe.fumbleFace) {
-    result.isSuccess = false;
-    if (recipe.fumbleConfirm) {
-      const int confirm = dice.rollSum(rng);
-      result.rawDiceRolls.push_back(confirm);
-      result.isCriticalFailure = confirm > reference || confirm == recipe.fumbleFace;
-    } else {
-      result.isCriticalFailure = true;
-    }
-  } else if (recipe.grading == Grading::Percentile) {
-    result.successLevel = successLevelFor(reference, roll);
-    result.isCriticalSuccess = result.successLevel == SuccessLevel::Critical;
-    result.isCriticalFailure = result.successLevel == SuccessLevel::Fumble;
-    result.isSuccess = result.successLevel >= SuccessLevel::Success;
-  } else {
-    result.isSuccess =
-        recipe.comparison == Comparison::GreaterEqual ? total >= reference : roll <= reference;
-  }
+  detail::gradeThresholdResult(result, roll, total, reference, recipe, rng);
   return result;
 }
 
@@ -414,10 +455,12 @@ template <StatProvider Actor, RandomNumberGenerator Rng>
   // Every effective attribute must be at least 1 before any die is rolled:
   // otherwise that part of the check can never pass, and no RNG is consumed.
   const std::size_t n = recipe.numPoolAttributes;
-  int32_t eav[3]{};
+  std::array<int32_t, 3> eav{};
   for (std::size_t i = 0; i < n; ++i) {
-    eav[i] = static_cast<int32_t>(actor.getStat(recipe.poolAttributes[i])) + params.difficulty;
-    if (eav[i] < 1) {
+    const int32_t effective =
+        static_cast<int32_t>(actor.getStat(recipe.poolAttributes.at(i))) + params.difficulty;
+    eav.at(i) = effective;
+    if (effective < 1) {
       result.isSuccess = false;
       return result;
     }
@@ -426,7 +469,9 @@ template <StatProvider Actor, RandomNumberGenerator Rng>
   result.rawDiceRolls = dice.roll(rng);
   int32_t totalOvershoot = 0;
   for (std::size_t i = 0; i < n; ++i) {
-    totalOvershoot += result.rawDiceRolls[i] > eav[i] ? (result.rawDiceRolls[i] - eav[i]) : 0;
+    const int32_t roll = result.rawDiceRolls[i];
+    const int32_t effective = eav.at(i);
+    totalOvershoot += roll > effective ? roll - effective : 0;
   }
 
   const int32_t pool =

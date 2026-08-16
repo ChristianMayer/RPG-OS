@@ -9,9 +9,10 @@
  * attack-vs-defence check and the event-driven damage pipeline (armour
  * absorption, wound checks). Both archetypes and bestiary entries can fight:
  * bestiary fields (@c attacks[].to_hit, @c attacks[].damage, @c dodge,
- * @c armor_rating) are promoted into stats so the shared check algorithms and
- * the damage pipeline see them, while archetypes rely on their derived
- * @c Attack / @c Parry values plus a weapon damage expression.
+ * @c armor_rating, and for D&D-style systems @c ac and @c initiative) are
+ * promoted into stats so the shared check algorithms and the damage pipeline
+ * see them, while archetypes rely on their derived @c Attack / @c Parry
+ * values plus a weapon damage expression.
  *
  * @par Why a combat simulator in the engine at all?
  * Combat is where the engine's pieces meet: checks, damage, resources, and
@@ -27,6 +28,8 @@
  */
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <rpg_os/core/dice_engine.hpp>
@@ -58,16 +61,18 @@ struct CombatantSpec {
   int32_t attackValue{0};            ///< to-hit value (Attack / bestiary `to_hit`)
   int32_t defenseValue{0};           ///< parry / bestiary `dodge`
   int32_t armorRating{0};            ///< Armor_Rating (bestiary `armor_rating`)
+  int32_t acValue{0};                ///< bestiary `ac` (D&D armor class; 0 when absent)
+  int32_t initiativeValue{0};        ///< bestiary `initiative` (0 when absent)
   std::string damageExpression;      ///< dice expression, e.g. "2d6+4"
   std::vector<std::string> spellIds; ///< spells the combatant can cast (empty = pure melee)
 };
 
 /// The result of one fight.
 struct FightOutcome {
-  int winnerIndex{-1};          ///< 0 or 1 (index of the combatant passed to runFight), -1 = draw
-  int rounds{0};                ///< rounds fought until the decision (maxRounds on a draw)
-  int32_t maxLp[2]{0, 0};       ///< starting hit points of both combatants
-  int32_t remainingLp[2]{0, 0}; ///< hit points left at the end
+  int winnerIndex{-1}; ///< 0 or 1 (index of the combatant passed to runFight), -1 = draw
+  int rounds{0};       ///< rounds fought until the decision (maxRounds on a draw)
+  std::array<int32_t, 2> maxLp{0, 0};       ///< starting hit points of both combatants
+  std::array<int32_t, 2> remainingLp{0, 0}; ///< hit points left at the end
 };
 
 /// Finds the id of the ruleset's opposed combat check type ("tde_attack"
@@ -91,6 +96,17 @@ struct FightOutcome {
       return def.id;
     }
   }
+  // D&D-style attack-vs-AC: a threshold check rolled against a *target* stat
+  // (e.g. AC) whose bonus comes from the combatant's promoted `Attack` stat
+  // (the bestiary `to_hit`). Systems without an opposed parry roll (D&D)
+  // use this instead of the opposed resolution above.
+  for (const CheckTypeDef &def : ruleset.checkTypes) {
+    if (def.recipe.resolution == Resolution::Threshold &&
+        def.recipe.thresholdSource == ThresholdSource::TargetStat &&
+        std::ranges::contains(def.recipe.bonusStats, "Attack")) {
+      return def.id;
+    }
+  }
   return {};
 }
 
@@ -110,6 +126,72 @@ struct FightOutcome {
   }
   return {};
 }
+
+namespace detail {
+
+/// Fills `out` from an archetype record (a probe entity at average variance);
+/// false when the archetype cannot be created.
+[[nodiscard]] inline bool fillArchetypeSpec(RulesetEngine &engine, const Json &entry,
+                                            std::string_view id, CombatantSpec &out,
+                                            std::string_view weaponDamage,
+                                            DefaultRandom &probeRng) {
+  auto probe = engine.createEntityWith(id, Variance::Average, probeRng);
+  if (probe == nullptr) {
+    return false;
+  }
+  out.id = std::string(id);
+  out.name = entry.value("name", out.id);
+  out.isArchetype = true;
+  out.attackValue = probe->getStat("Attack");
+  out.defenseValue = probe->getStat("Parry");
+  out.armorRating = probe->baseAttribute("Armor_Rating");
+  out.damageExpression = std::string(weaponDamage);
+  // An archetype's `spells_known` were loaded into the probe's spellbook;
+  // copy them so the fight loop can cast magic for this combatant.
+  out.spellIds = probe->spellbook().known();
+  return true;
+}
+
+/// Fills `out` from a bestiary record (a probe creature at average variance),
+/// promoting its `to_hit` / `dodge` / `armor_rating` / `ac` / `initiative`
+/// fields; false when the creature cannot be created.
+[[nodiscard]] inline bool fillCreatureSpec(RulesetEngine &engine, const Json &entry,
+                                           std::string_view id, CombatantSpec &out,
+                                           std::string_view weaponDamage, DefaultRandom &probeRng) {
+  auto probe = engine.createCreatureWith(id, Variance::Average, probeRng);
+  if (probe == nullptr) {
+    return false;
+  }
+  out.id = std::string(id);
+  out.name = entry.value("name", out.id);
+  out.isArchetype = false;
+  out.defenseValue = entry.value("dodge", 0);
+  out.armorRating = entry.value("armor_rating", 0);
+  out.acValue = entry.value("ac", 0);
+  out.initiativeValue = entry.value("initiative", 0);
+  out.attackValue = 0;
+  out.damageExpression = std::string(weaponDamage);
+  if (entry.contains("attacks") && entry.at("attacks").is_array()) {
+    int32_t bestToHit = -1;
+    for (const Json &attack : entry.at("attacks")) {
+      const int32_t toHit = attack.value("to_hit", 0);
+      if (toHit > bestToHit) {
+        bestToHit = toHit;
+        out.attackValue = toHit;
+        out.damageExpression = attack.value("damage", "1d6");
+      }
+    }
+  }
+  if (out.attackValue <= 0) {
+    // No natural attack defined: fall back to the creature's derived
+    // attack value and an unarmed strike.
+    out.attackValue = probe->getStat("Attack");
+    out.damageExpression = "1d6";
+  }
+  return true;
+}
+
+} // namespace detail
 
 /// Builds a `CombatantSpec` for `id` (archetype first, then bestiary entry).
 /// `weaponDamage` is used for archetypes (default: a longsword) and for
@@ -135,21 +217,7 @@ struct FightOutcome {
       if (entry.value("id", "") != id) {
         continue;
       }
-      auto probe = engine.createEntityWith(id, Variance::Average, probeRng);
-      if (probe == nullptr) {
-        return false;
-      }
-      out.id = std::string(id);
-      out.name = entry.value("name", out.id);
-      out.isArchetype = true;
-      out.attackValue = probe->getStat("Attack");
-      out.defenseValue = probe->getStat("Parry");
-      out.armorRating = probe->baseAttribute("Armor_Rating");
-      out.damageExpression = std::string(weaponDamage);
-      // An archetype's `spells_known` were loaded into the probe's spellbook;
-      // copy them so the fight loop can cast magic for this combatant.
-      out.spellIds = probe->spellbook().known();
-      return true;
+      return detail::fillArchetypeSpec(engine, entry, id, out, weaponDamage, probeRng);
     }
   }
 
@@ -158,35 +226,7 @@ struct FightOutcome {
       if (entry.value("id", "") != id) {
         continue;
       }
-      auto probe = engine.createCreatureWith(id, Variance::Average, probeRng);
-      if (probe == nullptr) {
-        return false;
-      }
-      out.id = std::string(id);
-      out.name = entry.value("name", out.id);
-      out.isArchetype = false;
-      out.defenseValue = entry.value("dodge", 0);
-      out.armorRating = entry.value("armor_rating", 0);
-      out.attackValue = 0;
-      out.damageExpression = std::string(weaponDamage);
-      if (entry.contains("attacks") && entry.at("attacks").is_array()) {
-        int32_t bestToHit = -1;
-        for (const Json &attack : entry.at("attacks")) {
-          const int32_t toHit = attack.value("to_hit", 0);
-          if (toHit > bestToHit) {
-            bestToHit = toHit;
-            out.attackValue = toHit;
-            out.damageExpression = attack.value("damage", "1d6");
-          }
-        }
-      }
-      if (out.attackValue <= 0) {
-        // No natural attack defined: fall back to the creature's derived
-        // attack value and an unarmed strike.
-        out.attackValue = probe->getStat("Attack");
-        out.damageExpression = "1d6";
-      }
-      return true;
+      return detail::fillCreatureSpec(engine, entry, id, out, weaponDamage, probeRng);
     }
   }
   return false;
@@ -213,6 +253,17 @@ template <RandomNumberGenerator Rng>
     entity->setBaseAttribute("Attack", spec.attackValue);
     entity->setBaseAttribute("Parry", spec.defenseValue);
     entity->setBaseAttribute("Armor_Rating", spec.armorRating);
+    // D&D-style systems promote the bestiary's real AC and initiative into
+    // base attributes: the derived `AC = 10 + DEX_mod` does not match a
+    // creature's stat block, and `Initiative` has no derived stat at all.
+    // Skipping a zero value keeps rulesets without those fields (TDE, BRP)
+    // on their derived stats.
+    if (spec.acValue != 0) {
+      entity->setBaseAttribute("AC", spec.acValue);
+    }
+    if (spec.initiativeValue != 0) {
+      entity->setBaseAttribute("Initiative", spec.initiativeValue);
+    }
   }
   return entity;
 }
@@ -344,6 +395,42 @@ bool actOnce(RulesetEngine &engine, DynamicEntity &actor, const CombatantSpec &s
   return attackOnce(engine, actor, weaponDamage, defender, checkTypeId, hpResourceId, rng);
 }
 
+/// Plays one round of a fight: rolls initiative, resolves both combatants'
+/// actions in initiative order, and returns the winner's index (0 or 1) or
+/// -1 when neither combatant is reduced to 0 hit points.
+///
+/// @par Why return the winner instead of mutating the outcome?
+/// Keeping the round self-contained (inputs in, winner out) lets the fight
+/// loop stay a flat read loop — no winner bookkeeping spread across the round
+/// body — and makes the per-round RNG stream easy to reason about in tests.
+template <RandomNumberGenerator Rng>
+[[nodiscard]] int resolveRound(RulesetEngine &engine, const CombatantSpec &a,
+                               const CombatantSpec &b, DynamicEntity &ea, DynamicEntity &eb,
+                               const DiceExpression &damageA, const DiceExpression &damageB,
+                               std::string_view checkTypeId, std::string_view hpResourceId,
+                               bool useMagic, Rng &rng) {
+  const int initA = ea.getStat("Initiative") + rng(1, 6);
+  const int initB = eb.getStat("Initiative") + rng(1, 6);
+  const bool aFirst = initA != initB ? initA > initB : rng(0, 1) == 0;
+
+  DynamicEntity &first = aFirst ? ea : eb;
+  DynamicEntity &second = aFirst ? eb : ea;
+  const CombatantSpec &firstSpec = aFirst ? a : b;
+  const CombatantSpec &secondSpec = aFirst ? b : a;
+  const DiceExpression &firstDamage = aFirst ? damageA : damageB;
+  const DiceExpression &secondDamage = aFirst ? damageB : damageA;
+
+  if (actOnce(engine, first, firstSpec, firstDamage, second, checkTypeId, hpResourceId, useMagic,
+              rng)) {
+    return aFirst ? 0 : 1;
+  }
+  if (actOnce(engine, second, secondSpec, secondDamage, first, checkTypeId, hpResourceId, useMagic,
+              rng)) {
+    return aFirst ? 1 : 0;
+  }
+  return -1;
+}
+
 } // namespace detail
 
 /// Runs a fight between two freshly created combatants until one of them
@@ -381,25 +468,10 @@ template <RandomNumberGenerator Rng>
 
   int roundsPlayed = 0;
   for (; roundsPlayed < maxRounds; ++roundsPlayed) {
-    const int initA = ea->getStat("Initiative") + rng(1, 6);
-    const int initB = eb->getStat("Initiative") + rng(1, 6);
-    const bool aFirst = initA != initB ? initA > initB : rng(0, 1) == 0;
-
-    DynamicEntity *first = aFirst ? ea.get() : eb.get();
-    DynamicEntity *second = aFirst ? eb.get() : ea.get();
-    const CombatantSpec &firstSpec = aFirst ? a : b;
-    const CombatantSpec &secondSpec = aFirst ? b : a;
-    const DiceExpression &firstDamage = aFirst ? damageA : damageB;
-    const DiceExpression &secondDamage = aFirst ? damageB : damageA;
-
-    if (detail::actOnce(engine, *first, firstSpec, firstDamage, *second, checkTypeId, hpResourceId,
-                        useMagic, rng)) {
-      outcome.winnerIndex = aFirst ? 0 : 1;
-      break;
-    }
-    if (detail::actOnce(engine, *second, secondSpec, secondDamage, *first, checkTypeId,
-                        hpResourceId, useMagic, rng)) {
-      outcome.winnerIndex = aFirst ? 1 : 0;
+    const int winner = detail::resolveRound(engine, a, b, *ea, *eb, damageA, damageB, checkTypeId,
+                                            hpResourceId, useMagic, rng);
+    if (winner >= 0) {
+      outcome.winnerIndex = winner;
       break;
     }
   }
