@@ -15,6 +15,14 @@
     "brp"
   ],
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Mundus-Mirabilis/RPG-OS"
+  },
+  "homepage": "https://github.com/Mundus-Mirabilis/RPG-OS",
+  "bugs": {
+    "url": "https://github.com/Mundus-Mirabilis/RPG-OS/issues"
+  },
   "type": "module",
   "main": "./index.mjs",
   "module": "./index.mjs",
