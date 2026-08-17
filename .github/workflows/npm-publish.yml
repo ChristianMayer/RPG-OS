@@ -35,7 +35,7 @@ jobs:
     name: Publish @mundus-mirabilis/rpg-os
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up the Emscripten SDK
         run: |
@@ -49,10 +49,11 @@ jobs:
           wasm/build.sh
 
       - name: Set up Node + the npm registry
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false  # never use caching in release builds
 
       - name: Determine the npm version and dist-tag from the ref
         id: version
@@ -78,7 +79,6 @@ jobs:
       - name: Set the package version and publish to npm
         working-directory: wasm/package
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
           NPM_VERSION: ${{ steps.version.outputs.version }}
           NPM_DIST_TAG: ${{ steps.version.outputs.dist_tag }}
         run: |
