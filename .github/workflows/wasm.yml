@@ -1,0 +1,57 @@
+name: WASM / npm package
+
+# Builds the universal engine to WebAssembly, tests the @mundus-mirabilis/rpg-os
+# package (including the seeded native-vs-WASM fight parity test), and uploads
+# the packaged result as an artifact. Publishing to npm happens separately in
+# npm-publish.yml (tag-triggered).
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+
+jobs:
+  build-wasm:
+    name: Build WASM + test the npm package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the native toolchain (fight binary for the parity test)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++-13
+
+      - name: Set up the Emscripten SDK
+        # The WASM build needs a recent Emscripten (its bundled clang provides
+        # libc++ >= 18, required for <expected> and std::ranges in C++23).
+        # `latest` was validated with Emscripten 6.0.6 (2026-08-17); pin a
+        # specific release here once one is proven stable.
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          /tmp/emsdk/emsdk install latest
+          /tmp/emsdk/emsdk activate latest
+
+      - name: Build the native fight example (parity reference)
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DRPG_OS_BUILD_TESTS=OFF -DRPG_OS_BUILD_DOCS=OFF \
+            -DRPG_OS_BUILD_EXAMPLES=ON
+          cmake --build build --target rpg_os_example_fight --parallel
+
+      - name: Build the WASM package
+        run: |
+          source /tmp/emsdk/emsdk_env.sh
+          wasm/build.sh
+
+      - name: Test the npm package (incl. native-vs-WASM parity)
+        working-directory: wasm/package
+        run: npm test
+
+      - name: Upload the packaged npm folder as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpg-os-wasm-package
+          path: wasm/package/
+          if-no-files-found: error

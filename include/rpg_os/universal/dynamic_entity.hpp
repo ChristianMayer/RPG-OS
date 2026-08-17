@@ -574,6 +574,29 @@ public:
     restoreResistances(in);
   }
 
+  /// (Re)creates the resource pools from the ruleset definitions, computing
+  /// each maximum from the current stats. Newly created pools start at their
+  /// full derived maximum; existing pools keep their current value while
+  /// their bounds are refreshed.
+  ///
+  /// @par Why public?
+  /// A sheet built by hand — a character entered into a form, restored from
+  /// JSON, or otherwise never loaded from an archetype — has no pools yet.
+  /// @c createFighter needs this so arbitrary characters get their hit-point
+  /// pools before a fight.
+  void refreshResources() {
+    for (const ResourcePoolDef &def : m_ruleset->resourcePools) {
+      const int32_t maxValue = getStat(def.maxStat);
+      const auto it = m_resources.find(def.id);
+      if (it == m_resources.end()) {
+        m_resources.emplace(def.id, ResourcePool{maxValue, def.minValue, maxValue});
+      } else {
+        it->second.min = def.minValue;
+        it->second.max = maxValue;
+      }
+    }
+  }
+
   /// Loads attributes, skills, resources, and conditions from an archetype
   /// JSON record (ranged values picked at random), then (re)initializes the
   /// resource pools. This overload uses a fresh entropy-seeded RNG.
@@ -859,22 +882,6 @@ private:
       }
     }
     return nullptr;
-  }
-  /// (Re)creates the resource pools from the ruleset definitions, computing
-  /// each maximum from the current stats. Called after loading an archetype
-  /// so a pool always starts at its full derived maximum — the default state
-  /// a freshly spawned character is expected to be in.
-  void refreshResources() {
-    for (const ResourcePoolDef &def : m_ruleset->resourcePools) {
-      const int32_t maxValue = getStat(def.maxStat);
-      const auto it = m_resources.find(def.id);
-      if (it == m_resources.end()) {
-        m_resources.emplace(def.id, ResourcePool{maxValue, def.minValue, maxValue});
-      } else {
-        it->second.min = def.minValue;
-        it->second.max = maxValue;
-      }
-    }
   }
 
   /// Evaluates a derived-stat formula for this entity (no target / env).

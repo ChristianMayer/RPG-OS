@@ -76,6 +76,9 @@ def parse_args():
                              "(default: fresh entropy)")
     parser.add_argument("--list", action="store_true",
                         help="list all combatants in the ruleset and exit")
+    parser.add_argument("--json", metavar="PATH", default=None,
+                        help="write the final ranking as JSON to PATH (the "
+                             "GitHub Pages demo leaderboard)")
     return parser.parse_args()
 
 
@@ -178,6 +181,44 @@ def print_ranking(ratings, stats, entries):
     print(f"\nChampion: {ranked[0]} (rating {ratings[ranked[0]]:.1f})")
 
 
+def write_json(path, ratings, stats, entries, args):
+    """Writes the final ranking as a JSON leaderboard for the web demo.
+
+    The file is deterministic for a given `--seed` (ratings rounded to one
+    decimal, entries sorted by rating descending), so CI can regenerate it and
+    the demo serve it verbatim. The entry shape mirrors what `print_ranking`
+    shows, plus `win_pct` for convenience.
+    """
+    ranked = sorted(entries, key=lambda entry: ratings[entry], reverse=True)
+    leaderboard = []
+    for index, entry in enumerate(ranked, start=1):
+        stat = stats[entry]
+        win_pct = 100.0 * stat["wins"] / stat["games"] if stat["games"] else 0.0
+        leaderboard.append({
+            "rank": index,
+            "id": entry,
+            "rating": round(ratings[entry], 1),
+            "games": stat["games"],
+            "wins": stat["wins"],
+            "draws": stat["draws"],
+            "losses": stat["losses"],
+            "win_pct": round(win_pct, 1),
+        })
+    payload = {
+        "ruleset": os.path.splitext(os.path.basename(args.ruleset))[0],
+        "seed": args.seed,
+        "k": args.k,
+        "initial": args.initial,
+        "rounds": args.rounds,
+        "games_per_pair": args.games,
+        "champion": ranked[0] if ranked else None,
+        "entries": leaderboard,
+    }
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2, ensure_ascii=False)
+        handle.write("\n")
+
+
 def _write_progress(done, total, width=30):
     """Draws an in-place progress bar on stderr; call again to update."""
     if total <= 0:
@@ -245,6 +286,9 @@ def main():
         sys.stderr.write("\n")
 
     print_ranking(ratings, stats, entries)
+    if args.json:
+        write_json(args.json, ratings, stats, entries, args)
+        print(f"wrote leaderboard JSON to {args.json}", file=sys.stderr)
     return 0
 
 

@@ -97,10 +97,40 @@ step regenerates them into a temp dir and checks `git diff --exit-code`.
 | `generated/` | Committed codegen outputs (`dnd5e_srd_static.hpp`, `tde5e_core_static.hpp`) |
 | `tests/` | doctest suite, registered with CTest via `tests/CMakeLists.txt` |
 | `examples/` | Small self-contained demo programs |
+| `scripts/` | Python tooling — Monte-Carlo ELO ranking (`elo_ranking.py`) |
 | `cmake/` | CMake helper modules (warnings, sanitizers) |
+| `wasm/` | WebAssembly port: extern "C" binding (`bindings.cpp`), build script, and the `@mundus-mirabilis/rpg-os` npm package source |
+| `web/` | Static, no-build web demo (`web/demo/` = the ELO Arena page) |
 
 The `rpg_os` CMake target is an **INTERFACE (header-only)** target; do not
 convert it to `STATIC`. Only tests and examples compile executables.
+
+### WebAssembly / npm
+
+- `wasm/bindings.cpp` is a flat extern "C" API over the universal engine,
+  compiled to WASM by `wasm/build.sh` (em++). It stays host-compilable (no
+  Emscripten headers unless `__EMSCRIPTEN__`) so `g++ -std=c++23 -fsyntax-only`
+  works as a local syntax check.
+- The npm package `@mundus-mirabilis/rpg-os` lives in `wasm/package/` and is
+  assembled by `wasm/build.sh` (WASM dist + rulesets + LICENSE). The ELO
+  ratings deliberately stay in Python (`scripts/elo_ranking.py`); the demo
+  ports only the small formula to JS. CI: `wasm.yml` (build+test), `npm-publish.yml`
+  (publishes on every main/develop push under the `main`/`develop` dist-tags and
+  on `v*` tags under `latest`), `demo.yml` (deploys `web/demo/` to `/<version>/demo/`).
+- The `wasm/` build output and `web/demo/{wasm,rulesets,data}` are CI-generated
+  and gitignored (see `.gitignore`).
+- **Portable seeded RNG**: `DefaultRandom::operator()` draws from the raw
+  `std::mt19937` output, NOT `std::uniform_int_distribution` (which differs
+  between libstdc++ and libc++). This makes "same seed = same result" hold
+  across native builds and the WASM build (libc++), which the npm package's
+  native-vs-WASM fight parity test relies on (pinned by `test_dice.cpp`). Do
+  not "restore" the distribution — it would break WASM↔native parity.
+- **Arbitrary characters can fight**: `CombatantSpec` carries an optional
+  embedded `Json sheet`; `createFighter` builds the fighter from it, and
+  `makeCombatantSpecFromEntity(engine, entity, weapon, out)` derives combat
+  values from ANY `DynamicEntity` — a character with no ruleset entry (e.g.
+  one entered into a form) is fully supported. `DynamicEntity::refreshResources`
+  is public so hand-built sheets get their resource pools.
 
 ## Shared template core
 

@@ -65,6 +65,11 @@ struct CombatantSpec {
   int32_t initiativeValue{0};        ///< bestiary `initiative` (0 when absent)
   std::string damageExpression;      ///< dice expression, e.g. "2d6+4"
   std::vector<std::string> spellIds; ///< spells the combatant can cast (empty = pure melee)
+  /// An optional embedded character sheet (the `DynamicEntity` save form).
+  /// When present (a JSON object), @c createFighter builds the fighter from
+  /// this sheet instead of the named ruleset entry — letting ANY character
+  /// (not just a named archetype or bestiary entry) take part in a fight.
+  Json sheet;
 };
 
 /// The result of one fight.
@@ -232,6 +237,45 @@ namespace detail {
   return false;
 }
 
+/// Builds a `CombatantSpec` from an *existing* character sheet (`entity`), so
+/// any character — not only a named archetype or bestiary entry — can take
+/// part in a fight. The entity's current state is captured into the spec's
+/// embedded sheet (see @ref CombatantSpec::sheet), and @c createFighter
+/// rebuilds a fresh entity from that sheet for every Monte-Carlo trial.
+///
+/// @par Why does the spec carry a whole sheet?
+/// `runFight` creates new entities per fight. A character that exists only as
+/// a sheet (a form entry, a saved game) has no ruleset record to re-derive
+/// from, so the spec must carry the sheet itself; the combat values
+/// (`Attack`, `Parry`, `Armor_Rating`, `AC`, `Initiative`) are captured too,
+/// so callers can inspect the spec without a live entity.
+[[nodiscard]] inline bool makeCombatantSpecFromEntity(RulesetEngine &engine,
+                                                      const DynamicEntity &entity,
+                                                      CombatantSpec &out,
+                                                      std::string_view weaponDamage = "1d6+4") {
+  out.id = entity.id();
+  out.name = entity.id();
+  // Resolve a human-readable name when the sheet happens to be a known
+  // ruleset entry (archetype or bestiary); otherwise the id is the name.
+  const Json *record = engine.findDataRecord("archetypes", entity.id());
+  if (record == nullptr) {
+    record = engine.findDataRecord("creatures", entity.id());
+  }
+  if (record != nullptr) {
+    out.name = record->value("name", out.name);
+  }
+  out.isArchetype = true; // the sheet fully describes the character
+  out.attackValue = entity.getStat("Attack");
+  out.defenseValue = entity.getStat("Parry");
+  out.armorRating = entity.getStat("Armor_Rating");
+  out.acValue = entity.getStat("AC");
+  out.initiativeValue = entity.getStat("Initiative");
+  out.damageExpression = std::string(weaponDamage);
+  out.spellIds = entity.spellbook().known();
+  entity.toJson(out.sheet);
+  return true;
+}
+
 /// Creates a fresh entity for a fight from `spec`. Ranged values are picked at
 /// the "average" variance so Monte Carlo trials are comparable. Bestiary
 /// fields are promoted into the `Attack` / `Parry` / `Armor_Rating` stats the
@@ -246,6 +290,17 @@ namespace detail {
 template <RandomNumberGenerator Rng>
 [[nodiscard]] std::shared_ptr<DynamicEntity> createFighter(RulesetEngine &engine,
                                                            const CombatantSpec &spec, Rng &rng) {
+  // A spec carrying an embedded sheet fights that sheet directly: ANY
+  // character — not just a named archetype or bestiary entry — can take part
+  // in a fight this way (e.g. a character entered into a form). The sheet is
+  // restored into a fresh entity per fight and its resource pools are
+  // (re)created so the fighter starts at its full derived hit points.
+  if (spec.sheet.is_object()) {
+    auto entity = std::make_shared<DynamicEntity>(engine.ruleset(), spec.id);
+    entity->fromJson(spec.sheet);
+    entity->refreshResources();
+    return entity;
+  }
   std::shared_ptr<DynamicEntity> entity =
       spec.isArchetype ? engine.createEntityWith(spec.id, Variance::Average, rng)
                        : engine.createCreatureWith(spec.id, Variance::Average, rng);
