@@ -1,9 +1,15 @@
-name: Build Documentation
+name: Publish docs + demo
 
 # Builds the Doxygen docs (Doxygen Awesome theme) and publishes them to the
 # `gh-pages` branch under versioned subfolders via the central reusable
 # workflow: /main/, /develop/, and /vX.Y.Z/ for release tags. This keeps all
 # published versions side-by-side on GitHub Pages.
+#
+# The ELO Arena demo is deployed in the SAME workflow, as a second job that
+# `needs: deploy-docs` — so the demo is always published AFTER the docs. This
+# is the "guaranteed and sensible order": both deploy to `gh-pages` with
+# `keep_files`, and chaining them inside one workflow means the two gh-pages
+# pushes can never race each other on the same commit.
 #
 # One-time repository settings (see docs/README.md):
 #   - Settings -> Actions -> General -> Workflow permissions: Read and write
@@ -35,3 +41,66 @@ jobs:
       doxyfile-path: 'Doxyfile'
       output-dir: 'html'
       enable-awesome-css: false
+
+  deploy-demo:
+    name: Deploy the ELO Arena demo to /<version>/demo/
+    needs: deploy-docs # guaranteed order: docs first, then the demo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the native toolchain (fight binary for elo_ranking.py)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++-13
+
+      - name: Build the native fight example
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DRPG_OS_BUILD_TESTS=OFF -DRPG_OS_BUILD_DOCS=OFF \
+            -DRPG_OS_BUILD_EXAMPLES=ON
+          cmake --build build --target rpg_os_example_fight --parallel
+
+      - name: Set up the Emscripten SDK
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          /tmp/emsdk/emsdk install latest
+          /tmp/emsdk/emsdk activate latest
+
+      - name: Build the WASM assets
+        run: |
+          source /tmp/emsdk/emsdk_env.sh
+          wasm/build.sh
+
+      - name: Assemble the demo (wasm + rulesets + leaderboards)
+        # The leaderboards are generated during this CI run by the Python ELO
+        # script (fixed seed -> deterministic). The wasm assets and rulesets
+        # are copied in; all three folders are gitignored in the repo.
+        run: |
+          STAGE="$GITHUB_WORKSPACE/web/demo"
+          mkdir -p "$STAGE/wasm" "$STAGE/rulesets" "$STAGE/data"
+          cp wasm/package/dist/rpg-os-universal.js wasm/package/dist/rpg-os-universal.wasm "$STAGE/wasm/"
+          cp rulesets/dnd5e_srd.json rulesets/tde5e_core.json "$STAGE/rulesets/"
+          python3 scripts/elo_ranking.py --ruleset rulesets/dnd5e_srd.json \
+            --seed 20260817 --rounds 30 --games 10 --jobs 4 \
+            --json "$STAGE/data/dnd5e_srd_elo.json"
+          python3 scripts/elo_ranking.py --ruleset rulesets/tde5e_core.json \
+            --seed 20260817 --rounds 30 --games 10 --jobs 4 \
+            --json "$STAGE/data/tde5e_core_elo.json"
+
+      - name: Determine the version subfolder (main | develop | vX.Y.Z)
+        id: version
+        run: |
+          REF="${GITHUB_REF#refs/heads/}"
+          if [[ "${REF}" == refs/tags/* ]]; then
+            REF="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "folder=${REF}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to GitHub Pages (keep the docs intact)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: web/demo
+          destination_dir: ${{ steps.version.outputs.folder }}/demo
+          keep_files: true

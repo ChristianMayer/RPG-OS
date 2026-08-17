@@ -125,7 +125,9 @@ ranking of every combatant in a ruleset (generated during CI by
 ranked live in the browser via WASM, and computes head-to-head fight-win
 probabilities from the ELO ratings. The ELO ratings stay in Python — the page
 only ports the small formula to JS for the interactive, serverless parts.
-Source in `web/demo/`; the deploy workflow is `.github/workflows/demo.yml`.
+Source in `web/demo/`; the demo is deployed by the `deploy-demo` job of
+`.github/workflows/docs.yml` (chained after the docs deploy, so the two
+gh-pages pushes never race).
 
 ## Using the generated (specific-mode) headers
 

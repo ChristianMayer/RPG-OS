@@ -116,7 +116,9 @@ convert it to `STATIC`. Only tests and examples compile executables.
   ratings deliberately stay in Python (`scripts/elo_ranking.py`); the demo
   ports only the small formula to JS. CI: `wasm.yml` (build+test), `npm-publish.yml`
   (publishes on every main/develop push under the `main`/`develop` dist-tags and
-  on `v*` tags under `latest`), `demo.yml` (deploys `web/demo/` to `/<version>/demo/`).
+  on `v*` tags under `latest`), and the `deploy-demo` job of `docs.yml` deploys
+  `web/demo/` to `/<version>/demo/` AFTER the docs (chained via `needs`, so the
+  two gh-pages pushes can never race).
 - The `wasm/` build output and `web/demo/{wasm,rulesets,data}` are CI-generated
   and gitignored (see `.gitignore`).
 - **Portable seeded RNG**: `DefaultRandom::operator()` draws from the raw

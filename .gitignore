@@ -14,8 +14,8 @@ scripts/__pycache__
 
 # ---- Web demo (CI-generated assets) ----
 # The ELO Arena demo page. The WASM module, the rulesets, and the leaderboards
-# are produced by CI (demo.yml) at deploy time; only the static page sources
-# are committed.
+# are produced by CI (the deploy-demo job of docs.yml) at deploy time; only
+# the static page sources are committed.
 /web/demo/data/
 /web/demo/rulesets/
 /web/demo/wasm/

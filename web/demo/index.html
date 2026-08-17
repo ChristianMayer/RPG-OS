@@ -5,12 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RPG-OS · ELO Arena</title>
   <meta name="description" content="The universal RPG-OS rule engine compiled to WebAssembly: browse ELO rankings, enter a character, and see head-to-head fight probabilities.">
-  <link rel="icon" type="image/png" href="https://mundus-mirabilis.github.io/RPG-OS/main/favicon.png">
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="site-header">
-    <h1>RPG-OS <span class="thin">· ELO Arena</span></h1>
+    <div class="brand-row">
+      <a class="brand" href="https://github.com/Mundus-Mirabilis/RPG-OS"
+         aria-label="RPG-OS on GitHub">
+        <img class="logo" src="assets/mundus-mirabilis_512.png" alt="">
+        <span class="brand-name">RPG-OS <span class="thin">· ELO Arena</span></span>
+      </a>
+    </div>
+    <img class="banner" src="assets/mundus-mirabilis-RPG_OS.png"
+         alt="RPG-OS — a universal rule engine for tabletop RPGs">
     <p class="tagline">
       The <a href="https://github.com/Mundus-Mirabilis/RPG-OS">RPG-OS</a> universal rule engine
       runs entirely in your browser via WebAssembly. Pick a ruleset, enter a character, and see
@@ -74,6 +82,7 @@
   </main>
 
   <footer class="site-footer">
+    <img class="logo-small" src="assets/mundus-mirabilis_512.png" alt="Mundus Mirabilis logo">
     <p>
       Powered by <a href="https://github.com/Mundus-Mirabilis/RPG-OS">RPG-OS</a>
       compiled to WebAssembly · npm <code>@mundus-mirabilis/rpg-os</code> ·
