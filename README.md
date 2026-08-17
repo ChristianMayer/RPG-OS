@@ -87,6 +87,48 @@ python3 codegen/rpg_os_codegen.py --ruleset rulesets/dnd5e_srd.json --out genera
 python3 codegen/rpg_os_codegen.py --ruleset rulesets/tde5e_core.json --out generated/
 ```
 
+## npm package & live demo
+
+The universal engine is also compiled to **WebAssembly** and published as the
+npm package **`@mundus-mirabilis/rpg-os`** — usable in **Node.js** and in the
+**browser**, with **any** ruleset JSON. The WASM binary never embeds a game's
+data: Node reads the JSON with `fs`, browsers fetch it, and both hand the
+string to the engine at runtime.
+
+```js
+import { init } from '@mundus-mirabilis/rpg-os';
+
+const rpg = await init();                                  // loads the WASM engine
+rpg.loadRulesetFromFile('rulesets/tde5e_core.json');       // Node: native fs
+// browser: rpg.loadRuleset(await (await fetch('rulesets/...')).text());
+
+const geron = rpg.createEntity('geron');                   // from a named archetype
+console.log(geron.getStat('COU'), geron.getResource('LP'));
+
+const hero = rpg.createEntityFromSheet('my_hero', { COU: 14, Attack: 12 }); // ANY character
+const spec = rpg.specFromEntity(hero);
+const outcome = rpg.fight(spec, rpg.specFromId('toad'), { seed: 42 });      // loop for win %
+```
+
+The package is built and published by CI: every push to `main` and `develop`
+updates a branch snapshot, and every `v*` tag publishes the release under
+`latest`. Consumers pick a line of development explicitly —
+`npm i @mundus-mirabilis/rpg-os` (release), `@main` or `@develop` (snapshots).
+See `wasm/` (bindings + build script) and `wasm/package/` (the package) for
+details, and `wasm/package/test/` for the test suite — including the seeded
+**native-vs-WASM fight parity test**.
+
+**ELO Arena** — a live demo, deployed alongside the docs to `/<version>/demo/`
+(e.g. <https://mundus-mirabilis.github.io/RPG-OS/main/demo/>), shows the ELO
+ranking of every combatant in a ruleset (generated during CI by
+`scripts/elo_ranking.py`), lets you enter an arbitrary character that is
+ranked live in the browser via WASM, and computes head-to-head fight-win
+probabilities from the ELO ratings. The ELO ratings stay in Python — the page
+only ports the small formula to JS for the interactive, serverless parts.
+Source in `web/demo/`; the demo is deployed by the `deploy-demo` job of
+`.github/workflows/docs.yml` (chained after the docs deploy, so the two
+gh-pages pushes never race).
+
 ## Using the generated (specific-mode) headers
 
 The code generator compiles a ruleset's schema into a strongly typed header.

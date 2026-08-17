@@ -1,0 +1,86 @@
+name: Publish npm package
+
+# Publishes @mundus-mirabilis/rpg-os to the npm registry (org mundus-mirabilis)
+# on EVERY push to `main` and `develop` and on every `v*` tag, or manually via
+# workflow_dispatch (uses the selected ref). Each push to a branch updates the
+# package under that branch's dist-tag with a unique prerelease version:
+#
+#   ref              npm version               dist-tag
+#   ---------------  ------------------------  --------
+#   vX.Y.Z (tag)     X.Y.Z                     latest
+#   main            0.0.0-main.<short-sha>     main
+#   develop         0.0.0-develop.<short-sha>  develop
+#
+# Consumers install a line of development explicitly:
+#   npm i @mundus-mirabilis/rpg-os          (latest release)
+#   npm i @mundus-mirabilis/rpg-os@main     (latest main build)
+#   npm i @mundus-mirabilis/rpg-os@develop  (latest develop build)
+#
+# Requires a repo secret `NODE_AUTH_TOKEN` with publish rights for the
+# @mundus-mirabilis scope (an npm access token, usually generated in npm
+# account -> Access Tokens, with the "Publish" permission).
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write # npm provenance (Sigstore) — no extra secret needed
+  contents: read
+
+jobs:
+  publish:
+    name: Publish @mundus-mirabilis/rpg-os
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up the Emscripten SDK
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          /tmp/emsdk/emsdk install latest
+          /tmp/emsdk/emsdk activate latest
+
+      - name: Build the WASM package
+        run: |
+          source /tmp/emsdk/emsdk_env.sh
+          wasm/build.sh
+
+      - name: Set up Node + the npm registry
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Determine the npm version and dist-tag from the ref
+        id: version
+        run: |
+          REF="${GITHUB_REF}"
+          if [[ "$REF" == refs/tags/v* ]]; then
+            VERSION="${REF#refs/tags/v}"
+            DIST_TAG="latest"
+          elif [[ "$REF" == refs/heads/main ]]; then
+            VERSION="0.0.0-main.${GITHUB_SHA::7}"
+            DIST_TAG="main"
+          elif [[ "$REF" == refs/heads/develop ]]; then
+            VERSION="0.0.0-develop.${GITHUB_SHA::7}"
+            DIST_TAG="develop"
+          else
+            echo "unexpected ref for npm publish: $REF" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "dist_tag=$DIST_TAG" >> "$GITHUB_OUTPUT"
+          echo "Publishing $VERSION under the '$DIST_TAG' dist-tag"
+
+      - name: Set the package version and publish to npm
+        working-directory: wasm/package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+          NPM_VERSION: ${{ steps.version.outputs.version }}
+          NPM_DIST_TAG: ${{ steps.version.outputs.dist_tag }}
+        run: |
+          npm version "$NPM_VERSION" --no-git-tag-version --allow-same-version
+          npm publish --tag "$NPM_DIST_TAG" --provenance --access public

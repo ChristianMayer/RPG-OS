@@ -12,6 +12,21 @@ scripts/__pycache__
 # must never be committed.
 /html/
 
+# ---- Web demo (CI-generated assets) ----
+# The ELO Arena demo page. The WASM module, the rulesets, and the leaderboards
+# are produced by CI (the deploy-demo job of docs.yml) at deploy time; only
+# the static page sources are committed.
+/web/demo/data/
+/web/demo/rulesets/
+/web/demo/wasm/
+
+# ---- npm package build output ----
+# The @mundus-mirabilis/rpg-os package is assembled by wasm/build.sh; its
+# dist (WASM module), rulesets, and LICENSE are generated, never committed.
+/wasm/package/dist/
+/wasm/package/rulesets/
+/wasm/package/LICENSE
+
 # ---- Tooling ----
 compile_commands.json
 .cache/

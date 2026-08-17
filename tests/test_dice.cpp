@@ -313,6 +313,23 @@ TEST_CASE("DefaultRandom: deterministic for a fixed seed") {
   }
 }
 
+TEST_CASE("DefaultRandom: the seeded stream is portable across standard libraries") {
+  // operator() draws from the raw std::mt19937 output — never
+  // std::uniform_int_distribution, which differs between libstdc++ and
+  // libc++. Pinning the exact draws here locks that portability: a seeded
+  // run produces identical results on native builds and the WASM build
+  // (libc++), which the npm package's native-vs-WASM parity test relies on.
+  rpg_os::DefaultRandom rng(42u);
+  const int d6[] = {1, 6, 5, 5, 1, 6, 5, 3, 5, 6};
+  for (const int expected : d6) {
+    CHECK(rng(1, 6) == expected);
+  }
+  const int d20[] = {19, 15, 11, 15, 12, 13}; // same engine, after the 10 d6 draws
+  for (const int expected : d20) {
+    CHECK(rng(1, 20) == expected);
+  }
+}
+
 TEST_CASE("DefaultRandom: unseeded instances draw varied entropy") {
   // Two independent default-seeded engines must not share a stream: each
   // draws its own seed from the OS random device, so a 32-bit collision is

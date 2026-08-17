@@ -1,0 +1,52 @@
+{
+  "name": "@mundus-mirabilis/rpg-os",
+  "version": "0.0.0",
+  "description": "Universal RPG rule engine (C++23 compiled to WebAssembly). Loads ANY ruleset JSON at runtime and resolves stats, checks, and combat in Node.js and the browser.",
+  "keywords": [
+    "rpg",
+    "rpg-os",
+    "rules-engine",
+    "wasm",
+    "webassembly",
+    "game-engine",
+    "the-dark-eye",
+    "dnd",
+    "dungeons-and-dragons",
+    "brp"
+  ],
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./index.mjs",
+  "module": "./index.mjs",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs",
+      "require": "./index.cjs",
+      "default": "./index.mjs"
+    },
+    "./rulesets/*": "./rulesets/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/",
+    "index.mjs",
+    "index.cjs",
+    "index.d.ts",
+    "rulesets/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bash ../build.sh",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

@@ -98,9 +98,20 @@ public:
 
   /// Returns a uniform integer in [min, max] (inclusive). The operator form
   /// is what satisfies the @c RandomNumberGenerator concept.
+  ///
+  /// @par Why not std::uniform_int_distribution?
+  /// `std::uniform_int_distribution` is *not* portable: for the same engine
+  /// and seed it produces different sequences on libstdc++ and libc++. The
+  /// engine here draws from the raw @c std::mt19937 output instead, which is
+  /// specified by the standard and identical on every implementation — so
+  /// "explicitly seeded = exactly reproducible" also holds across a native
+  /// build (libstdc++ or libc++) and the WebAssembly build (libc++). That
+  /// cross-standard-library determinism is what lets the npm package's
+  /// parity tests compare a seeded WASM fight with the native fight binary.
+  /// The tiny modulo bias is irrelevant for a game RNG.
   int operator()(int min, int max) {
-    std::uniform_int_distribution<int> dist(min, max);
-    return dist(m_engine);
+    const uint32_t span = static_cast<uint32_t>(max) - static_cast<uint32_t>(min) + 1u;
+    return min + static_cast<int>(m_engine() % span);
   }
 
 private:

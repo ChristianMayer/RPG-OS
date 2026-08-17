@@ -308,3 +308,80 @@ TEST_CASE("combat: dnd5e attack-vs-AC resolves to the end") {
   CHECK(outcome.remainingLp[0] == 8); // the winner's 8 HP untouched
   CHECK(outcome.remainingLp[1] == 0); // the loser at 0 HP
 }
+
+TEST_CASE("combat: a spec built from an entity sheet fights like the same character from an id") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+
+  // Build the spec the classic way (from the ruleset id) and from a live
+  // entity created from the same archetype; both must describe Geron.
+  rpg_os::CombatantSpec fromId;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "geron", fromId, "1d6+4"));
+  // No RNG is consumed for a TDE archetype: its attribute values are constants.
+  auto creationRng = script({0});
+  auto geronEntity = engine.createEntityWith("geron", rpg_os::Variance::Average, creationRng);
+  REQUIRE(geronEntity != nullptr);
+  rpg_os::CombatantSpec fromSheet;
+  REQUIRE(rpg_os::makeCombatantSpecFromEntity(engine, *geronEntity, fromSheet, "1d6+4"));
+
+  CHECK(fromSheet.id == "geron");
+  CHECK(fromSheet.name == "Geron, the Mercenary"); // resolved from the ruleset record
+  CHECK(fromSheet.attackValue == fromId.attackValue);
+  CHECK(fromSheet.defenseValue == fromId.defenseValue);
+  CHECK(fromSheet.armorRating == fromId.armorRating);
+  CHECK(fromSheet.damageExpression == fromId.damageExpression);
+  CHECK(fromSheet.sheet.is_object());
+
+  // The same scripted fight against a toad must produce identical outcomes,
+  // proving a sheet-based combatant is interchangeable with the named entry.
+  rpg_os::CombatantSpec toad;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "toad", toad));
+
+  auto rngId = script({6, 1, 1, 20, 6});
+  const rpg_os::FightOutcome viaId =
+      rpg_os::runFight(engine, fromId, toad, "tde_attack", "LP", 100, rngId);
+  auto rngSheet = script({6, 1, 1, 20, 6});
+  const rpg_os::FightOutcome viaSheet =
+      rpg_os::runFight(engine, fromSheet, toad, "tde_attack", "LP", 100, rngSheet);
+
+  CHECK(viaSheet.winnerIndex == viaId.winnerIndex);
+  CHECK(viaSheet.rounds == viaId.rounds);
+  CHECK(viaSheet.remainingLp[0] == viaId.remainingLp[0]);
+  CHECK(viaSheet.remainingLp[1] == viaId.remainingLp[1]);
+}
+
+TEST_CASE("combat: a hand-built character with no ruleset entry can fight") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+
+  // A character that exists only as a sheet — never declared in the ruleset.
+  rpg_os::DynamicEntity hero(engine.ruleset(), "my_hero");
+  hero.setBaseAttribute("COU", 12);
+  hero.setBaseAttribute("AGI", 13);
+  hero.setBaseAttribute("CON", 13);
+  hero.setBaseAttribute("Attack", 12);
+  hero.setBaseAttribute("Parry", 8);
+  hero.setBaseAttribute("Armor_Rating", 3);
+  hero.setBaseAttribute("Initiative", 12);
+  hero.refreshResources(); // give the sheet its pools (LP = 5 + 2*CON = 31)
+
+  rpg_os::CombatantSpec heroSpec;
+  REQUIRE(rpg_os::makeCombatantSpecFromEntity(engine, hero, heroSpec, "1d6+4"));
+  CHECK(heroSpec.id == "my_hero");
+  CHECK(heroSpec.attackValue == 12);
+  CHECK(heroSpec.defenseValue == 8);
+  CHECK(heroSpec.sheet.is_object());
+
+  rpg_os::CombatantSpec toad;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "toad", toad));
+
+  // The hero wins initiative, lands a critical the toad fails to parry, and
+  // rolls maximum weapon damage (1d6+4 = 10) — far more than the toad's 2 LP.
+  auto rng = script({6, 1, 1, 20, 6});
+  const rpg_os::FightOutcome outcome =
+      rpg_os::runFight(engine, heroSpec, toad, "tde_attack", "LP", 100, rng);
+  CHECK(outcome.winnerIndex == 0);
+  CHECK(outcome.rounds == 1);
+  CHECK(outcome.remainingLp[0] > 0); // hero untouched (the toad never acts)
+  CHECK(outcome.remainingLp[1] <= 0);
+}
