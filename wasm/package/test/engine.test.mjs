@@ -68,7 +68,14 @@ test('resolves a check against a target', () => {
   const result = rpg.check('tde_attack', hero, toad);
   assert.equal(typeof result.is_success, 'boolean');
   assert.ok(Array.isArray(result.raw_dice));
-  assert.ok(result.raw_dice.length >= 2); // attack + parry rolls
+  // The opposed attack is *staged*: the attacker's die is always rolled, but
+  // the defender's parry die is only rolled after a successful attack — a
+  // missed attack returns after a single die. So at least one die is always
+  // present, and a successful attack is exactly two (attack + parry).
+  assert.ok(result.raw_dice.length >= 1);
+  if (result.is_success) {
+    assert.equal(result.raw_dice.length, 2);
+  }
 });
 
 test('a fight is reproducible for a fixed seed', () => {
