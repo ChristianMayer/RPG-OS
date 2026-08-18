@@ -82,10 +82,10 @@ jobs:
           cp wasm/package/dist/rpg-os-universal.js wasm/package/dist/rpg-os-universal.wasm "$STAGE/wasm/"
           cp rulesets/dnd5e_srd.json rulesets/tde5e_core.json "$STAGE/rulesets/"
           python3 scripts/elo_ranking.py --ruleset rulesets/dnd5e_srd.json \
-            --seed 20260817 --rounds 30 --games 10 --jobs 4 \
+            --seed 20260817 --rounds 40 --games 20 --jobs 4 --initial 1000 \
             --json "$STAGE/data/dnd5e_srd_elo.json"
           python3 scripts/elo_ranking.py --ruleset rulesets/tde5e_core.json \
-            --seed 20260817 --rounds 30 --games 10 --jobs 4 \
+            --seed 20260817 --rounds 40 --games 20 --jobs 4 --initial 1000 \
             --json "$STAGE/data/tde5e_core_elo.json"
 
       - name: Determine the version subfolder (main | develop | vX.Y.Z)

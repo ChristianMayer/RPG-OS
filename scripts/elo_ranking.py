@@ -59,8 +59,9 @@ def parse_args():
     parser.add_argument("--rounds", type=int, default=40,
                         help="Swiss tournament rounds (each combatant plays one "
                              "opponent per round)")
-    parser.add_argument("--games", type=int, default=10,
-                        help="Monte Carlo fights per pair per round")
+    parser.add_argument("--games", type=int, default=20,
+                        help="Monte Carlo fights per pair per round (more fights "
+                             "per pair make the ratings converge faster)")
     parser.add_argument("--jobs", type=int, default=max(1, os.cpu_count() or 1),
                         help="parallel fight processes")
     parser.add_argument("--max-rounds", type=int, default=1000,
@@ -69,8 +70,10 @@ def parse_args():
                         help="disable spellcasting: rank pure weapon combat "
                              "only (spellcasters then fight with their weapons)")
     parser.add_argument("--k", type=float, default=32.0, help="ELO K-factor")
-    parser.add_argument("--initial", type=float, default=1500.0,
-                        help="starting ELO rating for every combatant")
+    parser.add_argument("--initial", type=float, default=1000.0,
+                        help="starting ELO rating for every combatant (the ELO "
+                             "standard strength — a default/average character "
+                             "converges to this rating)")
     parser.add_argument("--seed", type=int, default=None,
                         help="seed for reproducible pairing and fight seeds "
                              "(default: fresh entropy)")
@@ -262,7 +265,8 @@ def main():
 
     print(f"Monte Carlo ELO ranking: {len(entries)} combatants, "
           f"{args.rounds} rounds, {args.games} games/pair, "
-          f"{args.jobs} parallel jobs, K={args.k:g}", file=sys.stderr)
+          f"{args.jobs} parallel jobs, K={args.k:g}, start {args.initial:g}",
+          file=sys.stderr)
 
     # Only an interactive terminal gets the animated bar; when stderr is piped
     # (e.g. to a log) keep the output line-oriented and skip per-round spam.
