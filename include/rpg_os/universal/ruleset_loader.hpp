@@ -215,8 +215,11 @@ public:
   std::string id;
   std::string name;
   std::string source;
-  std::string licence; ///< licence governing the ruleset content (required)
-  std::string comment; ///< optional free-form note for the ruleset author
+  std::string licence;        ///< licence governing the ruleset content (required)
+  std::string licenceSource;  ///< optional URL where the rights holder states the licence
+  std::string licenceNotice;  ///< optional verbatim notice the licence requires (e.g. ORC Notice)
+  std::string attribution;    ///< optional attribution/credit statement the licence requires
+  std::string comment;        ///< optional free-form note for the ruleset author
   std::string ns;      ///< namespace used by the code generator
   std::string
       spellResource; ///< resource pool that spell casting draws its cost from (empty = none)
@@ -801,6 +804,9 @@ inline Ruleset RulesetLoader::load(const Json &root) {
   out.name = root.value("ruleset_name", out.id);
   out.source = root.value("source", "");
   out.licence = root.value("licence", "");
+  out.licenceSource = root.value("licence_source", "");
+  out.licenceNotice = root.value("licence_notice", "");
+  out.attribution = root.value("attribution", "");
   out.comment = root.value("comment", "");
   out.ns = root.value("namespace", "rpg_os::generated::" + out.id);
   out.spellResource = root.value("spell_resource", "");

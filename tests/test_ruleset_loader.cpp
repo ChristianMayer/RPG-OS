@@ -31,6 +31,9 @@ constexpr std::string_view kValidRuleset = R"json(
   "ruleset_name": "Test Ruleset",
   "source": "test",
   "licence": "CC-BY-4.0",
+  "licence_source": "https://example.com/licence",
+  "licence_notice": "Example notice text.",
+  "attribution": "Example attribution.",
   "comment": "A minimal fixture for loader tests.",
   "namespace": "rpg_os::generated::test",
   "attributes": [
@@ -126,6 +129,11 @@ TEST_CASE("RulesetLoader: loads a valid ruleset") {
   CHECK(ruleset.name == "Test Ruleset");
   CHECK(ruleset.schemaVersion == 1);
   CHECK(ruleset.ns == "rpg_os::generated::test");
+  CHECK(ruleset.source == "test");
+  CHECK(ruleset.licence == "CC-BY-4.0");
+  CHECK(ruleset.licenceSource == "https://example.com/licence");
+  CHECK(ruleset.licenceNotice == "Example notice text.");
+  CHECK(ruleset.attribution == "Example attribution.");
   CHECK(ruleset.attributes.size() == 4);
   CHECK(ruleset.derivedStats.size() == 2);
   CHECK(ruleset.resourcePools.size() == 1);
@@ -266,14 +274,26 @@ TEST_CASE("RulesetLoader: licence is required, comment is optional") {
   )json");
   CHECK(noComment.licence == "MIT");
   CHECK(noComment.comment.empty());
+  // licence_source is optional: absent -> empty.
+  CHECK(noComment.licenceSource.empty());
+  // licence_notice / attribution are optional too.
+  CHECK(noComment.licenceNotice.empty());
+  CHECK(noComment.attribution.empty());
 
   // Both present -> parsed.
   const rpg_os::Ruleset both = RulesetLoader::loadFromString(R"json(
     { "schema_version": 1, "ruleset_id": "x", "licence": "MIT",
+      "licence_source": "https://example.com/source",
+      "licence_notice": "Notice text.", "attribution": "Credit text.",
       "comment": "hello", "attributes": [] }
   )json");
   CHECK(both.licence == "MIT");
   CHECK(both.comment == "hello");
+  // licence_source is parsed when present.
+  CHECK(both.licenceSource == "https://example.com/source");
+  // licence_notice / attribution are parsed when present.
+  CHECK(both.licenceNotice == "Notice text.");
+  CHECK(both.attribution == "Credit text.");
 }
 
 TEST_CASE("RulesetLoader: duplicate ids throw") {

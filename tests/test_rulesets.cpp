@@ -133,6 +133,16 @@ TEST_CASE("rulesets: licence/comment metadata and data sections (schema)") {
     // Licence is required and non-empty; comment is optional but present here.
     CHECK_FALSE(rs.licence.empty());
     CHECK_FALSE(rs.comment.empty());
+    // The shipped rulesets each state their source and link to where their own
+    // licence is declared — the ruleset data is NOT Apache-2.0.
+    CHECK_FALSE(rs.source.empty());
+    CHECK(rs.licenceSource.find("https://") == 0);
+    // The ORC-licensed rulesets carry the verbatim ORC Notice the licence
+    // requires; every ruleset carries an attribution/credit statement.
+    if (rs.licence.contains("ORC")) {
+      CHECK_FALSE(rs.licenceNotice.empty());
+    }
+    CHECK_FALSE(rs.attribution.empty());
     // The data database carries the documented sections.
     const rpg_os::Json &data = rs.data;
     CHECK(data.contains("creatures"));
