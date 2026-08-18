@@ -30,8 +30,9 @@ runs RPG OS in your browser via WebAssembly:
 - a **character form** that lets you enter an arbitrary character (no ruleset
   entry needed) and ranks it *live* against the combatants closest to its
   rating, starting from the ELO standard strength 1000,
-- **head-to-head** win probabilities between any two combatants, with an
-  optional live 100-fight confirmation.
+- **head-to-head** win probabilities between any two combatants — an ELO
+  estimate (combat is matchup-specific, so the demo also measures real duels
+  with live fights).
 
 ![The ELO Arena — RPG OS compiled to WebAssembly, ranking every combatant of a ruleset](docs/assets/elo-arena-screenshot.png)
 

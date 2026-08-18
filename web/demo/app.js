@@ -289,8 +289,10 @@ function renderLeaderboard() {
     leaderboardBody.append(tr);
   });
 
-  leaderboardNote.textContent = leaderboardMeta +
-    (reference ? ` · Win % shown relative to ${reference.name}` : '');
+  const winNote = reference
+    ? `Win % is an ELO estimate of relative strength (vs ${reference.name})`
+    : "Win % is each combatant's actual win rate in the ranking tournament";
+  leaderboardNote.textContent = `${leaderboardMeta} · ${winNote}`;
 }
 
 function toggleSelection(id) {
@@ -312,7 +314,7 @@ async function specForEntry(entry) {
 }
 
 /** Builds a `.duel` grid: two `.side`s (name, meta line, big probability) and
- *  a `.bar` that fills `leftPct`. Shared by the ELO prediction and the live
+ *  a `.bar` that fills `leftPct`. Shared by the ELO estimate and the live
  *  Monte-Carlo result so the two are presented identically. */
 function duelGrid(left, right, leftPct, { leftMeta, rightMeta } = {}) {
   const side = (entry, prob, cls, meta) => {
@@ -375,11 +377,18 @@ function renderDuel() {
     return l;
   };
 
-  // What the ELO ratings predict.
+  // What the ELO ratings suggest — an estimate: individual matchups can differ
+  // from it, so the live fights below are the measured result.
   const pa = winProbability(a.rating, b.rating);
   const predict = document.createElement('div');
-  predict.append(label('ELO prediction'));
+  predict.append(label('ELO estimate'));
   predict.append(duelGrid(a, b, pa));
+  const estimateNote = document.createElement('p');
+  estimateNote.className = 'muted';
+  estimateNote.textContent =
+    'Estimate from the ELO ratings — individual matchups can differ from it. ' +
+    'Run the live fights below for the measured result.';
+  predict.append(estimateNote);
 
   // The live WASM confirmation; stays around so it can be re-run.
   const actions = document.createElement('div');
@@ -416,7 +425,7 @@ async function runMonteCarlo(a, b, button) {
     const specA = await specForEntry(a);
     const specB = await specForEntry(b);
     // Each run is a fresh Monte-Carlo sample, so re-running shows how the
-    // estimate varies around the ELO prediction (fights within a run stay
+    // measured result varies around the ELO estimate (fights within a run stay
     // distinct via the index, mirroring scripts/elo_ranking.py).
     const runSeed = Math.floor(Math.random() * 0x100000000) >>> 0;
     for (let i = 0; i < 100; i += 1) {
