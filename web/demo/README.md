@@ -34,7 +34,16 @@ via `needs`, so the two gh-pages pushes can never race).
    in the WASM engine. The live result appears in the same layout as the
    estimate (names, W/D/L record, percentages) and can be **re-run** any
    number of times — each run draws fresh dice, so you can watch the measured
-   result vary around the estimate.
+   result vary around the estimate. A **"Run 1 fight — show details"** button
+   replays a single fight dice by dice: every round's initiative roll, each
+   combatant's attack/cast with its individual dice (attack + parry, the
+   casting check, the damage dice), the hit-point changes they caused, and a
+   summary of who won and in how many rounds. Spell casts show the casting
+   check and the actual damage dealt (a failed check fizzles — the round is
+   spent with no effect, exactly as the engine resolves it). Each single fight
+   also draws fresh dice, so re-running it shows a different possible fight.
+   Long draw fights are truncated in the middle (first and last rounds) to
+   stay readable.
 
 The currently loaded ruleset's **own licence** is shown in a dedicated box at
 the bottom of the page (read from `rpg.meta()` at runtime, so it always matches

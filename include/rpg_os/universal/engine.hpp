@@ -673,8 +673,13 @@ public:
     // Structured effects take precedence over the bare `damage` field: they
     // are the extracted, machine-readable form of the spell's prose (saves,
     // half-on-save damage, conditions, healing, resistances). A spell with no
-    // `effects` falls back to the simple damage field.
-    if (target != nullptr && spell->contains("effects") && spell->at("effects").is_array()) {
+    // `effects` falls back to the simple damage field. Both paths require the
+    // casting check to have passed: a failed check fizzles — the action and
+    // the resource are spent, but the spell has no effect (and no dice are
+    // rolled for its damage), so the combat log can trust that a fizzle
+    // changes no stat.
+    if (result.cast && target != nullptr && spell->contains("effects") &&
+        spell->at("effects").is_array()) {
       // The casting check's quality level (The Dark Eye's QL) is threaded into
       // the effect formulas so QL-scaled spells ("2D6 + QLx2") resolve from
       // data alone.
@@ -683,7 +688,7 @@ public:
           resolveEffects(actor, *target, spell->at("effects"), params, rng, ql, selections);
       result.appliedDamage = effects.damageDealt;
       result.choicesRequired = effects.choicesRequired;
-    } else if (target != nullptr && spell->contains("damage")) {
+    } else if (result.cast && target != nullptr && spell->contains("damage")) {
       // `applyDamage` reports the (negative) pool delta, so negate it into the
       // positive "damage dealt" the caller expects.
       const int32_t damage = readVariantValue(spell->at("damage"), Variance::Random, rng);

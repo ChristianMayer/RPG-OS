@@ -1148,6 +1148,31 @@ TEST_CASE("bookkeeping: TDE spell effects resolve through castSpell with the cas
   CHECK(victim2.conditionStacks("confusion") == 1);
 }
 
+TEST_CASE("bookkeeping: a failed spell casting check fizzles — no damage is applied") {
+  RulesetEngine tde;
+  REQUIRE(tde.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  const auto &ruleset = tde.ruleset();
+  DynamicEntity caster(ruleset, "caster");
+  caster.setBaseAttribute("SGC", 15);
+  caster.setBaseAttribute("INT", 15);
+  caster.setBaseAttribute("CON", 15);
+  caster.loadFromArchetype(rpg_os::Json::object()); // AE pool = 20 + INT = 35
+  DynamicEntity target(ruleset, "target");
+  target.setBaseAttribute("CON", 12); // LifePoints_Max = 5 + 2*12 = 29
+  target.loadFromArchetype(rpg_os::Json::object());
+
+  // fulminictus with a scripted casting check that fails: every 3d20 die
+  // (16) exceeds its attribute (15), so the cast fizzles — the action and the
+  // AE are spent, but no damage dice are even rolled and the target is
+  // untouched. This pins the fight-log invariant: a fizzle changes no stat.
+  auto rng = script({16, 16, 16});
+  const auto result = tde.castSpell("fulminictus", caster, &target, CheckParams{}, rng);
+  CHECK_FALSE(result.cast);
+  CHECK(result.appliedDamage == 0);
+  CHECK(target.resource("LP") == 29); // untouched
+  CHECK(rng.idx == 3);                // only the check dice were rolled — the damage was skipped
+}
+
 TEST_CASE("bookkeeping: TDE buff spells apply stat bonuses via castSpell") {
   RulesetEngine tde;
   REQUIRE(tde.loadRulesetFromFile(rulesetPath("tde5e_core.json")));

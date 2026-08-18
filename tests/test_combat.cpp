@@ -134,6 +134,111 @@ TEST_CASE("combat: the stronger beast defeats a helpless one to the end") {
   CHECK(outcome.remainingLp[1] <= 0);  // Toad at 0
 }
 
+TEST_CASE("combat: a detailed fight log records dice and stat changes") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  rpg_os::CombatantSpec irrhalk;
+  rpg_os::CombatantSpec toad;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "irrhalk", irrhalk));
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "toad", toad));
+
+  // Same script as the plain runFight test above: irrhalk wins initiative
+  // (3 vs 2), lands a critical (1) the toad fails to parry (20), and rolls
+  // maximum Claws damage (6, 6) + 4 = 16 — more than the toad's 2 LP.
+  auto rng = script({3, 2, 1, 20, 6, 6});
+  rpg_os::FightLog log;
+  const rpg_os::FightOutcome outcome =
+      rpg_os::runFight(engine, irrhalk, toad, "tde_attack", "LP", 100, rng, true, log);
+  CHECK(outcome.winnerIndex == 0);
+  CHECK(outcome.rounds == 1);
+
+  CHECK(log.winnerIndex == 0);
+  CHECK(log.names[0] == "Irrhalk");
+  CHECK(log.names[1] == "Toad (Kosh Toad)");
+  CHECK(log.maxLp[0] == 90);
+  CHECK(log.maxLp[1] == 2);
+  REQUIRE(log.rounds.size() == 1);
+
+  const rpg_os::FightRoundLog &round = log.rounds[0];
+  CHECK(round.round == 1);
+  CHECK(round.initRoll[0] == 3); // the raw initiative dice
+  CHECK(round.initRoll[1] == 2);
+  CHECK(round.goesFirst == 0);        // irrhalk acts first
+  REQUIRE(round.actions.size() == 1); // the toad never gets to act
+
+  const rpg_os::FightActionLog &action = round.actions[0];
+  CHECK(action.actorIndex == 0);
+  CHECK(action.targetIndex == 1);
+  CHECK(action.kind == "attack");
+  CHECK(action.isHit);
+  CHECK(action.checkDice == std::vector<int32_t>({1, 20})); // attack, then parry
+  CHECK(action.damageDice == std::vector<int32_t>({6, 6}));
+  CHECK(action.damage == 16);
+  CHECK(action.hpBefore == 2); // the toad starts at its 2 LP
+  CHECK(action.targetHp == 0); // the toad is reduced to 0 LP
+}
+
+TEST_CASE("combat: a logged fight consumes the identical RNG stream as a plain fight") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  rpg_os::CombatantSpec a;
+  rpg_os::CombatantSpec b;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "geron", a));
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "gotongi", b));
+
+  // The same seeded fight once without a log and once with: the log must not
+  // change how many (or which) random values the fight draws, so the outcome
+  // and both remaining hit-point pools are byte-identical.
+  rpg_os::DefaultRandom rngPlain(42);
+  const rpg_os::FightOutcome plain =
+      rpg_os::runFight(engine, a, b, "tde_attack", "LP", 100, rngPlain, true);
+  rpg_os::DefaultRandom rngLogged(42);
+  rpg_os::FightLog log;
+  const rpg_os::FightOutcome logged =
+      rpg_os::runFight(engine, a, b, "tde_attack", "LP", 100, rngLogged, true, log);
+
+  CHECK(logged.winnerIndex == plain.winnerIndex);
+  CHECK(logged.rounds == plain.rounds);
+  CHECK(logged.remainingLp[0] == plain.remainingLp[0]);
+  CHECK(logged.remainingLp[1] == plain.remainingLp[1]);
+  REQUIRE(log.rounds.size() == static_cast<std::size_t>(logged.rounds));
+}
+
+TEST_CASE("combat: a logged mage fight records the cast action and its dice") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));
+  rpg_os::CombatantSpec magus;
+  rpg_os::CombatantSpec toad;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "magister", magus));
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "toad", toad));
+
+  // Same magic-path script as the existing test: the mage wins initiative
+  // (5 vs 1), passes the SGC/INT/CON casting check (three 1s), and
+  // Fulminictus rolls maximum damage (6, 6).
+  auto rng = script({5, 1, 1, 1, 1, 6, 6});
+  rpg_os::FightLog log;
+  const rpg_os::FightOutcome outcome =
+      rpg_os::runFight(engine, magus, toad, "tde_attack", "LP", 100, rng, true, log);
+  CHECK(outcome.winnerIndex == 0);
+  REQUIRE(log.rounds.size() == 1);
+  REQUIRE(log.rounds[0].actions.size() == 1);
+
+  const rpg_os::FightActionLog &action = log.rounds[0].actions[0];
+  CHECK(action.actorIndex == 0);
+  CHECK(action.kind == "cast");
+  CHECK(action.spellId == "fulminictus");
+  CHECK(action.isHit);
+  CHECK(action.checkDice == std::vector<int32_t>({1, 1, 1}));
+  // The spell rolls full damage, but the recorded `damage` is the clamped
+  // hit-point loss the target actually took (SpellResult::appliedDamage):
+  // the toad has only 2 LP, so it loses exactly 2 despite the overkill.
+  CHECK(action.damage == 2);
+  CHECK(action.hpBefore == 2); // the toad starts at its 2 LP
+  CHECK(action.targetHp == 0); // the toad is reduced to 0 LP
+  CHECK(action.resourceId == "AE");
+  CHECK(action.resourceCost == 8); // Fulminictus costs 8 AE
+}
+
 TEST_CASE("combat: maxRounds guard ends a helpless fight as a draw") {
   rpg_os::RulesetEngine engine;
   REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));

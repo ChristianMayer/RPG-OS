@@ -81,6 +81,47 @@ struct FightOutcome {
   std::array<int32_t, 2> remainingLp{0, 0}; ///< hit points left at the end
 };
 
+/// One combatant's action in a fight round, as recorded in a @ref FightLog.
+/// It captures what the combatant did, the dice it rolled, and the stat
+/// change it caused — enough to replay a single round from the initiative
+/// roll to the final hit.
+struct FightActionLog {
+  int actorIndex{0};               ///< 0 or 1 — which combatant acted
+  int targetIndex{0};              ///< 0 or 1 — which combatant was acted upon
+  std::string kind;                ///< "attack" or "cast"
+  std::string spellId;             ///< the spell id (kind == "cast", else "")
+  std::vector<int32_t> checkDice;  ///< the attack/parry or casting-check dice (raw)
+  bool isHit{false};               ///< the attack landed / the cast resolved
+  std::vector<int32_t> damageDice; ///< raw damage dice (weapon attacks only)
+  int32_t damage{0};               ///< hit points removed from the target (>= 0)
+  int32_t hpBefore{0};             ///< the target's hit points before the action
+  int32_t targetHp{0};             ///< the target's remaining hit points after the action
+  int32_t resourceCost{0};         ///< resource points spent (spell cost), 0 for a weapon
+  std::string resourceId;          ///< the pool the cost came from ("", "AE", ...)
+};
+
+/// One round of a fight as recorded in a @ref FightLog — the initiative rolls
+/// and the actions taken, in the order they happened.
+struct FightRoundLog {
+  int round{0};                           ///< 1-based round number
+  std::array<int32_t, 2> initStat{0, 0};  ///< each combatant's Initiative stat
+  std::array<int32_t, 2> initRoll{0, 0};  ///< each combatant's raw 1d6 initiative die
+  std::array<int32_t, 2> initTotal{0, 0}; ///< stat + roll, for each combatant
+  int goesFirst{0};                       ///< 0 or 1 — which combatant acted first
+  std::vector<FightActionLog> actions;    ///< in the order they were taken (1 or 2)
+};
+
+/// The full transcript of one fight — the individual dice rolls and stat
+/// changes from the opening initiative roll to the final hit that decided the
+/// winner. Passed to @ref runFight's @c FightLog overload; the plain
+/// (non-logging) overload records nothing, so Monte-Carlo loops stay fast.
+struct FightLog {
+  std::array<std::string, 2> names{}; ///< combatant names
+  std::array<int32_t, 2> maxLp{0, 0}; ///< starting hit points of both combatants
+  std::vector<FightRoundLog> rounds;  ///< per-round detail
+  int winnerIndex{-1};                ///< 0, 1, or -1 (draw)
+};
+
 /// Finds the id of the ruleset's opposed combat check type ("tde_attack"
 /// when present, otherwise the first check whose resolution is opposed).
 /// Returns an empty string when the ruleset has none.
@@ -404,7 +445,8 @@ namespace detail {
 template <RandomNumberGenerator Rng>
 bool attackOnce(RulesetEngine &engine, DynamicEntity &attacker, const DiceExpression &damage,
                 DynamicEntity &defender, std::string_view checkTypeId,
-                std::string_view hpResourceId, Rng &rng) {
+                std::string_view hpResourceId, Rng &rng, FightRoundLog *roundLog = nullptr,
+                int actorIndex = 0, int targetIndex = 1) {
   // The attacker's restrictions are enforced: a creature that cannot take
   // actions (incapacitated, stunned, paralyzed, ...) cannot attack.
   if (!engine.actionAllowed(attacker, "action")) {
@@ -415,11 +457,45 @@ bool attackOnce(RulesetEngine &engine, DynamicEntity &attacker, const DiceExpres
   // effective value equals the raw value, so ungeared fights are unchanged.
   const CheckResult hit =
       engine.executeCheckEffective(checkTypeId, attacker, &defender, CheckParams{}, rng);
+  FightActionLog action;
+  if (roundLog != nullptr) {
+    action.actorIndex = actorIndex;
+    action.targetIndex = targetIndex;
+    action.kind = "attack";
+    action.checkDice = hit.rawDiceRolls;
+    action.isHit = hit.isSuccess;
+    action.hpBefore = defender.resource(hpResourceId);
+  }
   if (!hit.isSuccess) {
+    if (roundLog != nullptr) {
+      action.targetHp = defender.resource(hpResourceId);
+      roundLog->actions.push_back(std::move(action));
+    }
     return false;
   }
-  const int32_t raw = static_cast<int32_t>(damage.rollSum(rng));
+  // Roll the damage explicitly so the individual dice can be logged. This is
+  // observation-only: roll() consumes exactly the RNG stream rollSum() would,
+  // so a logged fight and a plain fight stay byte-identical (pinned by test).
+  int32_t raw = 0;
+  if (roundLog != nullptr) {
+    const std::vector<int> rolled = damage.roll(rng);
+    action.damageDice.assign(rolled.begin(), rolled.end());
+    raw = damage.constant();
+    const auto &groups = damage.dice();
+    for (std::size_t g = 0, i = 0; g < groups.size(); ++g) {
+      for (int j = 0; j < groups[g].count; ++j, ++i) {
+        raw += groups[g].sign * rolled[i];
+      }
+    }
+  } else {
+    raw = static_cast<int32_t>(damage.rollSum(rng));
+  }
   engine.applyDamage(attacker, defender, hpResourceId, raw);
+  if (roundLog != nullptr) {
+    action.damage = raw;
+    action.targetHp = defender.resource(hpResourceId);
+    roundLog->actions.push_back(std::move(action));
+  }
   return defender.resource(hpResourceId) <= 0;
 }
 
@@ -437,18 +513,36 @@ bool attackOnce(RulesetEngine &engine, DynamicEntity &attacker, const DiceExpres
 template <RandomNumberGenerator Rng>
 bool actOnce(RulesetEngine &engine, DynamicEntity &actor, const CombatantSpec &spec,
              const DiceExpression &weaponDamage, DynamicEntity &defender,
-             std::string_view checkTypeId, std::string_view hpResourceId, bool useMagic, Rng &rng) {
+             std::string_view checkTypeId, std::string_view hpResourceId, bool useMagic, Rng &rng,
+             FightRoundLog *roundLog = nullptr, int actorIndex = 0, int targetIndex = 1) {
   if (useMagic && !spec.spellIds.empty()) {
     const std::string spellId = pickSpell(engine, actor, spec.spellIds);
     if (!spellId.empty()) {
+      const int32_t hpBefore = defender.resource(hpResourceId);
       const auto cast = engine.castSpell(spellId, actor, &defender, CheckParams{}, rng);
+      if (roundLog != nullptr) {
+        FightActionLog action;
+        action.actorIndex = actorIndex;
+        action.targetIndex = targetIndex;
+        action.kind = "cast";
+        action.spellId = spellId;
+        action.hpBefore = hpBefore;
+        action.checkDice = cast.check.rawDiceRolls;
+        action.isHit = cast.cast;
+        action.damage = cast.appliedDamage;
+        action.targetHp = defender.resource(hpResourceId);
+        action.resourceCost = cast.cost;
+        action.resourceId = cast.resourceId;
+        roundLog->actions.push_back(std::move(action));
+      }
       if (cast.cast) {
         return defender.resource(hpResourceId) <= 0;
       }
       return false; // the casting attempt failed — the round is spent
     }
   }
-  return attackOnce(engine, actor, weaponDamage, defender, checkTypeId, hpResourceId, rng);
+  return attackOnce(engine, actor, weaponDamage, defender, checkTypeId, hpResourceId, rng, roundLog,
+                    actorIndex, targetIndex);
 }
 
 /// Plays one round of a fight: rolls initiative, resolves both combatants'
@@ -464,10 +558,25 @@ template <RandomNumberGenerator Rng>
                                const CombatantSpec &b, DynamicEntity &ea, DynamicEntity &eb,
                                const DiceExpression &damageA, const DiceExpression &damageB,
                                std::string_view checkTypeId, std::string_view hpResourceId,
-                               bool useMagic, Rng &rng) {
+                               bool useMagic, Rng &rng, FightLog *log = nullptr,
+                               int roundNumber = 0) {
   const int initA = ea.getStat("Initiative") + rng(1, 6);
   const int initB = eb.getStat("Initiative") + rng(1, 6);
   const bool aFirst = initA != initB ? initA > initB : rng(0, 1) == 0;
+
+  // The round's transcript (built only when a log is requested — observation
+  // of the same dice, never an extra draw, so plain and logged fights match).
+  FightRoundLog roundLog;
+  if (log != nullptr) {
+    roundLog.round = roundNumber;
+    roundLog.initStat[0] = ea.getStat("Initiative");
+    roundLog.initStat[1] = eb.getStat("Initiative");
+    roundLog.initRoll[0] = initA - ea.getStat("Initiative");
+    roundLog.initRoll[1] = initB - eb.getStat("Initiative");
+    roundLog.initTotal[0] = initA;
+    roundLog.initTotal[1] = initB;
+    roundLog.goesFirst = aFirst ? 0 : 1;
+  }
 
   DynamicEntity &first = aFirst ? ea : eb;
   DynamicEntity &second = aFirst ? eb : ea;
@@ -475,16 +584,74 @@ template <RandomNumberGenerator Rng>
   const CombatantSpec &secondSpec = aFirst ? b : a;
   const DiceExpression &firstDamage = aFirst ? damageA : damageB;
   const DiceExpression &secondDamage = aFirst ? damageB : damageA;
+  const int firstIndex = aFirst ? 0 : 1;
+  const int secondIndex = aFirst ? 1 : 0;
 
   if (actOnce(engine, first, firstSpec, firstDamage, second, checkTypeId, hpResourceId, useMagic,
-              rng)) {
-    return aFirst ? 0 : 1;
+              rng, log != nullptr ? &roundLog : nullptr, firstIndex, secondIndex)) {
+    if (log != nullptr) {
+      log->rounds.push_back(std::move(roundLog));
+    }
+    return firstIndex;
   }
   if (actOnce(engine, second, secondSpec, secondDamage, first, checkTypeId, hpResourceId, useMagic,
-              rng)) {
-    return aFirst ? 1 : 0;
+              rng, log != nullptr ? &roundLog : nullptr, secondIndex, firstIndex)) {
+    if (log != nullptr) {
+      log->rounds.push_back(std::move(roundLog));
+    }
+    return secondIndex;
+  }
+  if (log != nullptr) {
+    log->rounds.push_back(std::move(roundLog));
   }
   return -1;
+}
+
+/// Shared implementation behind both @ref runFight overloads. `log` is
+/// optional: when non-null the fight's transcript (per-round dice and stat
+/// changes) is recorded into it; when null the fight runs exactly as before,
+/// recording nothing — so the Monte-Carlo hot path never pays for a log it
+/// does not use, and a logged fight consumes the identical RNG stream (the
+/// log only observes dice that were already being rolled).
+template <RandomNumberGenerator Rng>
+[[nodiscard]] FightOutcome runFightImpl(RulesetEngine &engine, const CombatantSpec &a,
+                                        const CombatantSpec &b, std::string_view checkTypeId,
+                                        std::string_view hpResourceId, int maxRounds, Rng &rng,
+                                        bool useMagic, FightLog *log) {
+  FightOutcome outcome;
+  if (log != nullptr) {
+    log->names = {a.name, b.name};
+  }
+  auto ea = createFighter(engine, a, rng);
+  auto eb = createFighter(engine, b, rng);
+  if (ea == nullptr || eb == nullptr) {
+    return outcome;
+  }
+  outcome.maxLp[0] = ea->resource(hpResourceId);
+  outcome.maxLp[1] = eb->resource(hpResourceId);
+  if (log != nullptr) {
+    log->maxLp = outcome.maxLp;
+  }
+  const DiceExpression damageA(a.damageExpression);
+  const DiceExpression damageB(b.damageExpression);
+
+  int roundsPlayed = 0;
+  for (; roundsPlayed < maxRounds; ++roundsPlayed) {
+    const int winner = detail::resolveRound(engine, a, b, *ea, *eb, damageA, damageB, checkTypeId,
+                                            hpResourceId, useMagic, rng, log, roundsPlayed + 1);
+    if (winner >= 0) {
+      outcome.winnerIndex = winner;
+      break;
+    }
+  }
+
+  outcome.rounds = outcome.winnerIndex == -1 ? maxRounds : roundsPlayed + 1;
+  outcome.remainingLp[0] = ea->resource(hpResourceId);
+  outcome.remainingLp[1] = eb->resource(hpResourceId);
+  if (log != nullptr) {
+    log->winnerIndex = outcome.winnerIndex;
+  }
+  return outcome;
 }
 
 } // namespace detail
@@ -511,31 +678,23 @@ template <RandomNumberGenerator Rng>
                                     const CombatantSpec &b, std::string_view checkTypeId,
                                     std::string_view hpResourceId, int maxRounds, Rng &rng,
                                     bool useMagic = true) {
-  FightOutcome outcome;
-  auto ea = createFighter(engine, a, rng);
-  auto eb = createFighter(engine, b, rng);
-  if (ea == nullptr || eb == nullptr) {
-    return outcome;
-  }
-  outcome.maxLp[0] = ea->resource(hpResourceId);
-  outcome.maxLp[1] = eb->resource(hpResourceId);
-  const DiceExpression damageA(a.damageExpression);
-  const DiceExpression damageB(b.damageExpression);
+  return detail::runFightImpl(engine, a, b, checkTypeId, hpResourceId, maxRounds, rng, useMagic,
+                              nullptr);
+}
 
-  int roundsPlayed = 0;
-  for (; roundsPlayed < maxRounds; ++roundsPlayed) {
-    const int winner = detail::resolveRound(engine, a, b, *ea, *eb, damageA, damageB, checkTypeId,
-                                            hpResourceId, useMagic, rng);
-    if (winner >= 0) {
-      outcome.winnerIndex = winner;
-      break;
-    }
-  }
-
-  outcome.rounds = outcome.winnerIndex == -1 ? maxRounds : roundsPlayed + 1;
-  outcome.remainingLp[0] = ea->resource(hpResourceId);
-  outcome.remainingLp[1] = eb->resource(hpResourceId);
-  return outcome;
+/// As @ref runFight, but also records the fight's full transcript into `log`
+/// — the individual dice rolls and hit-point changes of every round, from the
+/// opening initiative roll to the final hit that decided the winner. The
+/// transcript is observation-only: it consumes the identical RNG stream as
+/// the plain overload (pinned by the combat tests), so a logged single fight
+/// is the same fight the Monte-Carlo loop would have run.
+template <RandomNumberGenerator Rng>
+[[nodiscard]] FightOutcome runFight(RulesetEngine &engine, const CombatantSpec &a,
+                                    const CombatantSpec &b, std::string_view checkTypeId,
+                                    std::string_view hpResourceId, int maxRounds, Rng &rng,
+                                    bool useMagic, FightLog &log) {
+  return detail::runFightImpl(engine, a, b, checkTypeId, hpResourceId, maxRounds, rng, useMagic,
+                              &log);
 }
 
 } // namespace rpg_os
