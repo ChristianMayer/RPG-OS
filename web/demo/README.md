@@ -21,6 +21,10 @@ via `needs`, so the two gh-pages pushes can never race).
    (`elo.js`, a port of the Python formula) updates the rating.
 3. **Head to head** — tick two rows; the ELO win probability is shown, with an
    optional live 100-fight Monte-Carlo confirmation running in the WASM engine.
+   The live result appears in the same layout as the prediction (names,
+   W/D/L record, percentages) and can be **re-run** any number of times — each
+   run draws fresh dice, so you can watch the estimate vary around the ELO
+   prediction.
 
 The currently loaded ruleset's **own licence** is shown in a dedicated box at
 the bottom of the page (read from `rpg.meta()` at runtime, so it always matches

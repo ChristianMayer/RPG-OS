@@ -35,6 +35,7 @@ let entriesByName = new Map(); // id -> display name (from the ruleset)
 let leaderboard = []; // [{rank,id,name,rating,games,wins,losses,draws,win_pct}]
 let you = null; // { name, rating, spec } for the ranked character (spec kept alive)
 let selection = []; // ids of the selected rows (max 2)
+let duelLive = null; // { winsA, winsB, draws } of the last live run for the current pair
 let formDebounce = 0;
 let leaderboardMeta = ''; // metadata line shown under the leaderboard table
 
@@ -286,6 +287,7 @@ function renderLeaderboard() {
 }
 
 function toggleSelection(id) {
+  duelLive = null; // a different pair means the stored live result is stale
   const idx = selection.indexOf(id);
   if (idx >= 0) {
     selection.splice(idx, 1);
@@ -302,10 +304,50 @@ async function specForEntry(entry) {
   return rpg.specFromId(entry.id);
 }
 
+/** Builds a `.duel` grid: two `.side`s (name, meta line, big probability) and
+ *  a `.bar` that fills `leftPct`. Shared by the ELO prediction and the live
+ *  Monte-Carlo result so the two are presented identically. */
+function duelGrid(left, right, leftPct, { leftMeta, rightMeta } = {}) {
+  const side = (entry, prob, cls, meta) => {
+    const div = document.createElement('div');
+    div.className = `side ${cls}`;
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.textContent = entry.name;
+    const metaEl = document.createElement('div');
+    metaEl.className = 'rating';
+    metaEl.textContent = meta;
+    const probEl = document.createElement('div');
+    probEl.className = 'prob';
+    probEl.textContent = `${(prob * 100).toFixed(1)}%`;
+    div.append(name, metaEl, probEl);
+    return div;
+  };
+
+  const wrap = document.createElement('div');
+  wrap.className = 'duel';
+  const vs = document.createElement('div');
+  vs.className = 'vs';
+  vs.textContent = 'vs';
+  const bar = document.createElement('div');
+  bar.className = 'bar';
+  const fill = document.createElement('span');
+  fill.style.width = `${(leftPct * 100).toFixed(1)}%`;
+  bar.append(fill);
+  wrap.append(
+    side(left, leftPct, 'a', leftMeta ?? `ELO ${Math.round(left.rating)}`),
+    vs,
+    side(right, 1 - leftPct, 'b', rightMeta ?? `ELO ${Math.round(right.rating)}`),
+    bar,
+  );
+  return wrap;
+}
+
 function renderDuel() {
   const el = $('#duel-result');
   if (selection.length !== 2) {
     el.innerHTML = '';
+    duelLive = null;
     $('#duel-hint').textContent =
       selection.length === 1 ? 'Pick one more row to compare.' : 'Select two rows in the ranking to see the ELO win probability.';
     return;
@@ -317,59 +359,77 @@ function renderDuel() {
   const b = entryById(idB);
   if (!a || !b) return;
 
-  const pa = winProbability(a.rating, b.rating);
-  const pb = 1 - pa;
-
   el.innerHTML = '';
-  const bar = document.createElement('div');
-  bar.className = 'bar';
-  const fill = document.createElement('span');
-  fill.style.width = `${(pa * 100).toFixed(1)}%`;
-  bar.append(fill);
 
-  const side = (entry, prob, cls) => {
-    const div = document.createElement('div');
-    div.className = `side ${cls}`;
-    div.innerHTML = `<div class="name"></div><div class="rating"></div><div class="prob"></div>`;
-    div.querySelector('.name').textContent = entry.name;
-    div.querySelector('.rating').textContent = `ELO ${Math.round(entry.rating)}`;
-    div.querySelector('.prob').textContent = `${(prob * 100).toFixed(1)}%`;
-    return div;
+  const label = (text) => {
+    const l = document.createElement('div');
+    l.className = 'duel-label';
+    l.textContent = text;
+    return l;
   };
-  const vs = document.createElement('div');
-  vs.className = 'vs';
-  vs.textContent = 'vs';
 
+  // What the ELO ratings predict.
+  const pa = winProbability(a.rating, b.rating);
+  const predict = document.createElement('div');
+  predict.append(label('ELO prediction'));
+  predict.append(duelGrid(a, b, pa));
+
+  // The live WASM confirmation; stays around so it can be re-run.
+  const actions = document.createElement('div');
+  actions.className = 'duel-actions';
   const button = document.createElement('button');
-  button.textContent = 'Confirm with 100 live fights';
+  button.textContent = duelLive ? 'Re-run 100 live fights' : 'Confirm with 100 live fights';
   button.addEventListener('click', () => runMonteCarlo(a, b, button));
+  actions.append(button);
 
-  el.append(side(a, pa, 'a'), vs, side(b, pb, 'b'), bar, button);
+  el.append(predict, actions);
+
+  // The live result, in the same layout as the prediction (with real names).
+  if (duelLive) {
+    const { winsA, winsB, draws } = duelLive;
+    const total = winsA + winsB + draws;
+    const live = document.createElement('div');
+    live.append(label(`Live result — ${total} fights (WASM)`));
+    live.append(duelGrid(a, b, (winsA + 0.5 * draws) / total, {
+      leftMeta: `${winsA}W · ${draws}D · ${winsB}L`,
+      rightMeta: `${winsB}W · ${draws}D · ${winsA}L`,
+    }));
+    el.append(live);
+  }
 }
 
 async function runMonteCarlo(a, b, button) {
   button.disabled = true;
+  const originalLabel = button.textContent;
   button.textContent = 'Simulating…';
-  const specA = await specForEntry(a);
-  const specB = await specForEntry(b);
   let winsA = 0;
   let winsB = 0;
   let draws = 0;
-  for (let i = 0; i < 100; i += 1) {
-    const seed = (i * 1000003 + 13) >>> 0;
-    const outcome = rpg.fight(specA, specB, { seed, maxRounds: 1000 });
-    if (outcome.winner_index === 0) winsA += 1;
-    else if (outcome.winner_index === 1) winsB += 1;
-    else draws += 1;
+  try {
+    const specA = await specForEntry(a);
+    const specB = await specForEntry(b);
+    // Each run is a fresh Monte-Carlo sample, so re-running shows how the
+    // estimate varies around the ELO prediction (fights within a run stay
+    // distinct via the index, mirroring scripts/elo_ranking.py).
+    const runSeed = Math.floor(Math.random() * 0x100000000) >>> 0;
+    for (let i = 0; i < 100; i += 1) {
+      const seed = (runSeed * 1000003 + i * 31 + 13) >>> 0;
+      const outcome = rpg.fight(specA, specB, { seed, maxRounds: 1000 });
+      if (outcome.winner_index === 0) winsA += 1;
+      else if (outcome.winner_index === 1) winsB += 1;
+      else draws += 1;
+    }
+    if (!a.isYou) specA.dispose();
+    if (!b.isYou) specB.dispose();
+  } catch (err) {
+    setStatus(`Live fight failed: ${err.message}`, true);
+    console.error(err);
+    button.disabled = false;
+    button.textContent = originalLabel;
+    return;
   }
-  if (!a.isYou) specA.dispose();
-  if (!b.isYou) specB.dispose();
-  const note = document.createElement('p');
-  note.className = 'muted';
-  note.textContent =
-    `Live: ${winsA} A / ${winsB} B / ${draws} draws (100 fights, WASM). ` +
-    `ELO prediction: A ${(winProbability(a.rating, b.rating) * 100).toFixed(1)}%.`;
-  button.replaceWith(note);
+  duelLive = { winsA, winsB, draws };
+  renderDuel();
 }
 
 // ---------------------------------------------------------------------------
