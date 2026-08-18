@@ -13,7 +13,7 @@
  * leaderboards into ./data/ (all three folders are gitignored here).
  */
 import { init } from './rpg-browser.js';
-import { expectedScore, winProbability, rankNewcomer } from './elo.js';
+import { winProbability, rankNewcomer } from './elo.js';
 
 const RULESETS = {
   tde5e_core: { label: 'The Dark Eye 5e', file: 'tde5e_core.json' },
@@ -21,8 +21,12 @@ const RULESETS = {
 };
 
 const COMBAT_STATS = ['Attack', 'Parry', 'Armor_Rating', 'AC', 'Initiative'];
-const RANK_OPPONENTS = 16; // the newcomer fights the top-N entries
-const GAMES_PER_OPPONENT = 20;
+// The newcomer is ranked Swiss-style against the leaderboard entries closest
+// to its current rating (see rankNewcomer in elo.js). A focus on similar
+// ratings plus more fights per opponent makes the estimate converge faster.
+const RANK_ROUNDS = 8; // how many similar-rating rounds it plays
+const RANK_OPPONENTS_PER_ROUND = 2; // opponents picked per round (closest rating)
+const GAMES_PER_OPPONENT = 30; // fights per opponent
 
 const $ = (sel) => document.querySelector(sel);
 const status = $('#status');
@@ -38,6 +42,7 @@ let selection = []; // ids of the selected rows (max 2)
 let duelLive = null; // { winsA, winsB, draws } of the last live run for the current pair
 let formDebounce = 0;
 let leaderboardMeta = ''; // metadata line shown under the leaderboard table
+let leaderboardInitial = 1000; // ELO standard strength; the leaderboard's own anchor when known
 
 function setStatus(text, isError = false) {
   status.textContent = text;
@@ -186,14 +191,16 @@ async function loadLeaderboard(rulesetId) {
       'Run it locally and place the JSON in data/ to preview.';
     leaderboard = [];
     leaderboardMeta = '';
+    leaderboardInitial = 1000; // no leaderboard, so fall back to the ELO standard
     return;
   }
   leaderboard = data.entries
     .map((e) => ({ ...e, name: entriesByName.get(e.id) ?? e.id }))
     .sort((a, b) => a.rank - b.rank);
+  leaderboardInitial = data.initial ?? 1000; // the leaderboard's own ELO anchor
   leaderboardMeta =
     `${data.entries.length} combatants · ${data.rounds} rounds × ${data.games_per_pair} games/pair · ` +
-    `seed ${data.seed} · champion: ${data.champion}`;
+    `start ${leaderboardInitial} · seed ${data.seed} · champion: ${data.champion}`;
   renderLeaderboard();
 }
 
@@ -587,12 +594,13 @@ async function rankCharacter(event) {
     const spec = rpg.specFromEntity(entity, currentWeapon());
     entity.dispose();
 
-    const opponents = leaderboard
-      .slice(0, RANK_OPPONENTS)
-      .map((e) => ({ id: e.id, rating: e.rating }));
+    const opponents = leaderboard.map((e) => ({ id: e.id, rating: e.rating }));
 
     const result = await rankNewcomer(rpg, spec, opponents, {
       gamesPerOpponent: GAMES_PER_OPPONENT,
+      opponentsPerRound: RANK_OPPONENTS_PER_ROUND,
+      rounds: RANK_ROUNDS,
+      initial: leaderboardInitial,
     });
     you = {
       id: 'you',
@@ -604,7 +612,7 @@ async function rankCharacter(event) {
       draws: result.draws,
       games: result.games,
     };
-    renderRankResult(result, opponents);
+    renderRankResult(result);
     selection = [];
     renderLeaderboard();
     renderDuel();
@@ -617,14 +625,15 @@ async function rankCharacter(event) {
   }
 }
 
-function renderRankResult(result, opponents) {
+function renderRankResult(result) {
   const box = $('#rank-result');
   box.hidden = false;
   const rank = [...leaderboard].filter((e) => e.rating > result.rating).length + 1;
   box.innerHTML =
     `<div class="big">ELO ${Math.round(result.rating)}</div>` +
-    `<p>Ranked against the top ${opponents.length} combatants ` +
-    `(${GAMES_PER_OPPONENT} fights each, K=32, start 1500): ` +
+    `<p>Ranked Swiss-style against the ${result.opponents} leaderboard combatants ` +
+    `closest to your rating (${GAMES_PER_OPPONENT} fights each, K=32, ` +
+    `start ${leaderboardInitial}): ` +
     `${result.wins}W / ${result.losses}L / ${result.draws}D. ` +
     `That places you at <b>#${rank}</b> in the table. ` +
     `You are now selectable for a head-to-head below.</p>`;

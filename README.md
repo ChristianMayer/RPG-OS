@@ -28,7 +28,8 @@ runs RPG OS in your browser via WebAssembly:
 - a **leaderboard** of every combatant in a ruleset, ranked by a Monte-Carlo
   ELO tournament — each rating comes from simulating thousands of fights,
 - a **character form** that lets you enter an arbitrary character (no ruleset
-  entry needed) and ranks it *live* against the top combatants,
+  entry needed) and ranks it *live* against the combatants closest to its
+  rating, starting from the ELO standard strength 1000,
 - **head-to-head** win probabilities between any two combatants, with an
   optional live 100-fight confirmation.
 
