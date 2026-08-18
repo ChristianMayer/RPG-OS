@@ -23,14 +23,6 @@ using rpg_os::CheckParams;
 using rpg_os::DynamicEntity;
 using rpg_os::RulesetEngine;
 
-namespace {
-
-std::string rulesetPath(const char *name) {
-  return std::string(RPG_OS_SOURCE_DIR) + "/rulesets/" + name;
-}
-
-} // namespace
-
 TEST_CASE("data API: finders return every data record type") {
   RulesetEngine tde;
   REQUIRE(tde.loadRulesetFromFile(rulesetPath("tde5e_core.json")));

@@ -128,7 +128,7 @@ TEST_CASE("RulesetLoader: loads a valid ruleset") {
   CHECK(ruleset.id == "test_ruleset");
   CHECK(ruleset.name == "Test Ruleset");
   CHECK(ruleset.schemaVersion == 1);
-  CHECK(ruleset.ns == "rpg_os::generated::test");
+  CHECK(ruleset.cppNamespace == "rpg_os::generated::test");
   CHECK(ruleset.source == "test");
   CHECK(ruleset.licence == "CC-BY-4.0");
   CHECK(ruleset.licenceSource == "https://example.com/licence");

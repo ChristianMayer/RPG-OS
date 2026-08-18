@@ -452,16 +452,10 @@ public:
       throw std::invalid_argument("skill '" + std::string(skillId) +
                                   "' is not a three-attribute skill check");
     }
-    CheckRecipe recipe;
-    recipe.resolution = Resolution::Pool;
-    recipe.dice = "3d20"_dice;
+    CheckRecipe recipe = makePoolRecipe();
     recipe.numPoolAttributes = 3;
     recipe.poolAttributes = {skill->attributes[0], skill->attributes[1], skill->attributes[2]};
     recipe.poolStat = std::string(skillId);
-    recipe.criticalStyle = CriticalStyle::DoubleRoll;
-    recipe.fumbleStyle = CriticalStyle::DoubleRoll;
-    recipe.grading = Grading::PoolQuality;
-    recipe.difficultyMode = DifficultyMode::ToStat;
     const CheckParams adjusted = withConditionModifiers(actor, nullptr, "skill", params);
     announceCheckStart(skillId, actor);
     const CheckResult result = resolveCheck(actor, NullStatProvider{}, recipe, adjusted, rng);
@@ -524,19 +518,7 @@ public:
   /// record verbatim so an application can read anything the ruleset covers
   /// (magic, illness, equipment, ...) without the engine having to model it.
   [[nodiscard]] const Json *findDataRecord(std::string_view section, std::string_view id) const {
-    if (!m_ruleset.data.is_object()) {
-      return nullptr;
-    }
-    const auto it = m_ruleset.data.find(std::string(section));
-    if (it == m_ruleset.data.end() || !it->is_array()) {
-      return nullptr;
-    }
-    for (const Json &record : *it) {
-      if (record.value("id", "") == id) {
-        return &record;
-      }
-    }
-    return nullptr;
+    return rpg_os::findDataRecord(m_ruleset, section, id);
   }
 
   /// The named data record accessors for the common sections.
@@ -602,6 +584,36 @@ public:
 
   /// Casts a spell from the ruleset's `data.spells` (see @ref SpellResult).
   ///
+  /// Applies a successfully-cast spell's structured `effects` (or its bare
+  /// `damage` field) to `target`, accumulating the damage dealt and any pending
+  /// option-group choices on `result`. Requires the casting check to have
+  /// passed — a failed check fizzles (the action and the resource are spent but
+  /// the spell has no effect, and no dice are rolled for its damage, so the
+  /// combat log can trust that a fizzle changes no stat).
+  template <RandomNumberGenerator Rng>
+  void applySpellEffects(DynamicEntity &actor, DynamicEntity *target, const Json *spell,
+                         SpellResult &result, const CheckParams &params, Rng &rng,
+                         int32_t qualityLevel,
+                         const std::unordered_map<std::string, int32_t> *selections) {
+    if (!result.cast || target == nullptr) {
+      return;
+    }
+    if (spell->contains("effects") && spell->at("effects").is_array()) {
+      const EffectsResult effects = resolveEffects(actor, *target, spell->at("effects"), params,
+                                                   rng, qualityLevel, selections);
+      result.appliedDamage = effects.damageDealt;
+      result.choicesRequired = effects.choicesRequired;
+    } else if (spell->contains("damage")) {
+      // `applyDamage` reports the (negative) pool delta, so negate it into the
+      // positive "damage dealt" the caller expects.
+      const int32_t damage = readVariantValue(spell->at("damage"), Variance::Random, rng);
+      const std::string hitPool = resolveHitPointPoolId();
+      if (!hitPool.empty()) {
+        result.appliedDamage = -applyDamage(actor, *target, hitPool, damage);
+      }
+    }
+  }
+
   /// The casting is fully data-driven: the cost is read from the spell record
   /// (`cost` / `ae_cost`, or `level` — one point per level), drawn from the
   /// ruleset's declared `spell_resource` (or the caller-supplied resource),
@@ -637,13 +649,7 @@ public:
       return result;
     }
     // Cost: `cost` or `ae_cost`, else `level` (one point per level).
-    if (spell->contains("cost") && spell->at("cost").is_number_integer()) {
-      result.cost = spell->at("cost").get<int32_t>();
-    } else if (spell->contains("ae_cost") && spell->at("ae_cost").is_number_integer()) {
-      result.cost = spell->at("ae_cost").get<int32_t>();
-    } else if (spell->contains("level") && spell->at("level").is_number_integer()) {
-      result.cost = spell->at("level").get<int32_t>();
-    }
+    result.cost = rpg_os::spellCost(*spell);
     result.resourceId = std::string(resourceId);
     if (result.cost > 0 && !resourceId.empty()) {
       if (actor.resource(resourceId) < result.cost) {
@@ -678,24 +684,12 @@ public:
     // the resource are spent, but the spell has no effect (and no dice are
     // rolled for its damage), so the combat log can trust that a fizzle
     // changes no stat.
-    if (result.cast && target != nullptr && spell->contains("effects") &&
-        spell->at("effects").is_array()) {
+    if (result.cast) {
       // The casting check's quality level (The Dark Eye's QL) is threaded into
       // the effect formulas so QL-scaled spells ("2D6 + QLx2") resolve from
       // data alone.
-      const int32_t ql = result.check.qualityLevel;
-      const EffectsResult effects =
-          resolveEffects(actor, *target, spell->at("effects"), params, rng, ql, selections);
-      result.appliedDamage = effects.damageDealt;
-      result.choicesRequired = effects.choicesRequired;
-    } else if (result.cast && target != nullptr && spell->contains("damage")) {
-      // `applyDamage` reports the (negative) pool delta, so negate it into the
-      // positive "damage dealt" the caller expects.
-      const int32_t damage = readVariantValue(spell->at("damage"), Variance::Random, rng);
-      const std::string hitPool = resolveHitPointPoolId();
-      if (!hitPool.empty()) {
-        result.appliedDamage = -applyDamage(actor, *target, hitPool, damage);
-      }
+      applySpellEffects(actor, target, spell, result, params, rng, result.check.qualityLevel,
+                        selections);
     }
 
     // Announce the cast attempt (cast = true when it went off). Refused casts
@@ -1475,156 +1469,23 @@ public:
       const std::string kind = effect.value("kind", "");
       bool applied = true; // whether the base effect actually took effect
       if (kind == "damage") {
-        if (!effect.contains("dice")) {
-          continue;
-        }
-        int32_t final =
-            static_cast<int32_t>(readVariantValue(effect.at("dice"), Variance::Random, rng));
-        if (effect.contains("add")) {
-          final += evaluateEffectAdd(source, &target, effect.at("add"), qualityLevel);
-        }
-        if (effect.contains("save")) {
-          if (resolveSave(source, target, effect.at("save"), params, rng, qualityLevel)) {
-            ++result.savesPassed;
-            if (effect.at("save").value("on_success", "none") == "half") {
-              final /= 2;
-            } else {
-              final = 0;
-              applied = false;
-            }
-          }
-        } else if (effect.contains("attack")) {
-          const Json &attack = effect.at("attack");
-          if (!resolveAttack(source, target, attack, params, rng)) {
-            if (attack.value("on_miss", "none") == "half") {
-              final /= 2;
-            } else {
-              final = 0;
-              applied = false;
-            }
-          }
-        }
-        if (final > 0 && !hitPool.empty()) {
-          // applyDamage reports the negative pool delta; negate for "dealt".
-          result.damageDealt += -applyDamage(source, target, hitPool, final);
-        }
+        applied =
+            resolveDamageEffect(source, target, effect, params, rng, qualityLevel, hitPool, result);
       } else if (kind == "condition") {
-        const std::string conditionId = effect.value("condition", "");
-        if (conditionId.empty()) {
-          continue;
-        }
-        if (effect.contains("save") &&
-            resolveSave(source, target, effect.at("save"), params, rng, qualityLevel)) {
-          ++result.savesPassed;
-          applied = false;
-        } else if (effect.contains("attack") &&
-                   !resolveAttack(source, target, effect.at("attack"), params, rng)) {
-          applied = false;
-        }
-        if (!applied) {
-          continue;
-        }
-        // `stacks` may be a plain number or a formula over the source's stats
-        // and the casting check's quality level (`env.ql`) — the latter lets
-        // QL-scaled conditions ("QL 3: 2 levels of Pain") resolve from data.
-        int32_t stacks = 1;
-        if (effect.contains("stacks")) {
-          const Json &stacksJson = effect.at("stacks");
-          if (stacksJson.is_number()) {
-            stacks = stacksJson.get<int32_t>();
-          } else if (stacksJson.is_string()) {
-            const Json env = {{"ql", qualityLevel}};
-            const EntityContext context(source, &target, env, Json{});
-            stacks = math::toStat(Expression(stacksJson.get<std::string>()).evaluate(context));
-          }
-        }
-        target.addCondition(conditionId, stacks);
-        fireConditionChanged(target, conditionId, stacks, "applied");
-        const int32_t duration = effect.value("duration", 0);
-        if (duration > 0) {
-          target.effects().add(ActiveEffect{conditionId, stacks, duration, "effect"});
-        }
-        ++result.conditionsApplied;
+        applied = resolveConditionEffect(source, target, effect, params, rng, qualityLevel, result);
       } else if (kind == "heal") {
-        if (!effect.contains("dice") || hitPool.empty()) {
-          continue;
-        }
-        int32_t amount =
-            static_cast<int32_t>(readVariantValue(effect.at("dice"), Variance::Random, rng));
-        if (effect.contains("add")) {
-          amount += evaluateEffectAdd(source, &target, effect.at("add"), qualityLevel);
-        }
-        result.healingDone += target.modifyResource(hitPool, amount);
+        applied = resolveHealEffect(source, target, effect, rng, qualityLevel, hitPool, result);
       } else if (kind == "temp_hp") {
-        if (!effect.contains("dice")) {
-          continue;
-        }
-        int32_t amount =
-            static_cast<int32_t>(readVariantValue(effect.at("dice"), Variance::Random, rng));
-        if (effect.contains("add")) {
-          amount += evaluateEffectAdd(source, &target, effect.at("add"), qualityLevel);
-        }
-        target.addTemporaryHitPoints(amount);
+        applied = resolveTempHpEffect(source, target, effect, rng, qualityLevel);
       } else if (kind == "resist") {
-        if (effect.contains("types")) {
-          for (const Json &type : effect.at("types")) {
-            target.addResistance(type.get<std::string>());
-          }
-        }
+        applied = resolveResistEffect(target, effect);
       } else if (kind == "stat_bonus") {
-        const std::string stat = effect.value("stat", "");
-        if (stat.empty()) {
-          continue;
-        }
-        const int32_t value =
-            effect.contains("add")
-                ? evaluateEffectAdd(source, &target, effect.at("add"), qualityLevel)
-                : 0;
-        const int32_t duration = effect.value("duration", 0);
-        target.effects().addBonus(StatBonus{stat, value, duration, "effect"});
-        ++result.statBonusesApplied;
+        applied = resolveStatBonusEffect(source, target, effect, qualityLevel, result);
       } else if (kind == "bonus_die") {
-        const std::string dice = effect.value("dice", "");
-        if (dice.empty()) {
-          continue;
-        }
-        const std::string scope = effect.value("scope", "all");
-        const int32_t duration = effect.value("duration", 0);
-        target.effects().addBonusDie(BonusDie{dice, scope, duration, "effect"});
+        applied = resolveBonusDieEffect(target, effect);
       } else if (kind == "options") {
-        // A caller-side choice: the engine never picks for the caller. Without
-        // a selection a required group is reported in choicesRequired (nothing
-        // applied); an optional group is skipped silently; with a selection the
-        // chosen option resolves (including its own save/attack/ongoing logic).
-        const std::string groupId = effect.value("id", "");
-        const Json &options = effect.at("options");
-        int32_t chosen = -1;
-        if (!groupId.empty() && selections != nullptr) {
-          const auto it = selections->find(groupId);
-          if (it != selections->end()) {
-            chosen = it->second;
-          }
-        }
-        if (chosen < 0) {
-          if (!effect.value("optional", false)) {
-            result.choicesRequired.push_back(groupId);
-          }
-          continue;
-        }
-        if (!options.is_array() || chosen >= static_cast<int32_t>(options.size())) {
-          continue;
-        }
-        Json batch = Json::array();
-        batch.push_back(options.at(static_cast<std::size_t>(chosen)));
-        const EffectsResult sub =
-            resolveEffects(source, target, batch, params, rng, qualityLevel, selections);
-        result.damageDealt += sub.damageDealt;
-        result.conditionsApplied += sub.conditionsApplied;
-        result.healingDone += sub.healingDone;
-        result.savesPassed += sub.savesPassed;
-        result.statBonusesApplied += sub.statBonusesApplied;
-        result.choicesRequired.insert(result.choicesRequired.end(), sub.choicesRequired.begin(),
-                                      sub.choicesRequired.end());
+        applied = resolveOptionsEffect(source, target, effect, params, rng, qualityLevel, result,
+                                       selections);
       }
 
       // Recurring (ongoing) effects: after the base effect resolves and
@@ -1650,6 +1511,216 @@ public:
       }
     }
     return result;
+  }
+
+  // ---- per-kind effect resolvers -------------------------------------------------
+
+  /// Applies a @c damage effect: rolls `dice` (+ optional formula `add`),
+  /// applies it through the damage pipeline (halving or negating on a save or
+  /// an attack miss as declared). Returns whether the effect actually took
+  /// effect (false when a save/attack fully negated it) — that gates whether a
+  /// recurring `ongoing` re-application is registered.
+  template <RandomNumberGenerator Rng>
+  bool resolveDamageEffect(DynamicEntity &source, DynamicEntity &target, const Json &effect,
+                           const CheckParams &params, Rng &rng, int32_t qualityLevel,
+                           const std::string &hitPool, EffectsResult &result) {
+    if (!effect.contains("dice")) {
+      return false;
+    }
+    int32_t final =
+        static_cast<int32_t>(readVariantValue(effect.at("dice"), Variance::Random, rng));
+    if (effect.contains("add")) {
+      final += evaluateEffectAdd(source, &target, effect.at("add"), qualityLevel);
+    }
+    bool applied = true;
+    if (effect.contains("save")) {
+      if (resolveSave(source, target, effect.at("save"), params, rng, qualityLevel)) {
+        ++result.savesPassed;
+        if (effect.at("save").value("on_success", "none") == "half") {
+          final /= 2;
+        } else {
+          final = 0;
+          applied = false;
+        }
+      }
+    } else if (effect.contains("attack")) {
+      const Json &attack = effect.at("attack");
+      if (!resolveAttack(source, target, attack, params, rng)) {
+        if (attack.value("on_miss", "none") == "half") {
+          final /= 2;
+        } else {
+          final = 0;
+          applied = false;
+        }
+      }
+    }
+    if (final > 0 && !hitPool.empty()) {
+      // applyDamage reports the negative pool delta; negate for "dealt".
+      result.damageDealt += -applyDamage(source, target, hitPool, final);
+    }
+    return applied;
+  }
+
+  /// Applies a @c condition effect: applies `condition` (stacks, optional
+  /// `duration`) unless the target passes the optional save or attack.
+  /// Returns whether the condition was applied (false when resisted).
+  template <RandomNumberGenerator Rng>
+  bool resolveConditionEffect(DynamicEntity &source, DynamicEntity &target, const Json &effect,
+                              const CheckParams &params, Rng &rng, int32_t qualityLevel,
+                              EffectsResult &result) {
+    const std::string conditionId = effect.value("condition", "");
+    if (conditionId.empty()) {
+      return false;
+    }
+    if (effect.contains("save") &&
+        resolveSave(source, target, effect.at("save"), params, rng, qualityLevel)) {
+      ++result.savesPassed;
+      return false;
+    }
+    if (effect.contains("attack") &&
+        !resolveAttack(source, target, effect.at("attack"), params, rng)) {
+      return false;
+    }
+    // `stacks` may be a plain number or a formula over the source's stats and
+    // the casting check's quality level (`env.ql`) — the latter lets QL-scaled
+    // conditions ("QL 3: 2 levels of Pain") resolve from data.
+    int32_t stacks = 1;
+    if (effect.contains("stacks")) {
+      const Json &stacksJson = effect.at("stacks");
+      if (stacksJson.is_number()) {
+        stacks = stacksJson.get<int32_t>();
+      } else if (stacksJson.is_string()) {
+        const Json env = {{"ql", qualityLevel}};
+        const EntityContext context(source, &target, env, Json{});
+        stacks = math::toStat(Expression(stacksJson.get<std::string>()).evaluate(context));
+      }
+    }
+    target.addCondition(conditionId, stacks);
+    fireConditionChanged(target, conditionId, stacks, "applied");
+    const int32_t duration = effect.value("duration", 0);
+    if (duration > 0) {
+      target.effects().add(ActiveEffect{conditionId, stacks, duration, "effect"});
+    }
+    ++result.conditionsApplied;
+    return true;
+  }
+
+  /// Applies a @c heal effect: rolls `dice` (+ optional formula `add`) into the
+  /// target's hit-point pool. Returns whether anything was applied.
+  template <RandomNumberGenerator Rng>
+  bool resolveHealEffect(DynamicEntity &source, DynamicEntity &target, const Json &effect, Rng &rng,
+                         int32_t qualityLevel, const std::string &hitPool, EffectsResult &result) {
+    if (!effect.contains("dice") || hitPool.empty()) {
+      return false;
+    }
+    int32_t amount =
+        static_cast<int32_t>(readVariantValue(effect.at("dice"), Variance::Random, rng));
+    if (effect.contains("add")) {
+      amount += evaluateEffectAdd(source, &target, effect.at("add"), qualityLevel);
+    }
+    result.healingDone += target.modifyResource(hitPool, amount);
+    return true;
+  }
+
+  /// Applies a @c temp_hp effect: grants temporary hit points. Returns whether
+  /// anything was granted.
+  template <RandomNumberGenerator Rng>
+  bool resolveTempHpEffect(DynamicEntity &source, DynamicEntity &target, const Json &effect,
+                           Rng &rng, int32_t qualityLevel) {
+    if (!effect.contains("dice")) {
+      return false;
+    }
+    int32_t amount =
+        static_cast<int32_t>(readVariantValue(effect.at("dice"), Variance::Random, rng));
+    if (effect.contains("add")) {
+      amount += evaluateEffectAdd(source, &target, effect.at("add"), qualityLevel);
+    }
+    target.addTemporaryHitPoints(amount);
+    return true;
+  }
+
+  /// Applies a @c resist effect: adds the listed damage `types` to the target's
+  /// resistances. Always applies (an empty list is a no-op).
+  bool resolveResistEffect(DynamicEntity &target, const Json &effect) {
+    if (effect.contains("types")) {
+      for (const Json &type : effect.at("types")) {
+        target.addResistance(type.get<std::string>());
+      }
+    }
+    return true;
+  }
+
+  /// Applies a @c stat_bonus effect: a temporary `add` (number or formula) to
+  /// the target's effective `stat` for `duration` ticks (0 = permanent).
+  /// Returns whether a bonus was applied.
+  bool resolveStatBonusEffect(DynamicEntity &source, DynamicEntity &target, const Json &effect,
+                              int32_t qualityLevel, EffectsResult &result) {
+    const std::string stat = effect.value("stat", "");
+    if (stat.empty()) {
+      return false;
+    }
+    const int32_t value = effect.contains("add")
+                              ? evaluateEffectAdd(source, &target, effect.at("add"), qualityLevel)
+                              : 0;
+    const int32_t duration = effect.value("duration", 0);
+    target.effects().addBonus(StatBonus{stat, value, duration, "effect"});
+    ++result.statBonusesApplied;
+    return true;
+  }
+
+  /// Applies a @c bonus_die effect: grants a temporary die (`dice` + `scope`)
+  /// added to matching checks. Returns whether a die was granted.
+  bool resolveBonusDieEffect(DynamicEntity &target, const Json &effect) {
+    const std::string dice = effect.value("dice", "");
+    if (dice.empty()) {
+      return false;
+    }
+    const std::string scope = effect.value("scope", "all");
+    const int32_t duration = effect.value("duration", 0);
+    target.effects().addBonusDie(BonusDie{dice, scope, duration, "effect"});
+    return true;
+  }
+
+  /// Resolves an @c options group: a caller-side choice, so the engine never
+  /// picks for the caller. Without a selection a required group is reported in
+  /// `choicesRequired` (nothing applied); an optional group is skipped
+  /// silently; with a selection the chosen option resolves (including its own
+  /// save/attack/ongoing logic). Returns whether a choice was applied.
+  template <RandomNumberGenerator Rng>
+  bool resolveOptionsEffect(DynamicEntity &source, DynamicEntity &target, const Json &effect,
+                            const CheckParams &params, Rng &rng, int32_t qualityLevel,
+                            EffectsResult &result,
+                            const std::unordered_map<std::string, int32_t> *selections) {
+    const std::string groupId = effect.value("id", "");
+    const Json &options = effect.at("options");
+    int32_t chosen = -1;
+    if (!groupId.empty() && selections != nullptr) {
+      const auto it = selections->find(groupId);
+      if (it != selections->end()) {
+        chosen = it->second;
+      }
+    }
+    if (chosen < 0) {
+      if (!effect.value("optional", false)) {
+        result.choicesRequired.push_back(groupId);
+      }
+      return false;
+    }
+    if (!options.is_array() || chosen >= static_cast<int32_t>(options.size())) {
+      return false;
+    }
+    Json batch = Json::array();
+    batch.push_back(options.at(static_cast<std::size_t>(chosen)));
+    const EffectsResult sub =
+        resolveEffects(source, target, batch, params, rng, qualityLevel, selections);
+    result.damageDealt += sub.damageDealt;
+    result.conditionsApplied += sub.conditionsApplied;
+    result.healingDone += sub.healingDone;
+    result.savesPassed += sub.savesPassed;
+    result.statBonusesApplied += sub.statBonusesApplied;
+    result.choicesRequired.insert(result.choicesRequired.end(), sub.choicesRequired.begin(),
+                                  sub.choicesRequired.end());
+    return true;
   }
 
   /// Evaluates an effect's `add` amount: a flat integer or a formula over the
@@ -2060,6 +2131,20 @@ private:
     }
   }
 
+  /// The generic pool-check recipe shared by skill checks and the "A/B/C"
+  /// casting-check form: a 3d20 roll against up to three linked attributes,
+  /// with double-roll criticals and pool-quality grading (The Dark Eye).
+  static CheckRecipe makePoolRecipe() {
+    CheckRecipe recipe;
+    recipe.resolution = Resolution::Pool;
+    recipe.dice = "3d20"_dice;
+    recipe.criticalStyle = CriticalStyle::DoubleRoll;
+    recipe.fumbleStyle = CriticalStyle::DoubleRoll;
+    recipe.grading = Grading::PoolQuality;
+    recipe.difficultyMode = DifficultyMode::ToStat;
+    return recipe;
+  }
+
   /// The ruleset's declared spell resource (empty when none).
   [[nodiscard]] std::string spellResourceId() const {
     return m_ruleset.spellResource;
@@ -2068,12 +2153,7 @@ private:
   /// The id of the ruleset's primary hit-point pool (the first resource pool
   /// with a minimum of 0), e.g. "HP" / "LP". Empty when none exists.
   [[nodiscard]] std::string resolveHitPointPoolId() const {
-    for (const ResourcePoolDef &pool : m_ruleset.resourcePools) {
-      if (pool.minValue == 0) {
-        return pool.id;
-      }
-    }
-    return {};
+    return rpg_os::resolveHitPointPool(m_ruleset);
   }
 
   /// Resolves a spell's casting check from its raw "A/B/C" attribute list
@@ -2084,13 +2164,7 @@ private:
   [[nodiscard]] CheckResult resolveSpellCheck(const DynamicEntity &actor,
                                               std::string_view checkText, const CheckParams &params,
                                               Rng &rng) const {
-    CheckRecipe recipe;
-    recipe.resolution = Resolution::Pool;
-    recipe.dice = "3d20"_dice;
-    recipe.criticalStyle = CriticalStyle::DoubleRoll;
-    recipe.fumbleStyle = CriticalStyle::DoubleRoll;
-    recipe.grading = Grading::PoolQuality;
-    recipe.difficultyMode = DifficultyMode::ToStat;
+    CheckRecipe recipe = makePoolRecipe();
 
     const std::size_t paren = checkText.find('(');
     const std::string_view head =

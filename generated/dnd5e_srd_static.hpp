@@ -1,3 +1,4 @@
+// clang-format off
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -11,13 +12,10 @@
 // Licence        : CC-BY-4.0
 // Licence Source : https://www.dndbeyond.com/srd
 // Licence Notice : -
-// Attribution    : This work includes material from the System Reference Document 5.2.1
-// (“SRD 5.2.1”) by Wizards of the Coast LLC, available at dndbeyond.com. The SRD 5.2.1 is licensed
-// under the Creative Commons Attribution 4.0 International License, available at
-// creativecommons.org. Comment        : Data transcription of the D&D 5e SRD 5.2.1 (Wizards of the
-// Coast, Open Game Content). Not affiliated with WotC. Rules and stats are informational for use
-// with the RPG OS engine.
+// Attribution    : This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at dndbeyond.com. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at creativecommons.org.
+// Comment        : Data transcription of the D&D 5e SRD 5.2.1 (Wizards of the Coast, Open Game Content). Not affiliated with WotC. Rules and stats are informational for use with the RPG OS engine.
 // ============================================================================
+// clang-format on
 
 /**
  * @file dnd5e_srd_static.hpp
@@ -43,6 +41,7 @@
 #include <rpg_os/core/money.hpp>
 #include <rpg_os/core/spellbook.hpp>
 #include <rpg_os/core/variance.hpp>
+#include <rpg_os/specific/sheet.hpp>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -58,7 +57,7 @@ namespace dnd5e {
 /// and skills are named members; derived stats are named getters with
 /// compiled formulas; checks are named methods over the shared
 /// templates. The data database is still read from the ruleset JSON.
-class Character {
+class Character : public rpg_os::specific::SheetBase<Character> {
 public:
   /// Default-constructs a character; resources start at their maximum.
   Character() : hitPoints(maxHitPoints) {}
@@ -882,129 +881,6 @@ public:
     if (record.contains("level")) {
       advancement.level = record.at("level").get<int32_t>();
     }
-  }
-
-  /// Loads a single archetype by id; throws std::invalid_argument when missing.
-  static Character fromArchetype(const rpg_os::Json &rulesetJson, std::string_view id) {
-    rpg_os::DefaultRandom rng;
-    return fromArchetype(rulesetJson, id, rpg_os::Variance::Random, rng);
-  }
-
-  /// Loads a single archetype by id, picking ranged values per `variance`.
-  template <rpg_os::RandomNumberGenerator Rng>
-  static Character fromArchetype(const rpg_os::Json &rulesetJson, std::string_view id,
-                                 rpg_os::Variance variance, Rng &rng) {
-    for (const auto &record : rulesetJson.at("data").at("archetypes")) {
-      if (record.value("id", "") == id) {
-        Character character;
-        character.fromJson(record, variance, rng);
-        return character;
-      }
-    }
-    throw std::invalid_argument("unknown archetype '" + std::string(id) + "'");
-  }
-
-  /// Loads every archetype record from the ruleset JSON's data section.
-  static std::vector<Character> loadArchetypes(const rpg_os::Json &rulesetJson) {
-    rpg_os::DefaultRandom rng;
-    return loadArchetypes(rulesetJson, rpg_os::Variance::Random, rng);
-  }
-
-  /// Loads every archetype record, picking ranged values per `variance`.
-  template <rpg_os::RandomNumberGenerator Rng>
-  static std::vector<Character> loadArchetypes(const rpg_os::Json &rulesetJson,
-                                               rpg_os::Variance variance, Rng &rng) {
-    std::vector<Character> out;
-    for (const auto &record : rulesetJson.at("data").at("archetypes")) {
-      Character character;
-      character.fromJson(record, variance, rng);
-      out.push_back(std::move(character));
-    }
-    return out;
-  }
-
-  /// Loads a single creature from data.creatures by id; throws
-  /// std::invalid_argument when missing (ranged values at random).
-  static Character fromCreature(const rpg_os::Json &rulesetJson, std::string_view id) {
-    rpg_os::DefaultRandom rng;
-    return fromCreature(rulesetJson, id, rpg_os::Variance::Random, rng);
-  }
-
-  /// Loads a single creature by id, picking ranged values per `variance`.
-  template <rpg_os::RandomNumberGenerator Rng>
-  static Character fromCreature(const rpg_os::Json &rulesetJson, std::string_view id,
-                                rpg_os::Variance variance, Rng &rng) {
-    for (const auto &record : rulesetJson.at("data").at("creatures")) {
-      if (record.value("id", "") == id) {
-        Character character;
-        character.fromJson(record, variance, rng);
-        return character;
-      }
-    }
-    throw std::invalid_argument("unknown creature '" + std::string(id) + "'");
-  }
-
-  /// Loads every creature record from the ruleset JSON's data section.
-  static std::vector<Character> loadCreatures(const rpg_os::Json &rulesetJson) {
-    rpg_os::DefaultRandom rng;
-    return loadCreatures(rulesetJson, rpg_os::Variance::Random, rng);
-  }
-
-  /// Loads every creature record, picking ranged values per `variance`.
-  template <rpg_os::RandomNumberGenerator Rng>
-  static std::vector<Character> loadCreatures(const rpg_os::Json &rulesetJson,
-                                              rpg_os::Variance variance, Rng &rng) {
-    std::vector<Character> out;
-    for (const auto &record : rulesetJson.at("data").at("creatures")) {
-      Character character;
-      character.fromJson(record, variance, rng);
-      out.push_back(std::move(character));
-    }
-    return out;
-  }
-
-  // ---- free-form data section loaders ----
-  /// Loads every record from a named `data` section as raw JSON.
-  static std::vector<rpg_os::Json> loadSection(const rpg_os::Json &rulesetJson,
-                                               std::string_view section) {
-    std::vector<rpg_os::Json> out;
-    const auto &data = rulesetJson.at("data");
-    if (data.contains(section)) {
-      for (const auto &record : data.at(section)) {
-        out.push_back(record);
-      }
-    }
-    return out;
-  }
-
-  /// Loads every spells record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadSpells(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "spells");
-  }
-
-  /// Loads every conditions record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadConditions(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "conditions");
-  }
-
-  /// Loads every poisons record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadPoisons(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "poisons");
-  }
-
-  /// Loads every diseases record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadDiseases(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "diseases");
-  }
-
-  /// Loads every items record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadItems(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "items");
-  }
-
-  /// Loads every curses record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadCurses(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "curses");
   }
 };
 

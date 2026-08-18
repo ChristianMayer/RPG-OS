@@ -1,3 +1,4 @@
+// clang-format off
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -7,42 +8,14 @@
 // covered by Apache-2.0: it is governed by the ruleset's own licence (stated
 // in the ruleset JSON, linked below when known).
 // Ruleset        : brp_ugc (Basic Roleplaying: Universal Game Engine)
-// Source         : Basic Roleplaying: Universal Game Engine - Handouts Pack (Chaosium Inc., 2023,
-// ISBN 978-1-56882-470-3) Licence        : Open RPG Creative License (ORC). This product is
-// licensed under the ORC License (Chaosium Inc., 2023) and is available for personal and commercial
-// use. Basic Roleplaying is a trademark of Chaosium Inc.; this is a fan-made reference data file
-// for RPG OS, not affiliated with or endorsed by Chaosium Inc. Licence Source :
-// https://www.chaosium.com/orc-license/ Licence Notice : BRP: Universal Game Engine Notice - This
-// product is licensed under the ORC License held in the Library of Congress at TX 9-307-067 and
-// available online at various locations including www.chaosium.com/orclicense,
-// www.azoralaw.com/orclicense, www.gencon.com/orclicense and others. All warranties are disclaimed
-// as set forth therein. This product is the original work of Chaosium. Attribution    : This
-// product is based on the following Licensed Material: "Basic Roleplaying: Universal Game Engine,"
-// copyright © 2024 Chaosium Inc., by Jason Durall and Steve Perrin. Comment        : Fan
-// transcription of the Basic Roleplaying: Universal Game Engine Handouts Pack (Chaosium, 2023,
-// ORC-licensed) for RPG OS. Attributes are the eight characteristics (STR CON SIZ INT POW DEX APP
-// EDU, 3-18 scale) plus Luck and Sanity. Derived stats: Max Hit Points = ceil((CON+SIZ)/2), Max
-// Power Points = POW, each characteristic's x5 value (for characteristic rolls, e.g. STR_5 =
-// STR*5), and the combat abstractions Attack (= Brawl), Parry (= Dodge) and Initiative (= DEX) used
-// by the combat simulator. Skills follow the handout's category list; base chances are in the BRP
-// rulebook, so skill defaults are 0 and the required 'attributes' field records a primary
-// characteristic for reference only. Check types use the native percentile mechanics:
-// roll_under_d100 (Critical <= stat/20, Special <= stat/5, Success <= stat, skill-dependent fumble
-// band) for characteristics, Luck, Sanity and every skill; resistance_roll for the Resistance Table
-// (chance = 50 + 5 x (active - passive); the brp_resistance_* checks cover the same-characteristic
-// pairs); and opposed_roll_under_d100 for combat (brp_combat), which models the Attack and Defense
-// Matrix hit rule (the attacker hits only with a strictly higher success level; equal levels mean
-// the defender parries). BRP's Easy/Difficult difficulty levels (double/halve the skill) are
-// modelled via CheckParams::difficultyScale, and flat +/-20% situational modifiers via
-// CheckParams::difficulty. Data transcribes the handout's reference tables: sample poisons, the
-// magic spell summary, the sorcery spell summary (by category), the psychic abilities and
-// superpower summaries, the random mutation table (adverse mutations flagged), the chaotic features
-// table, the combat fumble tables, the major wound table, the damage modifier table, the
-// personality trait pairs, the reputation gains and observer modifiers, and the temporary insanity
-// tables. Items are a representative weapon/armour set and the archetype is an illustrative average
-// human. The weapon/armour tables themselves and the optional hit-location table are not
-// transcribed as data records.
+// Source         : Basic Roleplaying: Universal Game Engine - Handouts Pack (Chaosium Inc., 2023, ISBN 978-1-56882-470-3)
+// Licence        : Open RPG Creative License (ORC). This product is licensed under the ORC License (Chaosium Inc., 2023) and is available for personal and commercial use. Basic Roleplaying is a trademark of Chaosium Inc.; this is a fan-made reference data file for RPG OS, not affiliated with or endorsed by Chaosium Inc.
+// Licence Source : https://www.chaosium.com/orc-license/
+// Licence Notice : BRP: Universal Game Engine Notice - This product is licensed under the ORC License held in the Library of Congress at TX 9-307-067 and available online at various locations including www.chaosium.com/orclicense, www.azoralaw.com/orclicense, www.gencon.com/orclicense and others. All warranties are disclaimed as set forth therein. This product is the original work of Chaosium.
+// Attribution    : This product is based on the following Licensed Material: "Basic Roleplaying: Universal Game Engine," copyright © 2024 Chaosium Inc., by Jason Durall and Steve Perrin.
+// Comment        : Fan transcription of the Basic Roleplaying: Universal Game Engine Handouts Pack (Chaosium, 2023, ORC-licensed) for RPG OS. Attributes are the eight characteristics (STR CON SIZ INT POW DEX APP EDU, 3-18 scale) plus Luck and Sanity. Derived stats: Max Hit Points = ceil((CON+SIZ)/2), Max Power Points = POW, each characteristic's x5 value (for characteristic rolls, e.g. STR_5 = STR*5), and the combat abstractions Attack (= Brawl), Parry (= Dodge) and Initiative (= DEX) used by the combat simulator. Skills follow the handout's category list; base chances are in the BRP rulebook, so skill defaults are 0 and the required 'attributes' field records a primary characteristic for reference only. Check types use the native percentile mechanics: roll_under_d100 (Critical <= stat/20, Special <= stat/5, Success <= stat, skill-dependent fumble band) for characteristics, Luck, Sanity and every skill; resistance_roll for the Resistance Table (chance = 50 + 5 x (active - passive); the brp_resistance_* checks cover the same-characteristic pairs); and opposed_roll_under_d100 for combat (brp_combat), which models the Attack and Defense Matrix hit rule (the attacker hits only with a strictly higher success level; equal levels mean the defender parries). BRP's Easy/Difficult difficulty levels (double/halve the skill) are modelled via CheckParams::difficultyScale, and flat +/-20% situational modifiers via CheckParams::difficulty. Data transcribes the handout's reference tables: sample poisons, the magic spell summary, the sorcery spell summary (by category), the psychic abilities and superpower summaries, the random mutation table (adverse mutations flagged), the chaotic features table, the combat fumble tables, the major wound table, the damage modifier table, the personality trait pairs, the reputation gains and observer modifiers, and the temporary insanity tables. Items are a representative weapon/armour set and the archetype is an illustrative average human. The weapon/armour tables themselves and the optional hit-location table are not transcribed as data records.
 // ============================================================================
+// clang-format on
 
 /**
  * @file brp_ugc_static.hpp
@@ -68,6 +41,7 @@
 #include <rpg_os/core/money.hpp>
 #include <rpg_os/core/spellbook.hpp>
 #include <rpg_os/core/variance.hpp>
+#include <rpg_os/specific/sheet.hpp>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -83,7 +57,7 @@ namespace brp_ugc {
 /// and skills are named members; derived stats are named getters with
 /// compiled formulas; checks are named methods over the shared
 /// templates. The data database is still read from the ruleset JSON.
-class Character {
+class Character : public rpg_os::specific::SheetBase<Character> {
 public:
   /// Default-constructs a character; resources start at their maximum.
   Character() : hitPoints(maxHitPoints()), powerPoints(maxPowerPoints()) {}
@@ -2338,129 +2312,6 @@ public:
     if (record.contains("level")) {
       advancement.level = record.at("level").get<int32_t>();
     }
-  }
-
-  /// Loads a single archetype by id; throws std::invalid_argument when missing.
-  static Character fromArchetype(const rpg_os::Json &rulesetJson, std::string_view id) {
-    rpg_os::DefaultRandom rng;
-    return fromArchetype(rulesetJson, id, rpg_os::Variance::Random, rng);
-  }
-
-  /// Loads a single archetype by id, picking ranged values per `variance`.
-  template <rpg_os::RandomNumberGenerator Rng>
-  static Character fromArchetype(const rpg_os::Json &rulesetJson, std::string_view id,
-                                 rpg_os::Variance variance, Rng &rng) {
-    for (const auto &record : rulesetJson.at("data").at("archetypes")) {
-      if (record.value("id", "") == id) {
-        Character character;
-        character.fromJson(record, variance, rng);
-        return character;
-      }
-    }
-    throw std::invalid_argument("unknown archetype '" + std::string(id) + "'");
-  }
-
-  /// Loads every archetype record from the ruleset JSON's data section.
-  static std::vector<Character> loadArchetypes(const rpg_os::Json &rulesetJson) {
-    rpg_os::DefaultRandom rng;
-    return loadArchetypes(rulesetJson, rpg_os::Variance::Random, rng);
-  }
-
-  /// Loads every archetype record, picking ranged values per `variance`.
-  template <rpg_os::RandomNumberGenerator Rng>
-  static std::vector<Character> loadArchetypes(const rpg_os::Json &rulesetJson,
-                                               rpg_os::Variance variance, Rng &rng) {
-    std::vector<Character> out;
-    for (const auto &record : rulesetJson.at("data").at("archetypes")) {
-      Character character;
-      character.fromJson(record, variance, rng);
-      out.push_back(std::move(character));
-    }
-    return out;
-  }
-
-  /// Loads a single creature from data.creatures by id; throws
-  /// std::invalid_argument when missing (ranged values at random).
-  static Character fromCreature(const rpg_os::Json &rulesetJson, std::string_view id) {
-    rpg_os::DefaultRandom rng;
-    return fromCreature(rulesetJson, id, rpg_os::Variance::Random, rng);
-  }
-
-  /// Loads a single creature by id, picking ranged values per `variance`.
-  template <rpg_os::RandomNumberGenerator Rng>
-  static Character fromCreature(const rpg_os::Json &rulesetJson, std::string_view id,
-                                rpg_os::Variance variance, Rng &rng) {
-    for (const auto &record : rulesetJson.at("data").at("creatures")) {
-      if (record.value("id", "") == id) {
-        Character character;
-        character.fromJson(record, variance, rng);
-        return character;
-      }
-    }
-    throw std::invalid_argument("unknown creature '" + std::string(id) + "'");
-  }
-
-  /// Loads every creature record from the ruleset JSON's data section.
-  static std::vector<Character> loadCreatures(const rpg_os::Json &rulesetJson) {
-    rpg_os::DefaultRandom rng;
-    return loadCreatures(rulesetJson, rpg_os::Variance::Random, rng);
-  }
-
-  /// Loads every creature record, picking ranged values per `variance`.
-  template <rpg_os::RandomNumberGenerator Rng>
-  static std::vector<Character> loadCreatures(const rpg_os::Json &rulesetJson,
-                                              rpg_os::Variance variance, Rng &rng) {
-    std::vector<Character> out;
-    for (const auto &record : rulesetJson.at("data").at("creatures")) {
-      Character character;
-      character.fromJson(record, variance, rng);
-      out.push_back(std::move(character));
-    }
-    return out;
-  }
-
-  // ---- free-form data section loaders ----
-  /// Loads every record from a named `data` section as raw JSON.
-  static std::vector<rpg_os::Json> loadSection(const rpg_os::Json &rulesetJson,
-                                               std::string_view section) {
-    std::vector<rpg_os::Json> out;
-    const auto &data = rulesetJson.at("data");
-    if (data.contains(section)) {
-      for (const auto &record : data.at(section)) {
-        out.push_back(record);
-      }
-    }
-    return out;
-  }
-
-  /// Loads every spells record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadSpells(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "spells");
-  }
-
-  /// Loads every conditions record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadConditions(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "conditions");
-  }
-
-  /// Loads every poisons record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadPoisons(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "poisons");
-  }
-
-  /// Loads every diseases record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadDiseases(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "diseases");
-  }
-
-  /// Loads every items record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadItems(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "items");
-  }
-
-  /// Loads every curses record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadCurses(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "curses");
   }
 };
 

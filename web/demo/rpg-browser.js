@@ -149,7 +149,9 @@ export class RpgOs {
   }
 
   createEntityFromSheet(id, stats) {
-    const sheet = JSON.stringify({ id, stats: stats ?? {} });
+    const sheet = stats && typeof stats === 'object' && 'stats' in stats
+      ? JSON.stringify(stats)
+      : JSON.stringify({ id, stats: stats ?? {} });
     const idPtr = alloc(this._m, id);
     const { ptr, len } = alloc(this._m, sheet);
     try {

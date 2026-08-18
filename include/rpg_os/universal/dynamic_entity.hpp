@@ -873,16 +873,7 @@ private:
   /// Looks up a raw data record by id in a `data` section (items, conditions,
   /// ...) — the sheet-side twin of the engine's record finders.
   [[nodiscard]] const Json *findDataRecord(std::string_view section, std::string_view id) const {
-    if (!m_ruleset->data.is_object() || !m_ruleset->data.contains(section) ||
-        !m_ruleset->data.at(section).is_array()) {
-      return nullptr;
-    }
-    for (const Json &record : m_ruleset->data.at(section)) {
-      if (record.value("id", "") == id) {
-        return &record;
-      }
-    }
-    return nullptr;
+    return rpg_os::findDataRecord(*m_ruleset, section, id);
   }
 
   /// Evaluates a derived-stat formula for this entity (no target / env).

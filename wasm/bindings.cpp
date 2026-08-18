@@ -24,6 +24,7 @@
 
 #include <cstdint>
 #include <new>
+#include <optional>
 #include <rpg_os/universal/combat.hpp>
 #include <rpg_os/universal/dynamic_entity.hpp>
 #include <rpg_os/universal/engine.hpp>
@@ -49,15 +50,17 @@ const char *buffered(const std::string &value) {
   return g_buffer.c_str();
 }
 
-/// Parses `[data, len)` as JSON; an empty object on failure or bad input.
-rpg_os::Json parseJson(const char *data, int len) {
+/// Parses `[data, len)` as JSON. Returns std::nullopt on bad input or a
+/// malformed document, so the caller can surface a real error instead of
+/// silently treating a typo as an empty character.
+std::optional<rpg_os::Json> parseJson(const char *data, int len) {
   if (data == nullptr || len <= 0) {
-    return rpg_os::Json::object();
+    return std::nullopt;
   }
   try {
     return rpg_os::Json::parse(std::string(data, static_cast<std::size_t>(len)));
   } catch (const std::exception &) {
-    return rpg_os::Json::object();
+    return std::nullopt;
   }
 }
 
@@ -79,6 +82,15 @@ rpg_os::Variance toVariance(int variance) {
   }
 }
 
+/// Serializes raw die results as a JSON array.
+rpg_os::Json diceToJson(const std::vector<int32_t> &dice) {
+  rpg_os::Json arr = rpg_os::Json::array();
+  for (const int32_t die : dice) {
+    arr.push_back(die);
+  }
+  return arr;
+}
+
 /// Serializes one fight action (see @ref rpg_os_fight_detail).
 rpg_os::Json fightActionToJson(const rpg_os::FightActionLog &action) {
   rpg_os::Json out = rpg_os::Json::object();
@@ -86,17 +98,9 @@ rpg_os::Json fightActionToJson(const rpg_os::FightActionLog &action) {
   out["target"] = action.targetIndex;
   out["kind"] = action.kind;
   out["spell"] = action.spellId;
-  rpg_os::Json checkDice = rpg_os::Json::array();
-  for (const int32_t die : action.checkDice) {
-    checkDice.push_back(die);
-  }
-  out["check_dice"] = checkDice;
+  out["check_dice"] = diceToJson(action.checkDice);
   out["is_hit"] = action.isHit;
-  rpg_os::Json damageDice = rpg_os::Json::array();
-  for (const int32_t die : action.damageDice) {
-    damageDice.push_back(die);
-  }
-  out["damage_dice"] = damageDice;
+  out["damage_dice"] = diceToJson(action.damageDice);
   out["damage"] = action.damage;
   out["hp_before"] = action.hpBefore;
   out["target_hp"] = action.targetHp;
@@ -136,6 +140,54 @@ rpg_os::Json fightLogToJson(const rpg_os::FightLog &log) {
     rounds.push_back(fightRoundToJson(round));
   }
   out["rounds"] = rounds;
+  return out;
+}
+
+/// Shared "bad arguments" error returned by the exported functions.
+const char *const kErrorBadArguments = "{\"error\":\"bad arguments\"}";
+/// Shared "no combat available" error returned by the exported functions.
+const char *const kErrorNoCombat = "{\"error\":\"ruleset has no combat check or hit-point pool\"}";
+
+/// Allocates a combatant spec built by `build`; nullptr on allocation or
+/// build failure (the spec is deleted again in that case).
+template <typename Build> void *makeSpec(Build &&build) {
+  auto *spec = new (std::nothrow) rpg_os::CombatantSpec();
+  if (spec == nullptr) {
+    return nullptr;
+  }
+  if (!build(*spec)) {
+    delete spec;
+    return nullptr;
+  }
+  return spec;
+}
+
+/// Runs one fight and builds the outcome JSON shared by @ref rpg_os_fight and
+/// @ref rpg_os_fight_detail. When `log` is non-null the transcript is recorded
+/// (observation-only: same seed = same fight). `ok` is false when the ruleset
+/// has no combat check or hit-point pool (the caller returns @ref kErrorNoCombat).
+rpg_os::Json runFightToJson(rpg_os::RulesetEngine &eng, rpg_os::CombatantSpec &a,
+                            rpg_os::CombatantSpec &b, int max_rounds, unsigned int seed,
+                            bool useMagic, rpg_os::FightLog *log, bool &ok) {
+  ok = false;
+  const std::string checkType = rpg_os::resolveAttackCheckType(eng.ruleset());
+  const std::string hpPool = rpg_os::resolveHitPointPool(eng.ruleset());
+  if (checkType.empty() || hpPool.empty()) {
+    return rpg_os::Json::object();
+  }
+  rpg_os::DefaultRandom rng(seed);
+  const rpg_os::FightOutcome outcome =
+      log != nullptr
+          ? rpg_os::runFight(eng, a, b, checkType, hpPool, max_rounds, rng, useMagic, *log)
+          : rpg_os::runFight(eng, a, b, checkType, hpPool, max_rounds, rng, useMagic);
+  rpg_os::Json out = rpg_os::Json::object();
+  out["winner_index"] = outcome.winnerIndex;
+  out["rounds"] = outcome.rounds;
+  out["max_lp"] = {outcome.maxLp[0], outcome.maxLp[1]};
+  out["remaining_lp"] = {outcome.remainingLp[0], outcome.remainingLp[1]};
+  out["a"] = a.name;
+  out["b"] = b.name;
+  ok = true;
   return out;
 }
 
@@ -280,11 +332,15 @@ RPG_OS_WASM_EXPORT void *rpg_os_entity_create_sheet(void *engine, const char *id
   if (eng == nullptr || !eng->loaded() || id == nullptr) {
     return nullptr;
   }
+  auto sheetJson = parseJson(sheet, len);
+  if (!sheetJson.has_value()) {
+    return nullptr; // malformed sheet JSON — surface the failure to the caller
+  }
   auto *entity = new (std::nothrow) rpg_os::DynamicEntity(eng->ruleset(), std::string(id));
   if (entity == nullptr) {
     return nullptr;
   }
-  entity->fromJson(parseJson(sheet, len));
+  entity->fromJson(*sheetJson);
   entity->refreshResources();
   return entity;
 }
@@ -353,7 +409,7 @@ RPG_OS_WASM_EXPORT const char *rpg_os_check(void *engine, const char *check_type
   auto *actorEntity = static_cast<rpg_os::DynamicEntity *>(actor);
   auto *targetEntity = static_cast<rpg_os::DynamicEntity *>(target);
   if (eng == nullptr || check_type == nullptr || actorEntity == nullptr) {
-    return buffered("{\"error\":\"bad arguments\"}");
+    return buffered(kErrorBadArguments);
   }
   rpg_os::CheckParams params;
   params.advantage = advantage > 0   ? rpg_os::AdvantageMode::Advantage
@@ -369,11 +425,7 @@ RPG_OS_WASM_EXPORT const char *rpg_os_check(void *engine, const char *check_type
   out["margin"] = result.marginOfSuccess;
   out["remaining_pool"] = result.remainingPool;
   out["quality_level"] = result.qualityLevel;
-  rpg_os::Json dice = rpg_os::Json::array();
-  for (const int32_t die : result.rawDiceRolls) {
-    dice.push_back(die);
-  }
-  out["raw_dice"] = dice;
+  out["raw_dice"] = diceToJson(result.rawDiceRolls);
   return buffered(out.dump());
 }
 
@@ -386,16 +438,10 @@ RPG_OS_WASM_EXPORT void *rpg_os_spec_from_id(void *engine, const char *id, const
   if (eng == nullptr || id == nullptr) {
     return nullptr;
   }
-  auto *spec = new (std::nothrow) rpg_os::CombatantSpec();
-  if (spec == nullptr) {
-    return nullptr;
-  }
   const std::string weaponStr = weapon == nullptr ? "1d6+4" : std::string(weapon);
-  if (!rpg_os::makeCombatantSpec(*eng, id, *spec, weaponStr)) {
-    delete spec;
-    return nullptr;
-  }
-  return spec;
+  return makeSpec([&](rpg_os::CombatantSpec &spec) {
+    return rpg_os::makeCombatantSpec(*eng, id, spec, weaponStr);
+  });
 }
 
 /// Builds a combatant spec from an arbitrary character sheet (entity handle),
@@ -406,16 +452,10 @@ RPG_OS_WASM_EXPORT void *rpg_os_spec_from_entity(void *engine, void *entity, con
   if (eng == nullptr || ent == nullptr) {
     return nullptr;
   }
-  auto *spec = new (std::nothrow) rpg_os::CombatantSpec();
-  if (spec == nullptr) {
-    return nullptr;
-  }
   const std::string weaponStr = weapon == nullptr ? "1d6+4" : std::string(weapon);
-  if (!rpg_os::makeCombatantSpecFromEntity(*eng, *ent, *spec, weaponStr)) {
-    delete spec;
-    return nullptr;
-  }
-  return spec;
+  return makeSpec([&](rpg_os::CombatantSpec &spec) {
+    return rpg_os::makeCombatantSpecFromEntity(*eng, *ent, spec, weaponStr);
+  });
 }
 
 /// Destroys a combatant spec handle.
@@ -432,23 +472,13 @@ RPG_OS_WASM_EXPORT const char *rpg_os_fight(void *engine, void *spec_a, void *sp
   auto *a = static_cast<rpg_os::CombatantSpec *>(spec_a);
   auto *b = static_cast<rpg_os::CombatantSpec *>(spec_b);
   if (eng == nullptr || a == nullptr || b == nullptr || max_rounds <= 0) {
-    return buffered("{\"error\":\"bad arguments\"}");
+    return buffered(kErrorBadArguments);
   }
-  const std::string checkType = rpg_os::resolveAttackCheckType(eng->ruleset());
-  const std::string hpPool = rpg_os::resolveHitPointPool(eng->ruleset());
-  if (checkType.empty() || hpPool.empty()) {
-    return buffered("{\"error\":\"ruleset has no combat check or hit-point pool\"}");
+  bool ok = false;
+  rpg_os::Json out = runFightToJson(*eng, *a, *b, max_rounds, seed, use_magic != 0, nullptr, ok);
+  if (!ok) {
+    return buffered(kErrorNoCombat);
   }
-  rpg_os::DefaultRandom rng(seed);
-  const rpg_os::FightOutcome outcome =
-      rpg_os::runFight(*eng, *a, *b, checkType, hpPool, max_rounds, rng, use_magic != 0);
-  rpg_os::Json out = rpg_os::Json::object();
-  out["winner_index"] = outcome.winnerIndex;
-  out["rounds"] = outcome.rounds;
-  out["max_lp"] = {outcome.maxLp[0], outcome.maxLp[1]};
-  out["remaining_lp"] = {outcome.remainingLp[0], outcome.remainingLp[1]};
-  out["a"] = a->name;
-  out["b"] = b->name;
   return buffered(out.dump());
 }
 
@@ -470,25 +500,15 @@ RPG_OS_WASM_EXPORT const char *rpg_os_fight_detail(void *engine, void *spec_a, v
   auto *a = static_cast<rpg_os::CombatantSpec *>(spec_a);
   auto *b = static_cast<rpg_os::CombatantSpec *>(spec_b);
   if (eng == nullptr || a == nullptr || b == nullptr || max_rounds <= 0) {
-    return buffered("{\"error\":\"bad arguments\"}");
+    return buffered(kErrorBadArguments);
   }
-  const std::string checkType = rpg_os::resolveAttackCheckType(eng->ruleset());
-  const std::string hpPool = rpg_os::resolveHitPointPool(eng->ruleset());
-  if (checkType.empty() || hpPool.empty()) {
-    return buffered("{\"error\":\"ruleset has no combat check or hit-point pool\"}");
-  }
-  rpg_os::DefaultRandom rng(seed);
   rpg_os::FightLog log;
-  const rpg_os::FightOutcome outcome =
-      rpg_os::runFight(*eng, *a, *b, checkType, hpPool, max_rounds, rng, use_magic != 0, log);
-  rpg_os::Json out = rpg_os::Json::object();
-  out["winner_index"] = outcome.winnerIndex;
-  out["rounds"] = outcome.rounds;
-  out["max_lp"] = {outcome.maxLp[0], outcome.maxLp[1]};
-  out["remaining_lp"] = {outcome.remainingLp[0], outcome.remainingLp[1]};
-  out["a"] = a->name;
-  out["b"] = b->name;
-  out["hp_pool"] = hpPool;
+  bool ok = false;
+  rpg_os::Json out = runFightToJson(*eng, *a, *b, max_rounds, seed, use_magic != 0, &log, ok);
+  if (!ok) {
+    return buffered(kErrorNoCombat);
+  }
+  out["hp_pool"] = rpg_os::resolveHitPointPool(eng->ruleset());
   out["log"] = fightLogToJson(log);
   return buffered(out.dump());
 }

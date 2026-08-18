@@ -28,6 +28,7 @@
  */
 #pragma once
 
+#include <cmath>
 #include <cstddef>
 #include <rpg_os/core/math.hpp>
 #include <stdexcept>

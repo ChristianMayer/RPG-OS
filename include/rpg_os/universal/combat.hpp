@@ -157,23 +157,6 @@ struct FightLog {
   return {};
 }
 
-/// Finds the id of the ruleset's primary hit-point pool (the first resource
-/// pool with a minimum of 0), e.g. "LP" for The Dark Eye and "HP" for D&D 5e.
-///
-/// @par Why "minimum of 0" as the heuristic?
-/// The primary hit-point pool is the one a creature is reduced to 0 in to die;
-/// in both shipped rulesets it is the pool whose minimum is 0 (LP, HP), while
-/// secondary pools (Astral Energy, Karma) start above 0. The heuristic avoids
-/// hard-coding pool names into the engine.
-[[nodiscard]] inline std::string resolveHitPointPool(const Ruleset &ruleset) {
-  for (const ResourcePoolDef &pool : ruleset.resourcePools) {
-    if (pool.minValue == 0) {
-      return pool.id;
-    }
-  }
-  return {};
-}
-
 namespace detail {
 
 /// Fills `out` from an archetype record (a probe entity at average variance);
@@ -413,14 +396,7 @@ namespace detail {
     if (spell == nullptr) {
       continue;
     }
-    int32_t cost = 0;
-    if (spell->contains("cost") && spell->at("cost").is_number_integer()) {
-      cost = spell->at("cost").get<int32_t>();
-    } else if (spell->contains("ae_cost") && spell->at("ae_cost").is_number_integer()) {
-      cost = spell->at("ae_cost").get<int32_t>();
-    } else if (spell->contains("level") && spell->at("level").is_number_integer()) {
-      cost = spell->at("level").get<int32_t>();
-    }
+    const int32_t cost = rpg_os::spellCost(*spell);
     if (cost > 0 && !resourceId.empty() && caster.resource(resourceId) < cost) {
       continue; // cannot afford
     }

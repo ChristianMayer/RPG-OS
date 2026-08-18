@@ -40,10 +40,6 @@ using rpg_os::RulesetEngine;
 
 namespace {
 
-std::string rulesetPath(const char *name) {
-  return std::string(RPG_OS_SOURCE_DIR) + "/rulesets/" + name;
-}
-
 /// A minimal D&D-style coinage for unit tests.
 CurrencySystem dndCoins() {
   return CurrencySystem{"dnd",

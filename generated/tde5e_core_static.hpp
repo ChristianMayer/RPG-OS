@@ -1,3 +1,4 @@
+// clang-format off
 // Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -8,21 +9,13 @@
 // in the ruleset JSON, linked below when known).
 // Ruleset        : tde5e_core (The Dark Eye 5th Edition (Core Rules))
 // Source         : The Dark Eye Core Rules, 2nd Printing (Ulisses Spiele, 2016)
-// Licence        : Open RPG Creative License (ORC). This product is licensed under the ORC License
-// located at the Library of Congress at TX00[number TBD] and available online at various locations.
-// All warranties are disclaimed as set forth therein. The Dark Eye (Das Schwarze Auge) is (c)
-// Ulisses Spiele GmbH; this is a fan-made reference data file for RPG OS, not affiliated with or
-// endorsed by Ulisses Spiele. Licence Source : https://ulisses-spiele.de/die-deutsche-orc-ist-da/
-// Licence Notice : THE DARK EYE 5TH EDITION CORE RULES NOTICE - This product is licensed under the
-// ORC License located at the Library of Congress at TX 9-307-067 and available online at various
-// locations including www.azoralaw.com/orclicense, www.gencon.com/orclicense, www.orclicense.org
-// and others. All warranties are disclaimed as set forth therein. This product is based on the
-// original work of Ulisses Spiele GmbH. Attribution    : This product is based on the following
-// Licensed Material: "The Dark Eye 5th Edition Core Rules" ("Das Schwarze Auge 5. Edition -
-// Regelwerk"), copyright © 2016 Ulisses Spiele GmbH. Comment        : Data transcription of the
-// German original 'Das Schwarze Auge 5. Edition - Regelwerk' (2. Druck). Attribute abbreviations
-// COU SGC INT CHA DEX AGI CON STR follow the official English localization.
+// Licence        : Open RPG Creative License (ORC). This product is licensed under the ORC License located at the Library of Congress at TX00[number TBD] and available online at various locations. All warranties are disclaimed as set forth therein. The Dark Eye (Das Schwarze Auge) is (c) Ulisses Spiele GmbH; this is a fan-made reference data file for RPG OS, not affiliated with or endorsed by Ulisses Spiele.
+// Licence Source : https://ulisses-spiele.de/die-deutsche-orc-ist-da/
+// Licence Notice : THE DARK EYE 5TH EDITION CORE RULES NOTICE - This product is licensed under the ORC License located at the Library of Congress at TX 9-307-067 and available online at various locations including www.azoralaw.com/orclicense, www.gencon.com/orclicense, www.orclicense.org and others. All warranties are disclaimed as set forth therein. This product is based on the original work of Ulisses Spiele GmbH.
+// Attribution    : This product is based on the following Licensed Material: "The Dark Eye 5th Edition Core Rules" ("Das Schwarze Auge 5. Edition - Regelwerk"), copyright © 2016 Ulisses Spiele GmbH.
+// Comment        : Data transcription of the German original 'Das Schwarze Auge 5. Edition - Regelwerk' (2. Druck). Attribute abbreviations COU SGC INT CHA DEX AGI CON STR follow the official English localization.
 // ============================================================================
+// clang-format on
 
 /**
  * @file tde5e_core_static.hpp
@@ -48,6 +41,7 @@
 #include <rpg_os/core/money.hpp>
 #include <rpg_os/core/spellbook.hpp>
 #include <rpg_os/core/variance.hpp>
+#include <rpg_os/specific/sheet.hpp>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -63,7 +57,7 @@ namespace tde5e {
 /// and skills are named members; derived stats are named getters with
 /// compiled formulas; checks are named methods over the shared
 /// templates. The data database is still read from the ruleset JSON.
-class Character {
+class Character : public rpg_os::specific::SheetBase<Character> {
 public:
   /// Default-constructs a character; resources start at their maximum.
   Character()
@@ -757,6 +751,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"AGI", "AGI", "CON"},
         .numPoolAttributes = 3,
         .poolStat = "body_control",
@@ -764,6 +760,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -773,6 +770,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "CON", "STR"},
         .numPoolAttributes = 3,
         .poolStat = "carousing",
@@ -780,6 +779,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -789,6 +789,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "AGI", "STR"},
         .numPoolAttributes = 3,
         .poolStat = "climbing",
@@ -796,6 +798,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -805,6 +808,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "CHA", "DEX"},
         .numPoolAttributes = 3,
         .poolStat = "dancing",
@@ -812,6 +817,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -821,6 +827,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"CON", "STR", "STR"},
         .numPoolAttributes = 3,
         .poolStat = "feat_of_strength",
@@ -828,6 +836,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -836,6 +845,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "INT", "AGI"},
         .numPoolAttributes = 3,
         .poolStat = "flying",
@@ -843,6 +854,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -852,6 +864,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "CHA", "DEX"},
         .numPoolAttributes = 3,
         .poolStat = "gaukelei",
@@ -859,6 +873,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -868,6 +883,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "INT", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "perception",
@@ -875,6 +892,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -884,6 +902,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "DEX", "AGI"},
         .numPoolAttributes = 3,
         .poolStat = "pickpocket",
@@ -891,6 +911,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -899,6 +920,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"CHA", "AGI", "STR"},
         .numPoolAttributes = 3,
         .poolStat = "riding",
@@ -906,6 +929,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -915,6 +939,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "COU", "CON"},
         .numPoolAttributes = 3,
         .poolStat = "self_control",
@@ -922,6 +948,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -931,6 +958,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "CHA", "CON"},
         .numPoolAttributes = 3,
         .poolStat = "singing",
@@ -938,6 +967,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -947,6 +977,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "INT", "AGI"},
         .numPoolAttributes = 3,
         .poolStat = "stealth",
@@ -954,6 +986,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -963,6 +996,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"AGI", "CON", "STR"},
         .numPoolAttributes = 3,
         .poolStat = "swimming",
@@ -970,6 +1005,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -979,6 +1015,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"INT", "CHA", "AGI"},
         .numPoolAttributes = 3,
         .poolStat = "disguise",
@@ -986,6 +1024,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -995,6 +1034,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "INT", "CHA"},
         .numPoolAttributes = 3,
         .poolStat = "empathy",
@@ -1002,6 +1043,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1011,6 +1053,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "INT", "CHA"},
         .numPoolAttributes = 3,
         .poolStat = "etiquette",
@@ -1018,6 +1062,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1027,6 +1072,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "INT", "CHA"},
         .numPoolAttributes = 3,
         .poolStat = "fast_talk",
@@ -1034,6 +1081,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1043,6 +1091,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "INT", "CHA"},
         .numPoolAttributes = 3,
         .poolStat = "intimidation",
@@ -1050,6 +1100,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1059,6 +1110,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "SGC", "CHA"},
         .numPoolAttributes = 3,
         .poolStat = "persuasion",
@@ -1066,6 +1119,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1075,6 +1129,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "CHA", "CHA"},
         .numPoolAttributes = 3,
         .poolStat = "seduction",
@@ -1082,6 +1138,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1091,6 +1148,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "INT", "CHA"},
         .numPoolAttributes = 3,
         .poolStat = "streetwise",
@@ -1098,6 +1157,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1107,6 +1167,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "INT", "CHA"},
         .numPoolAttributes = 3,
         .poolStat = "willpower",
@@ -1114,6 +1176,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1123,6 +1186,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "COU", "CHA"},
         .numPoolAttributes = 3,
         .poolStat = "animal_lore",
@@ -1130,6 +1195,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1139,6 +1205,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"DEX", "AGI", "CON"},
         .numPoolAttributes = 3,
         .poolStat = "fishing",
@@ -1146,6 +1214,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1155,6 +1224,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "INT", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "orienting",
@@ -1162,6 +1233,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1171,6 +1243,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "DEX", "CON"},
         .numPoolAttributes = 3,
         .poolStat = "plant_lore",
@@ -1178,6 +1252,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1186,6 +1261,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "DEX", "STR"},
         .numPoolAttributes = 3,
         .poolStat = "ropes",
@@ -1193,6 +1270,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1202,6 +1280,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "AGI", "CON"},
         .numPoolAttributes = 3,
         .poolStat = "survival",
@@ -1209,6 +1289,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1218,6 +1299,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "INT", "AGI"},
         .numPoolAttributes = 3,
         .poolStat = "tracking",
@@ -1225,6 +1308,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1234,6 +1318,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "SGC", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "astronomy",
@@ -1241,6 +1327,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1250,6 +1337,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "SGC", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "gambling",
@@ -1257,6 +1346,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1266,6 +1356,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "SGC", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "geography",
@@ -1273,6 +1365,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1282,6 +1375,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "SGC", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "history",
@@ -1289,6 +1384,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1297,6 +1393,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "SGC", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "law",
@@ -1304,6 +1402,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1313,6 +1412,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "SGC", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "magical_lore",
@@ -1320,6 +1421,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1328,6 +1430,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "SGC", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "math",
@@ -1335,6 +1439,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1344,6 +1449,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "SGC", "DEX"},
         .numPoolAttributes = 3,
         .poolStat = "mechanics",
@@ -1351,6 +1458,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1360,6 +1468,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "SGC", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "myths_legends",
@@ -1367,6 +1477,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1376,6 +1487,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "SGC", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "religions",
@@ -1383,6 +1496,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1392,6 +1506,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "SGC", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "sphere_lore",
@@ -1399,6 +1515,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1408,6 +1525,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "SGC", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "warfare",
@@ -1415,6 +1534,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1424,6 +1544,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "SGC", "DEX"},
         .numPoolAttributes = 3,
         .poolStat = "alchemy",
@@ -1431,6 +1553,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1440,6 +1563,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"INT", "DEX", "DEX"},
         .numPoolAttributes = 3,
         .poolStat = "artistic_ability",
@@ -1447,6 +1572,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1456,6 +1582,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "DEX", "DEX"},
         .numPoolAttributes = 3,
         .poolStat = "clothworking",
@@ -1463,6 +1591,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1472,6 +1601,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "INT", "CHA"},
         .numPoolAttributes = 3,
         .poolStat = "commerce",
@@ -1479,6 +1610,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1488,6 +1620,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"CHA", "DEX", "CON"},
         .numPoolAttributes = 3,
         .poolStat = "driving",
@@ -1495,6 +1629,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1504,6 +1639,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"DEX", "DEX", "STR"},
         .numPoolAttributes = 3,
         .poolStat = "earthencraft",
@@ -1511,6 +1648,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1520,6 +1658,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"DEX", "AGI", "CON"},
         .numPoolAttributes = 3,
         .poolStat = "leatherworking",
@@ -1527,6 +1667,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1536,6 +1677,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"DEX", "CON", "STR"},
         .numPoolAttributes = 3,
         .poolStat = "metalworking",
@@ -1543,6 +1686,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1551,6 +1695,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"CHA", "DEX", "CON"},
         .numPoolAttributes = 3,
         .poolStat = "music",
@@ -1558,6 +1704,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1567,6 +1714,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"INT", "DEX", "DEX"},
         .numPoolAttributes = 3,
         .poolStat = "pick_locks",
@@ -1574,6 +1723,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1583,6 +1733,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"INT", "DEX", "DEX"},
         .numPoolAttributes = 3,
         .poolStat = "prepare_food",
@@ -1590,6 +1742,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1599,6 +1752,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"DEX", "AGI", "STR"},
         .numPoolAttributes = 3,
         .poolStat = "sailing",
@@ -1606,6 +1761,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1615,6 +1771,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "INT", "CON"},
         .numPoolAttributes = 3,
         .poolStat = "treat_disease",
@@ -1622,6 +1780,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1631,6 +1790,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"COU", "SGC", "INT"},
         .numPoolAttributes = 3,
         .poolStat = "treat_poison",
@@ -1638,6 +1799,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1647,6 +1809,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"INT", "CHA", "CON"},
         .numPoolAttributes = 3,
         .poolStat = "treat_soul",
@@ -1654,6 +1818,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1663,6 +1828,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"SGC", "DEX", "DEX"},
         .numPoolAttributes = 3,
         .poolStat = "treat_wounds",
@@ -1670,6 +1837,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -1679,6 +1847,8 @@ public:
     static const rpg_os::CheckRecipe recipe{
         .resolution = rpg_os::Resolution::Pool,
         .dice = 3_d20,
+        .comparison = rpg_os::Comparison::GreaterEqual,
+        .thresholdSource = rpg_os::ThresholdSource::Difficulty,
         .poolAttributes = {"DEX", "AGI", "STR"},
         .numPoolAttributes = 3,
         .poolStat = "woodworking",
@@ -1686,6 +1856,7 @@ public:
         .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,
         .grading = rpg_os::Grading::PoolQuality,
         .difficultyMode = rpg_os::DifficultyMode::ToStat,
+        .difficultyMultiplier = rpg_os::DifficultyMultiplier::None,
     };
     return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);
   }
@@ -2001,129 +2172,6 @@ public:
     if (record.contains("level")) {
       advancement.level = record.at("level").get<int32_t>();
     }
-  }
-
-  /// Loads a single archetype by id; throws std::invalid_argument when missing.
-  static Character fromArchetype(const rpg_os::Json &rulesetJson, std::string_view id) {
-    rpg_os::DefaultRandom rng;
-    return fromArchetype(rulesetJson, id, rpg_os::Variance::Random, rng);
-  }
-
-  /// Loads a single archetype by id, picking ranged values per `variance`.
-  template <rpg_os::RandomNumberGenerator Rng>
-  static Character fromArchetype(const rpg_os::Json &rulesetJson, std::string_view id,
-                                 rpg_os::Variance variance, Rng &rng) {
-    for (const auto &record : rulesetJson.at("data").at("archetypes")) {
-      if (record.value("id", "") == id) {
-        Character character;
-        character.fromJson(record, variance, rng);
-        return character;
-      }
-    }
-    throw std::invalid_argument("unknown archetype '" + std::string(id) + "'");
-  }
-
-  /// Loads every archetype record from the ruleset JSON's data section.
-  static std::vector<Character> loadArchetypes(const rpg_os::Json &rulesetJson) {
-    rpg_os::DefaultRandom rng;
-    return loadArchetypes(rulesetJson, rpg_os::Variance::Random, rng);
-  }
-
-  /// Loads every archetype record, picking ranged values per `variance`.
-  template <rpg_os::RandomNumberGenerator Rng>
-  static std::vector<Character> loadArchetypes(const rpg_os::Json &rulesetJson,
-                                               rpg_os::Variance variance, Rng &rng) {
-    std::vector<Character> out;
-    for (const auto &record : rulesetJson.at("data").at("archetypes")) {
-      Character character;
-      character.fromJson(record, variance, rng);
-      out.push_back(std::move(character));
-    }
-    return out;
-  }
-
-  /// Loads a single creature from data.creatures by id; throws
-  /// std::invalid_argument when missing (ranged values at random).
-  static Character fromCreature(const rpg_os::Json &rulesetJson, std::string_view id) {
-    rpg_os::DefaultRandom rng;
-    return fromCreature(rulesetJson, id, rpg_os::Variance::Random, rng);
-  }
-
-  /// Loads a single creature by id, picking ranged values per `variance`.
-  template <rpg_os::RandomNumberGenerator Rng>
-  static Character fromCreature(const rpg_os::Json &rulesetJson, std::string_view id,
-                                rpg_os::Variance variance, Rng &rng) {
-    for (const auto &record : rulesetJson.at("data").at("creatures")) {
-      if (record.value("id", "") == id) {
-        Character character;
-        character.fromJson(record, variance, rng);
-        return character;
-      }
-    }
-    throw std::invalid_argument("unknown creature '" + std::string(id) + "'");
-  }
-
-  /// Loads every creature record from the ruleset JSON's data section.
-  static std::vector<Character> loadCreatures(const rpg_os::Json &rulesetJson) {
-    rpg_os::DefaultRandom rng;
-    return loadCreatures(rulesetJson, rpg_os::Variance::Random, rng);
-  }
-
-  /// Loads every creature record, picking ranged values per `variance`.
-  template <rpg_os::RandomNumberGenerator Rng>
-  static std::vector<Character> loadCreatures(const rpg_os::Json &rulesetJson,
-                                              rpg_os::Variance variance, Rng &rng) {
-    std::vector<Character> out;
-    for (const auto &record : rulesetJson.at("data").at("creatures")) {
-      Character character;
-      character.fromJson(record, variance, rng);
-      out.push_back(std::move(character));
-    }
-    return out;
-  }
-
-  // ---- free-form data section loaders ----
-  /// Loads every record from a named `data` section as raw JSON.
-  static std::vector<rpg_os::Json> loadSection(const rpg_os::Json &rulesetJson,
-                                               std::string_view section) {
-    std::vector<rpg_os::Json> out;
-    const auto &data = rulesetJson.at("data");
-    if (data.contains(section)) {
-      for (const auto &record : data.at(section)) {
-        out.push_back(record);
-      }
-    }
-    return out;
-  }
-
-  /// Loads every spells record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadSpells(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "spells");
-  }
-
-  /// Loads every conditions record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadConditions(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "conditions");
-  }
-
-  /// Loads every poisons record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadPoisons(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "poisons");
-  }
-
-  /// Loads every diseases record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadDiseases(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "diseases");
-  }
-
-  /// Loads every items record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadItems(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "items");
-  }
-
-  /// Loads every curses record from the ruleset JSON.
-  static std::vector<rpg_os::Json> loadCurses(const rpg_os::Json &rulesetJson) {
-    return loadSection(rulesetJson, "curses");
   }
 };
 

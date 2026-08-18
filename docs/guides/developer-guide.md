@@ -28,8 +28,8 @@ is instantiated differently by two modes:
   `combat.hpp` (`runFight`), `game_session.hpp`.
 - **Specific mode (codegen)** — `codegen/rpg_os_codegen.py` compiles a
   ruleset's schema into `generated/<ruleset>_static.hpp` (the strongly typed
-  `Character` class), which loads its data at runtime via
-  `specific/data_loader.hpp`.
+  `Character` class), which loads its data at runtime via the shared
+  `specific/sheet.hpp` CRTP base (`SheetBase<Character>`).
 
 ```
                 ┌──────────────────────────────────────────────┐

@@ -110,7 +110,7 @@ public:
   /// cross-standard-library determinism is what lets the npm package's
   /// parity tests compare a seeded WASM fight with the native fight binary.
   /// The tiny modulo bias is irrelevant for a game RNG.
-  int operator()(int min, int max) {
+  int operator()(int min, int max) noexcept {
     const uint32_t span = static_cast<uint32_t>(max) - static_cast<uint32_t>(min) + 1u;
     return min + static_cast<int>(m_engine() % span);
   }
