@@ -49,6 +49,70 @@ export interface FightOutcome {
   b: string;
 }
 
+/** One combatant's action in a fight round, as recorded in a `FightLog`. */
+export interface FightActionLog {
+  /** 0 or 1 — which combatant acted. */
+  actor: number;
+  /** 0 or 1 — which combatant was acted upon. */
+  target: number;
+  /** "attack" or "cast". */
+  kind: string;
+  /** The spell id (kind === "cast", else ""). */
+  spell: string;
+  /** The attack/parry or casting-check dice (raw). */
+  check_dice: number[];
+  /** The attack landed / the cast resolved. */
+  is_hit: boolean;
+  /** Raw damage dice (weapon attacks only). */
+  damage_dice: number[];
+  /** Hit points removed from the target (the actual loss; >= 0). */
+  damage: number;
+  /** The target's hit points before the action. */
+  hp_before: number;
+  /** The target's remaining hit points after the action. */
+  target_hp: number;
+  /** Resource points spent (spell cost), 0 for a weapon. */
+  cost: number;
+  /** The pool the cost came from ("", "AE", ...). */
+  resource: string;
+}
+
+/** One round of a fight as recorded in a `FightLog`. */
+export interface FightRoundLog {
+  /** 1-based round number. */
+  round: number;
+  /** Each combatant's Initiative stat. */
+  init_stat: [number, number];
+  /** Each combatant's raw 1d6 initiative die. */
+  init_roll: [number, number];
+  /** Stat + roll, for each combatant. */
+  init_total: [number, number];
+  /** 0 or 1 — which combatant acted first. */
+  goes_first: number;
+  /** The actions taken, in the order they happened. */
+  actions: FightActionLog[];
+}
+
+/** The full transcript of one fight. */
+export interface FightLog {
+  /** Combatant names. */
+  names: [string, string];
+  /** Starting hit points of both combatants. */
+  max_lp: [number, number];
+  /** 0, 1, or -1 (draw). */
+  winner_index: number;
+  /** Per-round detail. */
+  rounds: FightRoundLog[];
+}
+
+/** Result of `fightDetail`: the outcome plus the full transcript. */
+export interface FightDetailOutcome extends FightOutcome {
+  /** The hit-point pool the fight was fought over (e.g. "LP", "HP"). */
+  hp_pool: string;
+  /** The fight's full transcript. */
+  log: FightLog;
+}
+
 export interface CreateEntityOptions {
   /** 0 weakest … 4 strongest, 2 = average (default). */
   variance?: number;
@@ -98,6 +162,7 @@ export class RpgOs {
   specFromId(id: string, weapon?: string): CombatantSpec;
   specFromEntity(entity: Entity, weapon?: string): CombatantSpec;
   fight(specA: CombatantSpec, specB: CombatantSpec, options?: FightOptions): FightOutcome;
+  fightDetail(specA: CombatantSpec, specB: CombatantSpec, options?: FightOptions): FightDetailOutcome;
   dispose(): void;
 }
 

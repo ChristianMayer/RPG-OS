@@ -96,6 +96,55 @@ test('a fight is reproducible for a fixed seed', () => {
   assert.deepEqual(first, second);
 });
 
+test('fightDetail returns the full transcript and matches the plain fight', () => {
+  rpg.loadRulesetFromFile(tdePath);
+  const geron = rpg.specFromId('geron');
+  const toad = rpg.specFromId('toad');
+  const seed = 12345;
+  const plain = rpg.fight(geron, toad, { seed, maxRounds: 1000 });
+  const detail = rpg.fightDetail(geron, toad, { seed, maxRounds: 1000 });
+
+  // The transcript is observation-only: the same seed must produce the same
+  // fight (same winner, rounds, and hit-point pools).
+  assert.equal(detail.winner_index, plain.winner_index);
+  assert.equal(detail.rounds, plain.rounds);
+  assert.deepEqual(detail.max_lp, plain.max_lp);
+  assert.deepEqual(detail.remaining_lp, plain.remaining_lp);
+  assert.equal(detail.a, plain.a);
+  assert.equal(detail.b, plain.b);
+  assert.ok(detail.hp_pool.length > 0);
+
+  // The transcript mirrors the outcome.
+  assert.equal(detail.log.winner_index, plain.winner_index);
+  assert.equal(detail.log.rounds.length, plain.rounds);
+  assert.deepEqual(detail.log.max_lp, plain.max_lp);
+  assert.equal(detail.log.names[0], plain.a);
+  assert.equal(detail.log.names[1], plain.b);
+
+  // Every round records the initiative dice and the actions with their dice.
+  for (const round of detail.log.rounds) {
+    assert.ok(round.round >= 1);
+    assert.equal(round.init_roll.length, 2);
+    assert.equal(round.init_total.length, 2);
+    assert.ok([0, 1].includes(round.goes_first));
+    assert.ok(round.actions.length >= 1 && round.actions.length <= 2);
+    for (const action of round.actions) {
+      assert.ok(['attack', 'cast'].includes(action.kind));
+      assert.ok(action.check_dice.length >= 1);
+      assert.ok(action.damage >= 0);
+      assert.ok(action.target_hp >= 0);
+    }
+  }
+
+  // When the fight is decided (not a draw), the final action brings the
+  // loser's hit points to <= 0.
+  if (plain.winner_index !== -1) {
+    const lastRound = detail.log.rounds[detail.log.rounds.length - 1];
+    const finalAction = lastRound.actions[lastRound.actions.length - 1];
+    assert.ok(finalAction.target_hp <= 0, 'loser reaches 0 hit points');
+  }
+});
+
 test('a hand-built character beats a toad (arbitrary sheet fights)', () => {
   const hero = rpg.createEntityFromSheet('my_hero', {
     COU: 14, AGI: 15, CON: 13, Attack: 12, Parry: 8, Armor_Rating: 3, Initiative: 12,

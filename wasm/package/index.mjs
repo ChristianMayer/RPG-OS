@@ -336,6 +336,25 @@ export class RpgOs {
       (options.useMagic ?? true) ? 1 : 0);
   }
 
+  /**
+   * Runs one fight and returns the outcome plus its full transcript — the
+   * individual dice rolls and stat changes of every round, from the opening
+   * initiative roll to the final hit that decided the winner. Same options as
+   * {@link fight}; the result additionally carries `hp_pool` and a `log`
+   * object (`{ names, max_lp, winner_index, rounds: [{ round, init_stat,
+   * init_roll, init_total, goes_first, actions: [{ actor, target, kind,
+   * spell, check_dice, is_hit, damage_dice, damage, hp_before, target_hp,
+   * cost, resource }] }] }`). The transcript is observation-only: the same
+   * seed produces exactly the same fight as {@link fight}.
+   */
+  fightDetail(specA, specB, options = {}) {
+    if (!specA?._ptr || !specB?._ptr) throw new Error('fightDetail needs two combatant specs');
+    return jsonResult(
+      this._m, this._m._rpg_os_fight_detail, this._ptr, specA._ptr, specB._ptr,
+      options.maxRounds ?? 1000, (options.seed ?? 0) >>> 0,
+      (options.useMagic ?? true) ? 1 : 0);
+  }
+
   // ---- lifecycle -----------------------------------------------------------
 
   /** Releases the engine and every entity/spec it created. */

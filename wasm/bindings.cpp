@@ -24,12 +24,11 @@
 
 #include <cstdint>
 #include <new>
-#include <string>
-
 #include <rpg_os/universal/combat.hpp>
 #include <rpg_os/universal/dynamic_entity.hpp>
 #include <rpg_os/universal/engine.hpp>
 #include <rpg_os/universal/ruleset_loader.hpp>
+#include <string>
 
 #if defined(__EMSCRIPTEN__)
 #include <emscripten/emscripten.h>
@@ -78,6 +77,66 @@ rpg_os::Variance toVariance(int variance) {
   default:
     return rpg_os::Variance::Random;
   }
+}
+
+/// Serializes one fight action (see @ref rpg_os_fight_detail).
+rpg_os::Json fightActionToJson(const rpg_os::FightActionLog &action) {
+  rpg_os::Json out = rpg_os::Json::object();
+  out["actor"] = action.actorIndex;
+  out["target"] = action.targetIndex;
+  out["kind"] = action.kind;
+  out["spell"] = action.spellId;
+  rpg_os::Json checkDice = rpg_os::Json::array();
+  for (const int32_t die : action.checkDice) {
+    checkDice.push_back(die);
+  }
+  out["check_dice"] = checkDice;
+  out["is_hit"] = action.isHit;
+  rpg_os::Json damageDice = rpg_os::Json::array();
+  for (const int32_t die : action.damageDice) {
+    damageDice.push_back(die);
+  }
+  out["damage_dice"] = damageDice;
+  out["damage"] = action.damage;
+  out["hp_before"] = action.hpBefore;
+  out["target_hp"] = action.targetHp;
+  out["cost"] = action.resourceCost;
+  out["resource"] = action.resourceId;
+  return out;
+}
+
+/// Serializes one fight round (see @ref rpg_os_fight_detail).
+rpg_os::Json fightRoundToJson(const rpg_os::FightRoundLog &round) {
+  rpg_os::Json out = rpg_os::Json::object();
+  out["round"] = round.round;
+  out["init_stat"] = {round.initStat[0], round.initStat[1]};
+  out["init_roll"] = {round.initRoll[0], round.initRoll[1]};
+  out["init_total"] = {round.initTotal[0], round.initTotal[1]};
+  out["goes_first"] = round.goesFirst;
+  rpg_os::Json actions = rpg_os::Json::array();
+  for (const rpg_os::FightActionLog &action : round.actions) {
+    actions.push_back(fightActionToJson(action));
+  }
+  out["actions"] = actions;
+  return out;
+}
+
+/// Serializes the full fight transcript (see @ref rpg_os_fight_detail).
+rpg_os::Json fightLogToJson(const rpg_os::FightLog &log) {
+  rpg_os::Json out = rpg_os::Json::object();
+  rpg_os::Json names = rpg_os::Json::array();
+  for (const std::string &name : log.names) {
+    names.push_back(name);
+  }
+  out["names"] = names;
+  out["max_lp"] = {log.maxLp[0], log.maxLp[1]};
+  out["winner_index"] = log.winnerIndex;
+  rpg_os::Json rounds = rpg_os::Json::array();
+  for (const rpg_os::FightRoundLog &round : log.rounds) {
+    rounds.push_back(fightRoundToJson(round));
+  }
+  out["rounds"] = rounds;
+  return out;
 }
 
 } // namespace
@@ -160,10 +219,8 @@ RPG_OS_WASM_EXPORT const char *rpg_os_engine_meta(void *engine) {
   meta["derived_stats"] = derived;
   rpg_os::Json pools = rpg_os::Json::array();
   for (const rpg_os::ResourcePoolDef &def : ruleset.resourcePools) {
-    pools.push_back({{"id", def.id},
-                     {"name", def.name},
-                     {"max_stat", def.maxStat},
-                     {"min", def.minValue}});
+    pools.push_back(
+        {{"id", def.id}, {"name", def.name}, {"max_stat", def.maxStat}, {"min", def.minValue}});
   }
   meta["resource_pools"] = pools;
   return buffered(meta.dump());
@@ -183,9 +240,7 @@ RPG_OS_WASM_EXPORT const char *rpg_os_engine_entries(void *engine) {
       if (ruleset.data.contains(section) && ruleset.data.at(section).is_array()) {
         for (const rpg_os::Json &record : ruleset.data.at(section)) {
           const std::string id = record.value("id", "");
-          entries.push_back({{"id", id},
-                             {"name", record.value("name", id)},
-                             {"kind", section}});
+          entries.push_back({{"id", id}, {"name", record.value("name", id)}, {"kind", section}});
         }
       }
     }
@@ -219,8 +274,8 @@ RPG_OS_WASM_EXPORT void *rpg_os_entity_create(void *engine, const char *id, int 
 /// save form: `{"stats":{...}, "resources":{...}, ...}`), so a character that
 /// has no ruleset entry — e.g. one entered into a form — is fully supported.
 /// Resource pools are (re)created from the sheet's stats.
-RPG_OS_WASM_EXPORT void *rpg_os_entity_create_sheet(void *engine, const char *id,
-                                                    const char *sheet, int len) {
+RPG_OS_WASM_EXPORT void *rpg_os_entity_create_sheet(void *engine, const char *id, const char *sheet,
+                                                    int len) {
   auto *eng = static_cast<rpg_os::RulesetEngine *>(engine);
   if (eng == nullptr || !eng->loaded() || id == nullptr) {
     return nullptr;
@@ -394,6 +449,47 @@ RPG_OS_WASM_EXPORT const char *rpg_os_fight(void *engine, void *spec_a, void *sp
   out["remaining_lp"] = {outcome.remainingLp[0], outcome.remainingLp[1]};
   out["a"] = a->name;
   out["b"] = b->name;
+  return buffered(out.dump());
+}
+
+/// Runs one fight between two combatant specs and returns the outcome plus the
+/// full transcript — the individual dice rolls and stat changes of every
+/// round, from the opening initiative roll to the final hit that decided the
+/// winner. Takes the same arguments as @ref rpg_os_fight; the returned JSON is
+/// that of @ref rpg_os_fight with an added @c hp_pool field and a @c log
+/// object (`{names, max_lp, winner_index, rounds:[{round, init_stat,
+/// init_roll, init_total, goes_first, actions:[{actor, target, kind, spell,
+/// check_dice, is_hit, damage_dice, damage, hp_before, target_hp, cost,
+/// resource}]}]}`).
+/// The transcript is observation-only: the same seed produces the same fight
+/// as @ref rpg_os_fight.
+RPG_OS_WASM_EXPORT const char *rpg_os_fight_detail(void *engine, void *spec_a, void *spec_b,
+                                                   int max_rounds, unsigned int seed,
+                                                   int use_magic) {
+  auto *eng = static_cast<rpg_os::RulesetEngine *>(engine);
+  auto *a = static_cast<rpg_os::CombatantSpec *>(spec_a);
+  auto *b = static_cast<rpg_os::CombatantSpec *>(spec_b);
+  if (eng == nullptr || a == nullptr || b == nullptr || max_rounds <= 0) {
+    return buffered("{\"error\":\"bad arguments\"}");
+  }
+  const std::string checkType = rpg_os::resolveAttackCheckType(eng->ruleset());
+  const std::string hpPool = rpg_os::resolveHitPointPool(eng->ruleset());
+  if (checkType.empty() || hpPool.empty()) {
+    return buffered("{\"error\":\"ruleset has no combat check or hit-point pool\"}");
+  }
+  rpg_os::DefaultRandom rng(seed);
+  rpg_os::FightLog log;
+  const rpg_os::FightOutcome outcome =
+      rpg_os::runFight(*eng, *a, *b, checkType, hpPool, max_rounds, rng, use_magic != 0, log);
+  rpg_os::Json out = rpg_os::Json::object();
+  out["winner_index"] = outcome.winnerIndex;
+  out["rounds"] = outcome.rounds;
+  out["max_lp"] = {outcome.maxLp[0], outcome.maxLp[1]};
+  out["remaining_lp"] = {outcome.remainingLp[0], outcome.remainingLp[1]};
+  out["a"] = a->name;
+  out["b"] = b->name;
+  out["hp_pool"] = hpPool;
+  out["log"] = fightLogToJson(log);
   return buffered(out.dump());
 }
 
