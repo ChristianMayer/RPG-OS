@@ -1,5 +1,5 @@
 # ============================================================================
-# Doxyfile for RPG-OS
+# Doxyfile for RPG OS
 #
 # Single source of truth for the API documentation. It is used by:
 #   - the local build via the CMake target `rpg_os_docs`
@@ -23,14 +23,14 @@
 DOXYFILE_ENCODING = UTF-8
 
 # --- Project ---------------------------------------------------------------
-PROJECT_NAME           = "RPG-OS"
+PROJECT_NAME           = "RPG OS"
 # Version shown in the docs header. The single source of truth is the root
 # VERSION file; its content is injected here via the RPG_OS_VERSION environment
 # variable by the local build (cmake/Doxygen.cmake) and by the CI deploy
 # workflow. Do not hardcode a version here — running plain `doxygen Doxyfile`
 # without RPG_OS_VERSION yields an empty number by design.
 PROJECT_NUMBER         = "$(RPG_OS_VERSION)"
-PROJECT_BRIEF          = "A header-only C++23 universal rule engine for tabletop role-playing games"
+PROJECT_BRIEF          = "A universal, header-only C++23 rule engine for tabletop role-playing games"
 # Square logo shown in the docs header (top-left). Scaled to the ~56 px title
 # row by the theme (#projectlogo img max-height). Branding assets live in
 # docs/assets/ (see docs/assets/README.md for the conventions).
@@ -43,15 +43,18 @@ OUTPUT_LANGUAGE        = English
 
 # --- Input ------------------------------------------------------------------
 # The engine headers, the examples, the test suite, and the committed codegen
-# outputs, plus the README (which becomes the front page). Internal documents
-# (AGENTS.md, CONTRIBUTING.md, ...) are intentionally NOT part of the public
+# outputs, plus the README (which becomes the front page) and the two curated
+# guide pages (docs/guides/) that separate the user-facing path from the
+# contributor-facing path. Internal documents (AGENTS.md, CONTRIBUTING.md,
+# docs/README.md, ...) are intentionally NOT part of the published
 # documentation. Vendored third-party headers are excluded: they are
 # documented by their own projects and would only bloat the output.
 INPUT                  = include \
                          examples \
                          tests \
                          generated \
-                         README.md
+                         README.md \
+                         docs/guides
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.cpp *.cc *.hpp *.h *.md
 RECURSIVE              = YES

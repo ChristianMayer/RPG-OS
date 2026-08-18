@@ -3,6 +3,7 @@
 
 /**
  * @file world_state.hpp
+ * @ingroup rpg_os_universal
  * @brief Minimal shared world bookkeeping.
  *
  * The library deliberately stays out of "higher-level" world concerns — plot,

@@ -1,4 +1,4 @@
-# Contributing to RPG-OS
+# Contributing to RPG OS
 
 Thanks for your interest in contributing! This page covers the development
 workflow and the coding standards. **LLM agents** should read `AGENTS.md` —

@@ -3,6 +3,7 @@
 
 /**
  * @file effects.hpp
+ * @ingroup rpg_os_core
  * @brief Active conditions with stack counts and durations.
  */
 #pragma once

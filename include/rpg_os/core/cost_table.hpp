@@ -3,6 +3,7 @@
 
 /**
  * @file cost_table.hpp
+ * @ingroup rpg_os_core
  * @brief Cost / progression tables.
  *
  * Rulesets define two superficially different kinds of table:

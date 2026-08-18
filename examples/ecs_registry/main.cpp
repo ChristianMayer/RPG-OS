@@ -5,7 +5,7 @@
  * @file main.cpp
  * @brief Dependency-free ECS pattern example.
  *
- * RPG-OS deliberately does not bundle an entity-component-system: entities are
+ * RPG OS deliberately does not bundle an entity-component-system: entities are
  * live @c rpg_os::DynamicEntity sheets, components are whatever the
  * application wants to store per entity, and systems are plain functions.
  * What the library now *does* provide are the pieces an ECS needs:

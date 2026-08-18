@@ -1,11 +1,26 @@
 # @mundus-mirabilis/rpg-os
 
-The **universal RPG-OS rule engine**, compiled to WebAssembly. It is *universal*
-because it loads **any** ruleset JSON at runtime — the WASM binary never embeds
-a game's data. All rule evaluation (character stats, derived stats, checks,
-skill rolls, combat simulation, hit points) runs in the compiled C++ engine.
+The **RPG OS** universal rule engine — a C++23 engine compiled to WebAssembly
+so it runs anywhere JavaScript does.
+
+> The part of a tabletop RPG that survives when you take the fantasy away:
+> attributes and skills, dice rolls against thresholds, combat, hit points.
+> RPG OS does that bookkeeping for **any** rule system — D&D, The Dark Eye,
+> Basic Roleplaying, or one you wrote yourself — so you can focus on the
+> wonderful world instead.
+
+It is *universal* because it loads **any** ruleset JSON at runtime — the WASM
+binary never embeds a game's data. All rule evaluation (character stats,
+derived stats, checks, skill rolls, combat simulation, hit points) runs in the
+compiled C++ engine.
 
 Works in **Node.js** and in the **browser** (no server needed).
+
+**Try it live:** the [ELO Arena](https://mundus-mirabilis.github.io/RPG-OS/main/demo/)
+ranks every combatant of a ruleset in your browser and lets you enter your own
+character. For the full picture — including the generated, strongly typed
+headers and how to create your own ruleset — see the
+[User Guide](https://mundus-mirabilis.github.io/RPG-OS/develop/user-guide.html).
 
 ## Install
 
@@ -65,7 +80,7 @@ const hero = rpg.createEntityFromSheet('my_hero', {
 The package ships the project's rulesets under `rulesets/` as plain JSON data
 (`dnd5e_srd.json`, `tde5e_core.json`, `brp_ugc.json`) for convenience. Because
 they are loaded at runtime, you can pass **any** ruleset that follows the
-[RPG-OS ruleset schema](https://github.com/Mundus-Mirabilis/RPG-OS/blob/main/rulesets/ruleset.schema.json).
+[RPG OS ruleset schema](https://github.com/Mundus-Mirabilis/RPG-OS/blob/main/rulesets/ruleset.schema.json).
 
 > **The shipped rulesets are NOT Apache-2.0.** Each ruleset carries **its own
 > licence** in its JSON — read the `licence` field of the individual file
@@ -82,3 +97,4 @@ they are loaded at runtime, you can pass **any** ruleset that follows the
 Apache-2.0 — see [LICENSE](./LICENSE). This covers the **engine code and the
 package itself only**; the ruleset JSON data under `rulesets/` has its own
 individual licences (see above).
+

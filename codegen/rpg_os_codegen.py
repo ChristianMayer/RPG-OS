@@ -581,6 +581,15 @@ class Generator:
                                    licence_notice=self.rs.get("licence_notice", "") or "-",
                                    attribution=self.rs.get("attribution", "") or "-",
                                    comment=comment if comment else "-"))
+        # Doxygen file block so the generated header shows up under the
+        # "Specific mode" module in the API reference (the module itself is
+        # defined in docs/guides/user-guide.md).
+        lines.append("/**")
+        lines.append(f" * @file {self.rs.get('ruleset_id', 'ruleset')}_static.hpp")
+        lines.append(" * @ingroup rpg_os_specific")
+        lines.append(f" * @brief Strongly typed {self.rs.get('ruleset_name', 'character')} class,")
+        lines.append(" * generated from the ruleset schema by the RPG OS code generator.")
+        lines.append(" */")
         lines.append("#pragma once\n")
         lines.append("#include <array>")
         lines.append("#include <cstdint>")

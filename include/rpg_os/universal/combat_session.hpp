@@ -3,6 +3,7 @@
 
 /**
  * @file combat_session.hpp
+ * @ingroup rpg_os_universal
  * @brief Turn & action-economy orchestrator (universal mode).
  *
  * The code review's gap was "no turn & action-economy orchestrator": the

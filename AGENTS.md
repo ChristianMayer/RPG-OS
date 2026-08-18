@@ -5,7 +5,7 @@ repository. **Read and follow these rules for every change you make.**
 
 ## Project
 
-RPG-OS — a **C++23, header-only library**: a universal rule engine and
+RPG OS — a **C++23, header-only library**: a universal rule engine and
 "operating system" for tabletop role-playing games. All rules live in
 ruleset-specific JSON files; the engine resolves them in two modes:
 

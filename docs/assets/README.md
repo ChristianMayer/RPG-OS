@@ -1,6 +1,6 @@
 # Branding assets (logo, banner, favicon)
 
-This directory holds the RPG-OS branding assets used by the Doxygen
+This directory holds the RPG OS branding assets used by the Doxygen
 documentation. Everything here is committed and referenced from the root
 `Doxyfile`, `docs/doxygen-awesome/header.html`, and `README.md` (the docs
 front page).
@@ -10,6 +10,7 @@ front page).
 | `mundus-mirabilis_512.png` | Project logo in the docs header (top-left) | square PNG, 512×512, transparent background |
 | `mundus-mirabilis-RPG_OS.png` | Hero banner on the docs front page | wide PNG, 2064×512 (≈4:1) |
 | `favicon.png` | Browser tab icon | square PNG, 256×256 |
+| `elo-arena-screenshot.png` | ELO Arena demo screenshot on the docs front page | wide PNG, 1280×1000 (browser viewport capture) |
 
 ## Conventions
 

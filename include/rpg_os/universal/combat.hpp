@@ -3,6 +3,7 @@
 
 /**
  * @file combat.hpp
+ * @ingroup rpg_os_universal
  * @brief Combat simulation helpers (universal mode).
  *
  * Runs a fight between two entities "to the end" using the ruleset's

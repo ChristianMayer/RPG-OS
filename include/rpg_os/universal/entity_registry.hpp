@@ -3,6 +3,7 @@
 
 /**
  * @file entity_registry.hpp
+ * @ingroup rpg_os_universal
  * @brief Entity handles and a live-instance registry (universal mode).
  *
  * The code review's gap was "no entity handles (EntityId, WeakRef) or target

@@ -2,7 +2,7 @@
 
 Implementation sources of the `rpg_os` library live here (`.cpp` files).
 
-As the library is inteded to be header only, this directory will most likely
+As the library is intended to be header only, this directory will most likely
 stay empty.
 
 Internal-only headers (things not installed with the library) go into

@@ -3,6 +3,7 @@
 
 /**
  * @file check_resolver.hpp
+ * @ingroup rpg_os_universal
  * @brief Check resolver (universal mode).
  *
  * A thin runtime layer over the generic resolver in @c core/checks.hpp: it

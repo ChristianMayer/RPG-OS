@@ -3,6 +3,7 @@
 
 /**
  * @file dice_engine.hpp
+ * @ingroup rpg_os_core
  * @brief Dice expression parsing and rolling.
  *
  * Parses dice expressions such as @c "1d20", @c "3d20", @c "2d6+4",

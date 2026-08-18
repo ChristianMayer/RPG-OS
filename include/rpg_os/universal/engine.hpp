@@ -3,6 +3,7 @@
 
 /**
  * @file engine.hpp
+ * @defgroup rpg_os_universal Universal mode — the dynamic engine
  * @brief RulesetEngine facade (universal mode).
  *
  * The public entry point for applications using the dynamic engine: load a

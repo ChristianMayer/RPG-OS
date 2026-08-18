@@ -4,7 +4,7 @@
 :root {
   /* Corporate palette — mirrors the Doxygen Awesome dark theme used by the
      project docs (docs/doxygen-awesome/doxygen-awesome.css, dark values) so
-     the demo feels like part of RPG-OS rather than a standalone page. */
+     the demo feels like part of RPG OS rather than a standalone page. */
   --bg: #1C1D1F;         /* --page-background-color (dark) */
   --panel: #24262a;
   --panel-2: #282c34;    /* --fragment-background */

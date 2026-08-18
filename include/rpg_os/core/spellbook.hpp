@@ -3,6 +3,7 @@
 
 /**
  * @file spellbook.hpp
+ * @ingroup rpg_os_core
  * @brief Known and prepared spells, plus vancian slot usage.
  */
 #pragma once

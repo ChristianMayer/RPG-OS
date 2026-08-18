@@ -1,6 +1,6 @@
 # ELO Arena demo
 
-A static, no-build web page that demonstrates the universal RPG-OS engine
+A static, no-build web page that demonstrates the universal RPG OS engine
 compiled to WebAssembly. It is deployed to GitHub Pages under the same version
 folders as the docs — `/main/demo/`, `/develop/demo/`, `/vX.Y.Z/demo/` — by the
 `deploy-demo` job of `.github/workflows/docs.yml` (run *after* the docs deploy

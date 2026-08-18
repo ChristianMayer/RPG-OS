@@ -3,6 +3,7 @@
 
 /**
  * @file concepts.hpp
+ * @ingroup rpg_os_core
  * @brief Core concepts that both modes (universal + specific) satisfy.
  *
  * These are the seams through which the shared template algorithms in

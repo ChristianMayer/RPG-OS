@@ -20,14 +20,14 @@ documentation build is reproducible and works offline.
 - `doxygen-awesome-tabs.js` — tabbed content support.
 - `doxygen-awesome-sidebar-only*.css` — optional sidebar-only layout variant
   (unused by the current `Doxyfile`, kept for reference).
-- `header.html` — Doxygen HTML header adapted for RPG-OS (metadata, the GitHub
+- `header.html` — Doxygen HTML header adapted for RPG OS (metadata, the GitHub
   corner, the theme scripts). Based on the upstream example header.
-- `custom.css` — small RPG-OS-specific tweaks on top of the theme.
+- `custom.css` — small RPG OS-specific tweaks on top of the theme.
 - `LICENSE` — the upstream MIT licence.
 
 ## Updating
 
 To upgrade, download the assets from the upstream release tag into this
-directory, re-apply the RPG-OS adjustments to `header.html` / `custom.css`
+directory, re-apply the RPG OS adjustments to `header.html` / `custom.css`
 (the upstream files are examples and cannot be copied verbatim), and bump the
 version above. Keep the licence file in sync.

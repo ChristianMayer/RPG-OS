@@ -3,6 +3,7 @@
 
 /**
  * @file math.hpp
+ * @ingroup rpg_os_core
  * @brief Shared math helpers for formula evaluation and stat arithmetic.
  *
  * These functions are the single source of truth for the formula function set
