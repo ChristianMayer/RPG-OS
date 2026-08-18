@@ -1,6 +1,6 @@
 # ELO Arena demo
 
-A static, no-build web page that demonstrates the universal RPG-OS engine
+A static, no-build web page that demonstrates the universal RPG OS engine
 compiled to WebAssembly. It is deployed to GitHub Pages under the same version
 folders as the docs — `/main/demo/`, `/develop/demo/`, `/vX.Y.Z/demo/` — by the
 `deploy-demo` job of `.github/workflows/docs.yml` (run *after* the docs deploy
@@ -11,20 +11,48 @@ via `needs`, so the two gh-pages pushes can never race).
 1. **ELO ranking** — a leaderboard of every combatant in the selected ruleset
    (The Dark Eye 5e or D&D 5e SRD). The leaderboards are generated *during the
    CI run* by `scripts/elo_ranking.py --json` (the Python Monte-Carlo ELO over
-   the native fight binary) and stored in `data/<ruleset>_elo.json`.
+   the native fight binary) and stored in `data/<ruleset>_elo.json`. Ratings
+   are anchored to the ELO standard strength 1000 (`--initial 1000`); since
+   ELO win probability depends only on rating *differences*, the anchor is a
+   convention that keeps a default/average character at the standard strength.
+   Tick exactly one row (or generate a character below) and the **Win %**
+   column shows every combatant's win chance *relative to* that one — so it
+   shows exactly 50% for the reference itself. The **Win %** is an ELO
+   *estimate* of relative strength — combat in these systems is matchup-
+   specific (a lower-rated combatant can win a particular duel), so the Head
+   to head panel measures real fights for the ground-truth number.
 2. **Character entry form** — attributes and skills generated from the loaded
    ruleset's schema. The entered character is ranked **live in the browser**:
-   the WASM engine fights it against the top combatants and the JS ELO formula
-   (`elo.js`, a port of the Python formula) updates the rating.
-3. **Head to head** — tick two rows; the ELO win probability is shown, with an
-   optional live 100-fight Monte-Carlo confirmation running in the WASM engine.
+   the WASM engine fights it **Swiss-style against the leaderboard combatants
+   closest to its current rating** — a focus on similar strength makes the
+   rating converge quickly — starting from the ELO standard strength **1000**.
+   A default/average character therefore lands at the standard strength. The
+   JS ELO formula (`elo.js`, a port of the Python formula) updates the rating.
+3. **Head to head** — tick two rows; an **ELO estimate** of the win probability
+   is shown (from the ratings — an estimate, because individual matchups can
+   be matchup-specific), with a live 100-fight Monte-Carlo measurement running
+   in the WASM engine. The live result appears in the same layout as the
+   estimate (names, W/D/L record, percentages) and can be **re-run** any
+   number of times — each run draws fresh dice, so you can watch the measured
+   result vary around the estimate. A **"Run 1 fight — show details"** button
+   replays a single fight dice by dice: every round's initiative roll, each
+   combatant's attack/cast with its individual dice (attack + parry, the
+   casting check, the damage dice), the hit-point changes they caused, and a
+   summary of who won and in how many rounds. Spell casts show the casting
+   check and the actual damage dealt (a failed check fizzles — the round is
+   spent with no effect, exactly as the engine resolves it). Each single fight
+   also draws fresh dice, so re-running it shows a different possible fight.
+   Long draw fights are truncated in the middle (first and last rounds) to
+   stay readable.
 
-The page header shows the currently loaded ruleset's **own licence** and a link
-to where it is stated, plus the verbatim notice/attribution text the licence
-requires (e.g. the ORC Notice), read from `rpg.meta()` at runtime (so it always
-matches the JSON actually loaded). The ruleset data is **not** Apache-2.0 — the
-Apache-2.0 licence covers only the engine/demo code. See the root `README.md`
-for the per-ruleset licence table.
+The currently loaded ruleset's **own licence** is shown in a dedicated box at
+the bottom of the page (read from `rpg.meta()` at runtime, so it always matches
+the JSON actually loaded). The box makes the ruleset-vs-application distinction
+explicit up front: it states that the rules are **not** Apache-2.0 — the
+Apache-2.0 licence covers only the engine/demo code — and then shows the
+licence statement, where the rights holder states it, the source document, and
+the verbatim notice/attribution text the licence requires (e.g. the ORC
+Notice). See the root `README.md` for the per-ruleset licence table.
 
 ## Layout
 
@@ -48,12 +76,16 @@ cp wasm/package/dist/rpg-os-universal.js wasm/package/dist/rpg-os-universal.wasm
 # 2. Copy the rulesets.
 cp rulesets/dnd5e_srd.json rulesets/tde5e_core.json web/demo/rulesets/
 
-# 3. Build the native fight binary + generate the leaderboards (fixed seed).
+# 3. Build the native fight binary + generate the leaderboards (fixed seed,
+#    anchored to the ELO standard strength 1000; more games/pair converge
+#    faster, and Swiss pairing keeps similar ratings playing each other).
 cmake --build build --target rpg_os_example_fight
 python3 scripts/elo_ranking.py --ruleset rulesets/dnd5e_srd.json \
-  --seed 20260817 --rounds 30 --games 10 --jobs 4 --json web/demo/data/dnd5e_srd_elo.json
+  --seed 20260817 --rounds 40 --games 20 --jobs 4 --initial 1000 \
+  --json web/demo/data/dnd5e_srd_elo.json
 python3 scripts/elo_ranking.py --ruleset rulesets/tde5e_core.json \
-  --seed 20260817 --rounds 30 --games 10 --jobs 4 --json web/demo/data/tde5e_core_elo.json
+  --seed 20260817 --rounds 40 --games 20 --jobs 4 --initial 1000 \
+  --json web/demo/data/tde5e_core_elo.json
 
 # 4. Serve the folder (fetch() needs http, not file://).
 python3 -m http.server -d web/demo 8000

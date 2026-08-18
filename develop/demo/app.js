@@ -13,7 +13,7 @@
  * leaderboards into ./data/ (all three folders are gitignored here).
  */
 import { init } from './rpg-browser.js';
-import { expectedScore, winProbability, rankNewcomer } from './elo.js';
+import { winProbability, rankNewcomer } from './elo.js';
 
 const RULESETS = {
   tde5e_core: { label: 'The Dark Eye 5e', file: 'tde5e_core.json' },
@@ -21,8 +21,12 @@ const RULESETS = {
 };
 
 const COMBAT_STATS = ['Attack', 'Parry', 'Armor_Rating', 'AC', 'Initiative'];
-const RANK_OPPONENTS = 16; // the newcomer fights the top-N entries
-const GAMES_PER_OPPONENT = 20;
+// The newcomer is ranked Swiss-style against the leaderboard entries closest
+// to its current rating (see rankNewcomer in elo.js). A focus on similar
+// ratings plus more fights per opponent makes the estimate converge faster.
+const RANK_ROUNDS = 8; // how many similar-rating rounds it plays
+const RANK_OPPONENTS_PER_ROUND = 2; // opponents picked per round (closest rating)
+const GAMES_PER_OPPONENT = 30; // fights per opponent
 
 const $ = (sel) => document.querySelector(sel);
 const status = $('#status');
@@ -35,7 +39,11 @@ let entriesByName = new Map(); // id -> display name (from the ruleset)
 let leaderboard = []; // [{rank,id,name,rating,games,wins,losses,draws,win_pct}]
 let you = null; // { name, rating, spec } for the ranked character (spec kept alive)
 let selection = []; // ids of the selected rows (max 2)
+let duelLive = null; // { winsA, winsB, draws } of the last live run for the current pair
+let fightDetail = null; // transcript of the last single detailed fight for the current pair
 let formDebounce = 0;
+let leaderboardMeta = ''; // metadata line shown under the leaderboard table
+let leaderboardInitial = 1000; // ELO standard strength; the leaderboard's own anchor when known
 
 function setStatus(text, isError = false) {
   status.textContent = text;
@@ -43,52 +51,81 @@ function setStatus(text, isError = false) {
 }
 
 /**
- * Shows the loaded ruleset's OWN licence (the rules are NOT Apache-2.0 — each
- * ruleset carries its own licence in the JSON), plus the source document, an
- * optional link to where the rights holder states the licence, and the
- * verbatim notice/attribution text the licence requires (e.g. the ORC Notice).
+ * Renders the loaded ruleset's OWN licence in a box at the bottom of the
+ * page. The rules are NOT Apache-2.0 (the engine and this page are), so the
+ * box states that distinction up front, then shows the licence statement,
+ * where the rights holder states it, the source document, and the verbatim
+ * notice/attribution the licence requires (e.g. the ORC Notice).
  */
 function renderLicence() {
-  const el = $('#ruleset-licence');
+  const el = $('#ruleset-licence-box');
   el.innerHTML = '';
   if (!meta?.licence) {
     el.hidden = true;
     return;
   }
-  const line = document.createElement('p');
-  const label = document.createElement('span');
-  label.textContent = 'Ruleset licence: ';
-  const lic = document.createElement('b');
-  lic.textContent = meta.licence;
-  line.append(label, lic);
+
+  const head = document.createElement('div');
+  head.className = 'licence-box-head';
+
+  const eyebrow = document.createElement('span');
+  eyebrow.className = 'licence-eyebrow';
+  eyebrow.textContent = 'Ruleset licence';
+
+  const title = document.createElement('h2');
+  title.textContent = 'The ruleset is not Apache-2.0';
+
+  const note = document.createElement('p');
+  note.className = 'licence-note';
+  note.append('RPG OS — the engine and this page — is Apache-2.0. ');
+  const strong = document.createElement('b');
+  strong.textContent =
+    'The licence below belongs to the loaded ruleset, not to the application:';
+  note.append(strong, ' read it before reusing or redistributing the rules.');
+  head.append(eyebrow, title, note);
+
+  const body = document.createElement('div');
+  body.className = 'licence-box-body';
+
+  const statement = document.createElement('p');
+  statement.className = 'licence-statement';
+  statement.textContent = meta.licence;
+  body.append(statement);
+
+  const metaLine = document.createElement('p');
+  metaLine.className = 'licence-meta';
+  if (meta.source) {
+    const src = document.createElement('span');
+    src.textContent = `Source: ${meta.source}`;
+    metaLine.append(src);
+  }
   if (meta.licence_source) {
-    line.append(document.createTextNode(' · '));
+    if (metaLine.childNodes.length > 0) metaLine.append(document.createTextNode(' · '));
     const link = document.createElement('a');
     link.href = meta.licence_source;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.textContent = 'licence source';
-    line.append(link);
+    link.textContent = 'Where the licence is stated';
+    metaLine.append(link);
   }
-  if (meta.source) {
-    line.append(document.createTextNode(' · '));
-    const src = document.createElement('span');
-    src.className = 'muted';
-    src.textContent = meta.source;
-    line.append(src);
-  }
-  el.append(line);
+  if (metaLine.childNodes.length > 0) body.append(metaLine);
 
-  // The licence's own required notice and attribution (e.g. the ORC Notice).
-  for (const [key, cls] of [['licence_notice', 'licence-detail'],
-                            ['attribution', 'licence-detail']]) {
-    if (meta[key]) {
+  let details = null;
+  for (const key of ['licence_notice', 'attribution']) {
+    if (meta?.[key]) {
+      if (!details) {
+        details = document.createElement('div');
+        details.className = 'licence-details';
+      }
       const p = document.createElement('p');
-      p.className = cls;
+      p.className = 'licence-detail';
       p.textContent = meta[key];
-      el.append(p);
+      details.append(p);
     }
   }
+  if (details) body.append(details);
+
+  el.append(head, body);
   el.hidden = false;
 }
 
@@ -120,7 +157,7 @@ async function loadRuleset(id) {
   setStatus(`Loading ${cfg.label}…`);
   clearForm();
   selection = [];
-  $('#ruleset-licence').hidden = true;
+  $('#ruleset-licence-box').hidden = true;
   you?.spec?.dispose();
   you = null;
   renderDuel();
@@ -154,14 +191,17 @@ async function loadLeaderboard(rulesetId) {
       'Leaderboard not found — it is generated by CI (scripts/elo_ranking.py --json). ' +
       'Run it locally and place the JSON in data/ to preview.';
     leaderboard = [];
+    leaderboardMeta = '';
+    leaderboardInitial = 1000; // no leaderboard, so fall back to the ELO standard
     return;
   }
   leaderboard = data.entries
     .map((e) => ({ ...e, name: entriesByName.get(e.id) ?? e.id }))
     .sort((a, b) => a.rank - b.rank);
-  leaderboardNote.textContent =
+  leaderboardInitial = data.initial ?? 1000; // the leaderboard's own ELO anchor
+  leaderboardMeta =
     `${data.entries.length} combatants · ${data.rounds} rounds × ${data.games_per_pair} games/pair · ` +
-    `seed ${data.seed} · champion: ${data.champion}`;
+    `start ${leaderboardInitial} · seed ${data.seed} · champion: ${data.champion}`;
   renderLeaderboard();
 }
 
@@ -169,8 +209,28 @@ async function loadLeaderboard(rulesetId) {
 // leaderboard rendering + selection
 // ---------------------------------------------------------------------------
 
+/** Every row the table can show: the stored leaderboard plus the ranked
+ *  character ("You") when present. */
+function allEntries() {
+  return [...leaderboard, ...(you ? [{ ...you, isYou: true }] : [])];
+}
+
+function entryById(id) {
+  return allEntries().find((e) => e.id === id);
+}
+
+/** Reference for the relative "Win %" column: the single selected combatant
+ *  (if exactly one row is ticked), or the generated character when nothing is
+ *  selected — otherwise null, which keeps the stored win rate. */
+function winPctReference() {
+  if (selection.length === 1) return entryById(selection[0]) ?? null;
+  if (selection.length === 0 && you) return you;
+  return null;
+}
+
 function renderLeaderboard() {
   leaderboardBody.innerHTML = '';
+  const reference = winPctReference();
   const rows = [...leaderboard];
   if (you) {
     const youRow = {
@@ -181,7 +241,7 @@ function renderLeaderboard() {
     rows.push(youRow);
   }
   rows.sort((a, b) => b.rating - a.rating);
-  rows.forEach((entry, index) => {
+  rows.forEach((entry) => {
     const tr = document.createElement('tr');
     if (entry.isYou) tr.classList.add('you');
     if (selection.includes(entry.id)) tr.classList.add('selected');
@@ -208,6 +268,12 @@ function renderLeaderboard() {
       return td;
     };
 
+    // Win % against the reference (a single selected row, or the ranked
+    // character); the reference itself therefore shows exactly 50%.
+    const winPct = reference
+      ? winProbability(entry.rating, reference.rating) * 100
+      : entry.win_pct;
+
     const pickTd = document.createElement('td');
     pickTd.className = 'pick';
     const box = document.createElement('input');
@@ -219,13 +285,20 @@ function renderLeaderboard() {
 
     tr.append(rankTd, nameTd,
       num(Math.round(entry.rating), 'rating'), num(entry.wins), num(entry.losses),
-      num(entry.draws), num(entry.win_pct.toFixed(1)), pickTd);
+      num(entry.draws), num(winPct.toFixed(1)), pickTd);
     tr.addEventListener('click', () => toggleSelection(entry.id));
     leaderboardBody.append(tr);
   });
+
+  const winNote = reference
+    ? `Win % is an ELO estimate of relative strength (vs ${reference.name})`
+    : "Win % is each combatant's actual win rate in the ranking tournament";
+  leaderboardNote.textContent = `${leaderboardMeta} · ${winNote}`;
 }
 
 function toggleSelection(id) {
+  duelLive = null; // a different pair means the stored live result is stale
+  fightDetail = null;
   const idx = selection.indexOf(id);
   if (idx >= 0) {
     selection.splice(idx, 1);
@@ -242,10 +315,51 @@ async function specForEntry(entry) {
   return rpg.specFromId(entry.id);
 }
 
+/** Builds a `.duel` grid: two `.side`s (name, meta line, big probability) and
+ *  a `.bar` that fills `leftPct`. Shared by the ELO estimate and the live
+ *  Monte-Carlo result so the two are presented identically. */
+function duelGrid(left, right, leftPct, { leftMeta, rightMeta } = {}) {
+  const side = (entry, prob, cls, meta) => {
+    const div = document.createElement('div');
+    div.className = `side ${cls}`;
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.textContent = entry.name;
+    const metaEl = document.createElement('div');
+    metaEl.className = 'rating';
+    metaEl.textContent = meta;
+    const probEl = document.createElement('div');
+    probEl.className = 'prob';
+    probEl.textContent = `${(prob * 100).toFixed(1)}%`;
+    div.append(name, metaEl, probEl);
+    return div;
+  };
+
+  const wrap = document.createElement('div');
+  wrap.className = 'duel';
+  const vs = document.createElement('div');
+  vs.className = 'vs';
+  vs.textContent = 'vs';
+  const bar = document.createElement('div');
+  bar.className = 'bar';
+  const fill = document.createElement('span');
+  fill.style.width = `${(leftPct * 100).toFixed(1)}%`;
+  bar.append(fill);
+  wrap.append(
+    side(left, leftPct, 'a', leftMeta ?? `ELO ${Math.round(left.rating)}`),
+    vs,
+    side(right, 1 - leftPct, 'b', rightMeta ?? `ELO ${Math.round(right.rating)}`),
+    bar,
+  );
+  return wrap;
+}
+
 function renderDuel() {
   const el = $('#duel-result');
   if (selection.length !== 2) {
     el.innerHTML = '';
+    duelLive = null;
+    fightDetail = null;
     $('#duel-hint').textContent =
       selection.length === 1 ? 'Pick one more row to compare.' : 'Select two rows in the ranking to see the ELO win probability.';
     return;
@@ -253,65 +367,275 @@ function renderDuel() {
   $('#duel-hint').textContent = '';
 
   const [idA, idB] = selection;
-  const find = (id) => [...leaderboard, ...(you ? [{ ...you, isYou: true }] : [])]
-    .find((e) => e.id === id);
-  const a = find(idA);
-  const b = find(idB);
+  const a = entryById(idA);
+  const b = entryById(idB);
   if (!a || !b) return;
 
-  const pa = winProbability(a.rating, b.rating);
-  const pb = 1 - pa;
-
   el.innerHTML = '';
-  const bar = document.createElement('div');
-  bar.className = 'bar';
-  const fill = document.createElement('span');
-  fill.style.width = `${(pa * 100).toFixed(1)}%`;
-  bar.append(fill);
 
-  const side = (entry, prob, cls) => {
-    const div = document.createElement('div');
-    div.className = `side ${cls}`;
-    div.innerHTML = `<div class="name"></div><div class="rating"></div><div class="prob"></div>`;
-    div.querySelector('.name').textContent = entry.name;
-    div.querySelector('.rating').textContent = `ELO ${Math.round(entry.rating)}`;
-    div.querySelector('.prob').textContent = `${(prob * 100).toFixed(1)}%`;
-    return div;
+  const label = (text) => {
+    const l = document.createElement('div');
+    l.className = 'duel-label';
+    l.textContent = text;
+    return l;
   };
-  const vs = document.createElement('div');
-  vs.className = 'vs';
-  vs.textContent = 'vs';
 
+  // What the ELO ratings suggest — an estimate: individual matchups can differ
+  // from it, so the live fights below are the measured result.
+  const pa = winProbability(a.rating, b.rating);
+  const predict = document.createElement('div');
+  predict.append(label('ELO estimate'));
+  predict.append(duelGrid(a, b, pa));
+  const estimateNote = document.createElement('p');
+  estimateNote.className = 'muted';
+  estimateNote.textContent =
+    'Estimate from the ELO ratings — individual matchups can differ from it. ' +
+    'Run the live fights below for the measured result.';
+  predict.append(estimateNote);
+
+  // The live WASM confirmation; stays around so it can be re-run.
+  const actions = document.createElement('div');
+  actions.className = 'duel-actions';
   const button = document.createElement('button');
-  button.textContent = 'Confirm with 100 live fights';
+  button.textContent = duelLive ? 'Re-run 100 live fights' : 'Confirm with 100 live fights';
   button.addEventListener('click', () => runMonteCarlo(a, b, button));
+  actions.append(button);
 
-  el.append(side(a, pa, 'a'), vs, side(b, pb, 'b'), bar, button);
+  // A single fight, replayed dice by dice: what happened each round and which
+  // hit decided the winner.
+  const detailButton = document.createElement('button');
+  detailButton.className = 'ghost';
+  detailButton.textContent = 'Run 1 fight — show details';
+  detailButton.addEventListener('click', () => runSingleFight(a, b, detailButton));
+  actions.append(detailButton);
+
+  el.append(predict, actions);
+
+  // The live result, in the same layout as the prediction (with real names).
+  if (duelLive) {
+    const { winsA, winsB, draws } = duelLive;
+    const total = winsA + winsB + draws;
+    const live = document.createElement('div');
+    live.append(label(`Live result — ${total} fights (WASM)`));
+    live.append(duelGrid(a, b, (winsA + 0.5 * draws) / total, {
+      leftMeta: `${winsA}W · ${draws}D · ${winsB}L`,
+      rightMeta: `${winsB}W · ${draws}D · ${winsA}L`,
+    }));
+    el.append(live);
+  }
+
+  // The transcript of the last single detailed fight, if one was run.
+  if (fightDetail) {
+    el.append(renderFightDetail(a, b));
+  }
 }
 
 async function runMonteCarlo(a, b, button) {
   button.disabled = true;
+  const originalLabel = button.textContent;
   button.textContent = 'Simulating…';
-  const specA = await specForEntry(a);
-  const specB = await specForEntry(b);
   let winsA = 0;
   let winsB = 0;
   let draws = 0;
-  for (let i = 0; i < 100; i += 1) {
-    const seed = (i * 1000003 + 13) >>> 0;
-    const outcome = rpg.fight(specA, specB, { seed, maxRounds: 1000 });
-    if (outcome.winner_index === 0) winsA += 1;
-    else if (outcome.winner_index === 1) winsB += 1;
-    else draws += 1;
+  try {
+    const specA = await specForEntry(a);
+    const specB = await specForEntry(b);
+    // Each run is a fresh Monte-Carlo sample, so re-running shows how the
+    // measured result varies around the ELO estimate (fights within a run stay
+    // distinct via the index, mirroring scripts/elo_ranking.py).
+    const runSeed = Math.floor(Math.random() * 0x100000000) >>> 0;
+    for (let i = 0; i < 100; i += 1) {
+      const seed = (runSeed * 1000003 + i * 31 + 13) >>> 0;
+      const outcome = rpg.fight(specA, specB, { seed, maxRounds: 1000 });
+      if (outcome.winner_index === 0) winsA += 1;
+      else if (outcome.winner_index === 1) winsB += 1;
+      else draws += 1;
+    }
+    if (!a.isYou) specA.dispose();
+    if (!b.isYou) specB.dispose();
+  } catch (err) {
+    setStatus(`Live fight failed: ${err.message}`, true);
+    console.error(err);
+    button.disabled = false;
+    button.textContent = originalLabel;
+    return;
   }
-  if (!a.isYou) specA.dispose();
-  if (!b.isYou) specB.dispose();
-  const note = document.createElement('p');
-  note.className = 'muted';
-  note.textContent =
-    `Live: ${winsA} A / ${winsB} B / ${draws} draws (100 fights, WASM). ` +
-    `ELO prediction: A ${(winProbability(a.rating, b.rating) * 100).toFixed(1)}%.`;
-  button.replaceWith(note);
+  duelLive = { winsA, winsB, draws };
+  renderDuel();
+}
+
+/** Runs a single fight between the two combatants and stores its transcript
+ *  for rendering. Each run draws fresh dice, so the replay varies like the
+ *  live Monte-Carlo result does. */
+async function runSingleFight(a, b, button) {
+  button.disabled = true;
+  const originalLabel = button.textContent;
+  button.textContent = 'Simulating…';
+  try {
+    const specA = await specForEntry(a);
+    const specB = await specForEntry(b);
+    const seed = Math.floor(Math.random() * 0x100000000) >>> 0;
+    fightDetail = rpg.fightDetail(specA, specB, { seed, maxRounds: 1000 });
+    if (!a.isYou) specA.dispose();
+    if (!b.isYou) specB.dispose();
+  } catch (err) {
+    setStatus(`Fight detail failed: ${err.message}`, true);
+    console.error(err);
+    button.disabled = false;
+    button.textContent = originalLabel;
+    return;
+  }
+  renderDuel();
+}
+
+// ---------------------------------------------------------------------------
+// single-fight transcript rendering
+// ---------------------------------------------------------------------------
+
+/** A monospaced `.dice` badge showing one dice result (e.g. "6 6"). */
+function diceBadge(text) {
+  const span = document.createElement('span');
+  span.className = 'dice';
+  span.textContent = text;
+  return span;
+}
+
+/** " · target H → H' pool" — the hit-point change one action caused. */
+function hpChange(target, before, after, pool) {
+  const span = document.createElement('span');
+  span.className = 'fight-hp';
+  span.textContent = before === after
+    ? ` · ${target} at ${after} ${pool}`
+    : ` · ${target} ${before} → ${after} ${pool}`;
+  return span;
+}
+
+/** One action line of a round's transcript (an attack or a spell cast). */
+function renderFightAction(action, aName, bName, hpPool) {
+  const actor = action.actor === 0 ? aName : bName;
+  const target = action.target === 0 ? aName : bName;
+  const row = document.createElement('div');
+  row.className = 'fight-action';
+
+  const actorEl = document.createElement('b');
+  actorEl.textContent = actor;
+  row.append(actorEl);
+
+  if (action.kind === 'cast') {
+    row.append(' casts ');
+    const spellEl = document.createElement('b');
+    spellEl.textContent = action.spell;
+    row.append(spellEl);
+    row.append(' — check ');
+    row.append(diceBadge(action.check_dice.join(' ')));
+    row.append(action.is_hit ? ' → success' : ' → failed');
+    if (action.is_hit && action.damage > 0) {
+      row.append(' · deals ');
+      const dmgEl = document.createElement('b');
+      dmgEl.textContent = `${action.damage} damage`;
+      row.append(dmgEl);
+      if (action.cost > 0) {
+        row.append(` (cost ${action.cost} ${action.resource})`);
+      }
+    }
+    row.append(hpChange(target, action.hp_before, action.target_hp, hpPool));
+  } else {
+    row.append(' attacks ');
+    const targetEl = document.createElement('b');
+    targetEl.textContent = target;
+    row.append(targetEl);
+    row.append(' — d20 ');
+    row.append(diceBadge(action.check_dice.join(' ')));
+    if (!action.is_hit) {
+      row.append(' → miss');
+      row.append(hpChange(target, action.hp_before, action.target_hp, hpPool));
+    } else {
+      row.append(' → hit · damage ');
+      // Some bestiary attacks have a flat (0-damage) expression — no dice.
+      if (action.damage_dice.length > 0) {
+        row.append(diceBadge(action.damage_dice.join(' ')));
+        row.append(' ');
+      }
+      const dmgEl = document.createElement('b');
+      dmgEl.textContent = `= ${action.damage}`;
+      row.append(dmgEl);
+      row.append(hpChange(target, action.hp_before, action.target_hp, hpPool));
+    }
+  }
+  return row;
+}
+
+/** One round of a fight's transcript: the initiative roll and its actions. */
+function renderFightRound(round, aName, bName, hpPool) {
+  const wrap = document.createElement('div');
+  wrap.className = 'fight-round';
+
+  const head = document.createElement('div');
+  head.className = 'fight-round-head';
+  const firstName = round.goes_first === 0 ? aName : bName;
+  head.append(`Round ${round.round} — initiative `);
+  head.append(diceBadge(`${aName} d6 ${round.init_roll[0]} → ${round.init_total[0]}`));
+  head.append(document.createTextNode(' · '));
+  head.append(diceBadge(`${bName} d6 ${round.init_roll[1]} → ${round.init_total[1]}`));
+  head.append(` — ${firstName} acts first`);
+  wrap.append(head);
+
+  for (const action of round.actions) {
+    wrap.append(renderFightAction(action, aName, bName, hpPool));
+  }
+  return wrap;
+}
+
+/** The transcript of the last single fight, from the opening roll to the
+ *  winner. Extremely long (draw) fights are truncated in the middle so the
+ *  beginning and the end stay readable. */
+function renderFightDetail(a, b) {
+  const detail = fightDetail;
+  const block = document.createElement('div');
+  block.className = 'fight-detail';
+
+  const labelEl = document.createElement('div');
+  labelEl.className = 'duel-label';
+  labelEl.textContent = 'Fight details';
+  block.append(labelEl);
+
+  const hpPool = detail.hp_pool;
+  const aName = a.name;
+  const bName = b.name;
+  const winnerName = detail.winner_index === 0 ? aName : detail.winner_index === 1 ? bName : null;
+
+  const summary = document.createElement('div');
+  summary.className = 'fight-summary';
+  const outcome = document.createElement('b');
+  outcome.className = winnerName ? 'fight-winner' : 'fight-draw';
+  outcome.textContent = winnerName
+    ? `${winnerName} wins in ${detail.rounds} round${detail.rounds === 1 ? '' : 's'}`
+    : `Draw after ${detail.rounds} rounds`;
+  summary.append(outcome);
+  summary.append(document.createTextNode(
+    ` · ${aName} ${detail.max_lp[0]} → ${detail.remaining_lp[0]} ${hpPool} · ` +
+    `${bName} ${detail.max_lp[1]} → ${detail.remaining_lp[1]} ${hpPool}`));
+  block.append(summary);
+
+  const roundsEl = document.createElement('div');
+  roundsEl.className = 'fight-rounds';
+  const all = detail.log.rounds;
+  const cap = 60; // keep an extreme (draw) fight readable
+  const shown = all.length > 2 * cap
+    ? [...all.slice(0, cap), null, ...all.slice(all.length - cap)]
+    : all;
+  for (const round of shown) {
+    if (round === null) {
+      const gap = document.createElement('div');
+      gap.className = 'fight-gap';
+      gap.textContent = `… ${all.length - 2 * cap} rounds omitted …`;
+      roundsEl.append(gap);
+      continue;
+    }
+    roundsEl.append(renderFightRound(round, aName, bName, hpPool));
+  }
+  block.append(roundsEl);
+  return block;
 }
 
 // ---------------------------------------------------------------------------
@@ -469,12 +793,13 @@ async function rankCharacter(event) {
     const spec = rpg.specFromEntity(entity, currentWeapon());
     entity.dispose();
 
-    const opponents = leaderboard
-      .slice(0, RANK_OPPONENTS)
-      .map((e) => ({ id: e.id, rating: e.rating }));
+    const opponents = leaderboard.map((e) => ({ id: e.id, rating: e.rating }));
 
     const result = await rankNewcomer(rpg, spec, opponents, {
       gamesPerOpponent: GAMES_PER_OPPONENT,
+      opponentsPerRound: RANK_OPPONENTS_PER_ROUND,
+      rounds: RANK_ROUNDS,
+      initial: leaderboardInitial,
     });
     you = {
       id: 'you',
@@ -486,9 +811,9 @@ async function rankCharacter(event) {
       draws: result.draws,
       games: result.games,
     };
-    renderLeaderboard();
-    renderRankResult(result, opponents);
+    renderRankResult(result);
     selection = [];
+    renderLeaderboard();
     renderDuel();
   } catch (err) {
     setStatus(`Ranking failed: ${err.message}`, true);
@@ -499,14 +824,15 @@ async function rankCharacter(event) {
   }
 }
 
-function renderRankResult(result, opponents) {
+function renderRankResult(result) {
   const box = $('#rank-result');
   box.hidden = false;
   const rank = [...leaderboard].filter((e) => e.rating > result.rating).length + 1;
   box.innerHTML =
     `<div class="big">ELO ${Math.round(result.rating)}</div>` +
-    `<p>Ranked against the top ${opponents.length} combatants ` +
-    `(${GAMES_PER_OPPONENT} fights each, K=32, start 1500): ` +
+    `<p>Ranked Swiss-style against the ${result.opponents} leaderboard combatants ` +
+    `closest to your rating (${GAMES_PER_OPPONENT} fights each, K=32, ` +
+    `start ${leaderboardInitial}): ` +
     `${result.wins}W / ${result.losses}L / ${result.draws}D. ` +
     `That places you at <b>#${rank}</b> in the table. ` +
     `You are now selectable for a head-to-head below.</p>`;
