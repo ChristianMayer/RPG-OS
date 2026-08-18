@@ -27,11 +27,12 @@ var NAVTREE =
   [ "RPG-OS", "index.html", [
     [ "Building", "index.html#autotoc_md2", null ],
     [ "Documentation", "index.html#autotoc_md3", null ],
-    [ "Using the generated (specific-mode) headers", "index.html#autotoc_md4", null ],
-    [ "Ruleset format, licence, and schema", "index.html#autotoc_md5", null ],
-    [ "Ranges and variance (weakest … strongest)", "index.html#autotoc_md6", null ],
-    [ "Project layout", "index.html#autotoc_md7", null ],
-    [ "Combat simulation & Monte Carlo ELO ranking", "index.html#autotoc_md8", null ],
+    [ "npm package & live demo", "index.html#autotoc_md4", null ],
+    [ "Using the generated (specific-mode) headers", "index.html#autotoc_md5", null ],
+    [ "Ruleset format, licence, and schema", "index.html#autotoc_md6", null ],
+    [ "Ranges and variance (weakest … strongest)", "index.html#autotoc_md7", null ],
+    [ "Project layout", "index.html#autotoc_md8", null ],
+    [ "Combat simulation & Monte Carlo ELO ranking", "index.html#autotoc_md9", null ],
     [ "Examples", "md_examples_2README.html", null ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
@@ -60,6 +61,7 @@ var NAVTREE =
       [ "File Members", "globals.html", [
         [ "All", "globals.html", "globals_dup" ],
         [ "Functions", "globals_func.html", "globals_func" ],
+        [ "Variables", "globals_vars.html", null ],
         [ "Macros", "globals_defs.html", null ]
       ] ]
     ] ]
@@ -69,18 +71,18 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "advancement_8hpp.html",
-"classrpg__os_1_1DynamicEntity.html#adb575dcf6f39fa3391f68e727c52a1ab",
-"classrpg__os_1_1GameSession.html#aebcc3749348c5db639f65efcf89b683b",
-"classrpg__os_1_1RulesetEngine.html#aa92968dd1fbb5bd56a538da8ed92ff78",
-"classrpg__os_1_1generated_1_1brp__ugc_1_1Character.html#a50579e66cd5d7d1ad9af91173a6de3a9",
-"classrpg__os_1_1generated_1_1dnd5e_1_1Character.html#a123c5762fff449a83abd5f7353de9b9c",
-"classrpg__os_1_1generated_1_1tde5e_1_1Character.html#a2506cd3019a5cfc4eb84c37a77e266a2",
-"classrpg__os_1_1generated_1_1tde5e_1_1Character.html#add767b8b8d31a78960be23e752144c40",
-"globals_defs.html",
-"structrpg__os_1_1ActionBudget.html#a1c85fe04cff6cd258b4146e75101a4b0",
-"structrpg__os_1_1EntityId.html#a8972983924090e7ecedac5f114ab0192",
-"test__bookkeeping_8cpp.html#a7ca3dc91eb56c52a696c21ff65a75809",
-"test__ruleset__loader_8cpp.html#a8fadc3d1a8321d063a6c77f92cd546d2"
+"classrpg__os_1_1DynamicEntity.html#adb312c30565ee046d574f39f8776f9f8",
+"classrpg__os_1_1GameSession.html#ae7e904d02c7b8b6fbb12704bddbee7d6",
+"classrpg__os_1_1RulesetEngine.html#a9cd8f8ae806dca92569139f6465ecbd5",
+"classrpg__os_1_1generated_1_1brp__ugc_1_1Character.html#a4ac7eec8adfd00986d31397c462c5ccd",
+"classrpg__os_1_1generated_1_1brp__ugc_1_1Character.html#affe68bf3e0268a8c96fcc1871b68c10f",
+"classrpg__os_1_1generated_1_1tde5e_1_1Character.html#a232810f3be875ea10deb69adb631d2b4",
+"classrpg__os_1_1generated_1_1tde5e_1_1Character.html#ad9d4e5b597c8c55485458e5fcce9dbe9",
+"functions_vars_v.html",
+"specific__mode_2main_8cpp.html",
+"structrpg__os_1_1EncumbranceConfig.html",
+"test__bookkeeping_8cpp.html#a2ab3999e23f6687b5dcd10fa3d28cf69",
+"test__math_8cpp.html#adb6383b689560925d75162b7f5537fd5"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

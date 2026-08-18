@@ -41,8 +41,8 @@ var searchData=
   ['alchemy_38',['alchemy',['../classrpg__os_1_1generated_1_1tde5e_1_1Character.html#acaa5db3c7de96eec9521656294e1b9ce',1,'rpg_os::generated::tde5e::Character']]],
   ['all_39',['all',['../classrpg__os_1_1EntityRegistry.html#a6c0b774326773140aa0289d68e1d2264',1,'rpg_os::EntityRegistry']]],
   ['amount_40',['amount',['../structrpg__os_1_1EventActionDef.html#a891457979528b9f2be0ef37d7cf0939e',1,'rpg_os::EventActionDef']]],
-  ['and_20schema_41',['Ruleset format, licence, and schema',['../index.html#autotoc_md5',1,'']]],
-  ['and_20variance_20weakest_20…_20strongest_42',['Ranges and variance (weakest … strongest)',['../index.html#autotoc_md6',1,'']]],
+  ['and_20schema_41',['Ruleset format, licence, and schema',['../index.html#autotoc_md6',1,'']]],
+  ['and_20variance_20weakest_20…_20strongest_42',['Ranges and variance (weakest … strongest)',['../index.html#autotoc_md7',1,'']]],
   ['animalhandling_43',['animalHandling',['../classrpg__os_1_1generated_1_1dnd5e_1_1Character.html#a5737e1af31bb15a2f971dfa70d15f5e1',1,'rpg_os::generated::dnd5e::Character']]],
   ['animallore_44',['animalLore',['../classrpg__os_1_1generated_1_1tde5e_1_1Character.html#a000aee8eb8462859bf0d1b0e6ca80054',1,'rpg_os::generated::tde5e::Character']]],
   ['announcetimepassed_45',['announceTimePassed',['../classrpg__os_1_1RulesetEngine.html#a8c5512272ef96889738e20cdfc480a3f',1,'rpg_os::RulesetEngine']]],
@@ -83,6 +83,7 @@ var searchData=
   ['attackvalue_80',['attackValue',['../structrpg__os_1_1CombatantSpec.html#ad03596128293f53c4305d793cf0ca36b',1,'rpg_os::CombatantSpec']]],
   ['attributedef_81',['AttributeDef',['../structrpg__os_1_1AttributeDef.html',1,'rpg_os']]],
   ['attributes_82',['attributes',['../classrpg__os_1_1Ruleset.html#abbb6a9f154f5aace74e3d9a351ccc38e',1,'rpg_os::Ruleset::attributes'],['../structrpg__os_1_1SkillDef.html#a525cb335c9dee0d63b101bc65a489e8a',1,'rpg_os::SkillDef::attributes']]],
-  ['autofail_83',['autoFail',['../structrpg__os_1_1CheckParams.html#a5a27bdb3888cf673271f6f9ba81e47d8',1,'rpg_os::CheckParams']]],
-  ['average_84',['average',['../namespacerpg__os.html#a5d0f76e637716d8f9bedca406ff39fe6ab1897515d548a960afe49ecf66a29021',1,'rpg_os::Average'],['../namespacerpg__os.html#ab870da3d65c79d59dad5920efc43dc65ab1897515d548a960afe49ecf66a29021',1,'rpg_os::Average']]]
+  ['attribution_83',['attribution',['../classrpg__os_1_1Ruleset.html#a37c17d70392d84278fba809c25b2c20d',1,'rpg_os::Ruleset']]],
+  ['autofail_84',['autoFail',['../structrpg__os_1_1CheckParams.html#a5a27bdb3888cf673271f6f9ba81e47d8',1,'rpg_os::CheckParams']]],
+  ['average_85',['average',['../namespacerpg__os.html#a5d0f76e637716d8f9bedca406ff39fe6ab1897515d548a960afe49ecf66a29021',1,'rpg_os::Average'],['../namespacerpg__os.html#ab870da3d65c79d59dad5920efc43dc65ab1897515d548a960afe49ecf66a29021',1,'rpg_os::Average']]]
 ];
