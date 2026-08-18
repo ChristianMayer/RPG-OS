@@ -57,6 +57,25 @@ Do **not** hardcode a version in `CMakeLists.txt` or the `Doxyfile` — update
 `VERSION` instead. (For this reason `project()` in `CMakeLists.txt` omits
 `VERSION`: the file may hold non-semver values such as `develop`.)
 
+## Licensing — engine code vs. ruleset data
+
+The documentation covers two things with **different licences**, and the
+published pages must never blur the line:
+
+- The **engine code** (everything under `include/`, the examples, the WASM
+  binding, this documentation) is **Apache-2.0**.
+- The **ruleset JSON files** under `rulesets/` are **NOT Apache-2.0**. Each is
+  governed by the licence stated in its own `licence` field (required), with
+  an optional `licence_source` URL pointing to where the rights holder states
+  that licence (e.g. `CC-BY-4.0` for the D&D SRD, ORC for The Dark Eye 5e and
+  BRP), plus optional `licence_notice` (verbatim notice the licence requires,
+  e.g. the ORC Notice) and `attribution` (credit/attribution the licence
+  requires). The repository-root `README.md` (the Doxygen front page)
+  documents this and lists the per-ruleset licences and their `licence_source`
+  links — keep that table in sync whenever a ruleset or its licence changes.
+  The ELO Arena demo displays the loaded ruleset's licence, notice and
+  attribution from `meta()` at runtime.
+
 ## One-time GitHub repository settings
 
 The deployment workflow needs:

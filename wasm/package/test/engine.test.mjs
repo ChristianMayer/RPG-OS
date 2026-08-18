@@ -37,6 +37,14 @@ test('loads the TDE ruleset and exposes its metadata', () => {
   assert.equal(meta.id, 'tde5e_core');
   assert.ok(meta.attributes.some((a) => a.id === 'COU'));
   assert.ok(meta.resource_pools.some((p) => p.id === 'LP'));
+  // The ruleset's own licensing metadata is exposed (the rules are NOT
+  // Apache-2.0): licence, source, and a licence_source link. The ORC ruleset
+  // also carries the verbatim ORC Notice and the attribution text.
+  assert.ok(typeof meta.licence === 'string' && meta.licence.length > 0);
+  assert.ok(typeof meta.source === 'string' && meta.source.length > 0);
+  assert.ok(meta.licence_source.startsWith('https://'));
+  assert.ok(typeof meta.licence_notice === 'string' && meta.licence_notice.length > 0);
+  assert.ok(typeof meta.attribution === 'string' && meta.attribution.length > 0);
   const entries = rpg.entries();
   assert.ok(entries.some((e) => e.id === 'geron' && e.kind === 'archetypes'));
   assert.ok(entries.some((e) => e.id === 'gotongi' && e.kind === 'creatures'));

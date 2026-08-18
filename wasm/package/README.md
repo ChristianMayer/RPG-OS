@@ -67,6 +67,18 @@ The package ships the project's rulesets under `rulesets/` as plain JSON data
 they are loaded at runtime, you can pass **any** ruleset that follows the
 [RPG-OS ruleset schema](https://github.com/Mundus-Mirabilis/RPG-OS/blob/main/rulesets/ruleset.schema.json).
 
+> **The shipped rulesets are NOT Apache-2.0.** Each ruleset carries **its own
+> licence** in its JSON — read the `licence` field of the individual file
+> before redistributing or modifying it. Every shipped ruleset also sets
+> `licence_source`, a URL to where its rights holder states that licence, and
+> the ORC-licensed ones carry the verbatim `licence_notice` (the ORC Notice)
+> plus an `attribution` credit. `rpg.meta()` exposes `source`, `licence`,
+> `licence_source`, `licence_notice` and `attribution` for the loaded ruleset
+> so your UI can display them. Reproduce the `licence_notice`/`attribution`
+> statements when you redistribute the content.
+
 ## License
 
-Apache-2.0 — see [LICENSE](./LICENSE).
+Apache-2.0 — see [LICENSE](./LICENSE). This covers the **engine code and the
+package itself only**; the ruleset JSON data under `rulesets/` has its own
+individual licences (see above).

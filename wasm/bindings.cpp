@@ -124,6 +124,15 @@ RPG_OS_WASM_EXPORT const char *rpg_os_engine_meta(void *engine) {
   meta["id"] = ruleset.id;
   meta["name"] = ruleset.name;
   meta["spell_resource"] = ruleset.spellResource;
+  // The ruleset's own licensing metadata: the rules are NOT Apache-2.0 — each
+  // ruleset is governed by its own licence, optionally linked via
+  // licence_source to where the rights holder states it, with the verbatim
+  // licence_notice/attribution text the licence requires (e.g. ORC Notice).
+  meta["source"] = ruleset.source;
+  meta["licence"] = ruleset.licence;
+  meta["licence_source"] = ruleset.licenceSource;
+  meta["licence_notice"] = ruleset.licenceNotice;
+  meta["attribution"] = ruleset.attribution;
   rpg_os::Json attributes = rpg_os::Json::array();
   for (const rpg_os::AttributeDef &def : ruleset.attributes) {
     attributes.push_back({{"id", def.id},

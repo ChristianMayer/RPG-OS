@@ -172,12 +172,22 @@ mode:
 - One file per system: `rulesets/<ruleset_id>.json`, containing the *schema*
   (rules) and a `data` section (creatures, items, archetypes, spells,
   conditions, poisons, diseases).
-- Every ruleset is validated against `rulesets/ruleset.schema.json` (JSON
-  Schema draft-07). `licence` is **required** (non-empty); `comment` is
-  optional. Run `python3 codegen/validate_ruleset.py rulesets/*.json` after
-  editing any ruleset; CI enforces it.
+- **Licensing:** ruleset JSONs are **not** Apache-2.0 — each is governed by
+  the licence in its own `licence` field (never assume Apache-2.0 for rules).
+  Every ruleset is validated against `rulesets/ruleset.schema.json` (JSON
+  Schema draft-07). `licence` is **required** (non-empty); `licence_source`
+  (optional http(s) URL pointing to where the rights holder states the
+  licence — set it for every shipped ruleset), `licence_notice` (optional
+  verbatim notice the licence requires — e.g. the ORC Notice for
+  ORC-licensed rulesets), `attribution` (optional credit/attribution the
+  licence requires — e.g. the CC-BY-4.0 or ORC attribution; set it for every
+  shipped ruleset) and `comment` (optional) may follow. Run
+  `python3 codegen/validate_ruleset.py rulesets/*.json` after editing any
+  ruleset; CI enforces it.
 - Top level: `schema_version`, `ruleset_id`, `ruleset_name`, `source`,
-  `licence` (required), `comment` (optional), `namespace` (used by codegen),
+  `licence` (required), `licence_source` (optional), `licence_notice`
+  (optional), `attribution` (optional), `comment` (optional),
+  `namespace` (used by codegen),
   `spell_resource` (optional: the resource pool spell casting draws its cost
   from; enables `RulesetEngine::castSpell`), then `attributes`,
   `derived_stats`, `resource_pools`, `skills`, `check_types`, `cost_tables`,

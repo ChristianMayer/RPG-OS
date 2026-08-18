@@ -24,6 +24,9 @@ SCHEMA_PATH = Path(__file__).resolve().parent.parent / "rulesets" / "ruleset.sch
 # A dice/range expression, e.g. "2d6", "1d4+1", "2d6-2", "3d10+6".
 _VARIANT_STRING = re.compile(r"^[+-]?([0-9]+d[0-9]+|[0-9]+)([+-][0-9]+d[0-9]+|[+-][0-9]+)*$")
 
+# An http(s) URL — the only accepted form for the optional 'licence_source'.
+_URL = re.compile(r"^https?://\S+$")
+
 
 def is_variant_value(node) -> bool:
     """True when `node` is a valid variant value (integer, dice string, range)."""
@@ -66,6 +69,17 @@ def structural_check(doc, errors):
             errors.append(f"root: missing required '{key}'")
     if isinstance(doc.get("licence"), str) and not doc["licence"].strip():
         errors.append("root: 'licence' must be a non-empty string")
+    # 'licence_source' is optional but, when present, must be an http(s) URL
+    # pointing at where the rights holder states the licence.
+    if isinstance(doc.get("licence_source"), str) and not _URL.match(doc["licence_source"].strip()):
+        errors.append("root: 'licence_source' must be an http(s) URL when present")
+    elif "licence_source" in doc and not isinstance(doc.get("licence_source"), str):
+        errors.append("root: 'licence_source' must be a string when present")
+    # 'licence_notice' and 'attribution' are optional free-text statements the
+    # ruleset's licence may require (ORC Notice / attribution).
+    for field in ("licence_notice", "attribution"):
+        if field in doc and not isinstance(doc.get(field), str):
+            errors.append(f"root: '{field}' must be a string when present")
     data = doc.get("data")
     if data is not None:
         for section in ("archetypes", "items", "creatures", "spells", "poisons", "diseases", "conditions"):

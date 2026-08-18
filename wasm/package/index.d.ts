@@ -5,6 +5,16 @@ export interface RulesetMeta {
   id: string;
   name: string;
   spell_resource: string;
+  /** Source document the rules were transcribed from. */
+  source: string;
+  /** The ruleset's OWN licence (not the Apache-2.0 licence of the engine). */
+  licence: string;
+  /** Optional URL where the rights holder states this licence. */
+  licence_source: string;
+  /** Optional verbatim notice the licence requires (e.g. the ORC Notice). */
+  licence_notice: string;
+  /** Optional attribution/credit statement the licence requires. */
+  attribution: string;
   attributes: Array<{ id: string; name: string; min: number; max: number; default: number }>;
   skills: Array<{ id: string; name: string; default: number; attributes: string[] }>;
   derived_stats: Array<{ id: string; name: string; formula: string }>;

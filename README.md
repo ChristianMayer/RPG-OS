@@ -123,8 +123,10 @@ details, and `wasm/package/test/` for the test suite — including the seeded
 ranking of every combatant in a ruleset (generated during CI by
 `scripts/elo_ranking.py`), lets you enter an arbitrary character that is
 ranked live in the browser via WASM, and computes head-to-head fight-win
-probabilities from the ELO ratings. The ELO ratings stay in Python — the page
-only ports the small formula to JS for the interactive, serverless parts.
+probabilities from the ELO ratings. The page always displays the currently
+loaded ruleset's **own licence** (the rules are not Apache-2.0) and a link to
+where that licence is stated. The ELO ratings stay in Python — the page only
+ports the small formula to JS for the interactive, serverless parts.
 Source in `web/demo/`; the demo is deployed by the `deploy-demo` job of
 `.github/workflows/docs.yml` (chained after the docs deploy, so the two
 gh-pages pushes never race).
@@ -154,10 +156,18 @@ parity test enforces this.
 
 ## Ruleset format, licence, and schema
 
+> **Licensing — read this first.** The *engine code* in this repository is
+> Apache-2.0, but the **ruleset JSON files are NOT**. Each ruleset is governed
+> by **its own licence**, stated in the file's required `licence` field (e.g.
+> `CC-BY-4.0`, or the Open RPG Creative License). Never assume a ruleset's
+> content is Apache-2.0 — always check the `licence` field of the individual
+> file (and, when present, the `licence_source` link) before redistributing or
+> modifying it. The Apache-2.0 `LICENSE` file at the repository root covers
+> only the engine code, not the rules.
+
 Every ruleset is a single JSON file validated against
 [`rulesets/ruleset.schema.json`](rulesets/ruleset.schema.json) (JSON Schema
-draft-07). The top level carries the ruleset metadata, including two fields
-every ruleset must provide:
+draft-07). The top level carries the ruleset metadata:
 
 ```jsonc
 {
@@ -165,8 +175,11 @@ every ruleset must provide:
   "ruleset_id": "dnd5e_srd",
   "ruleset_name": "Dungeons & Dragons 5th Edition (SRD 5.2.1)",
   "source": "System Reference Document 5.2.1, Wizards of the Coast (CC-BY-4.0)",
-  "licence": "CC-BY-4.0",          // required, non-empty
-  "comment": "...",                 // optional free-form note
+  "licence": "CC-BY-4.0",                     // required, non-empty
+  "licence_source": "https://www.dndbeyond.com/srd", // optional: where the licence is stated
+  "licence_notice": "...",                    // optional: verbatim notice the licence requires (e.g. ORC Notice)
+  "attribution": "...",                       // optional: credit/attribution the licence requires
+  "comment": "...",                           // optional free-form note
   "namespace": "rpg_os::generated::dnd5e",
   "attributes": [ /* ... */ ],
   "data": { /* creatures, spells, conditions, poisons, diseases, ... */ }
@@ -177,6 +190,21 @@ The loader refuses to load a ruleset without a `licence`, and the shipped
 validator `codegen/validate_ruleset.py` checks every ruleset against the
 schema (full draft-07 validation when `jsonschema` is installed, structural
 fallback otherwise). CI runs it on every pull request.
+
+For licences that require it, a ruleset may also carry the verbatim
+`licence_notice` (e.g. the ORC Notice, mandatory when redistributing
+ORC-licensed content) and `attribution` (e.g. the CC-BY-4.0 or ORC attribution
+crediting the rights holder). Reproduce these statements when you redistribute
+or modify the content.
+
+The shipped rulesets and their **individual** licences (each file's
+`licence_source` field points to where its rights holder states that licence):
+
+| Ruleset | Licence | Licence stated at |
+| --- | --- | --- |
+| `dnd5e_srd.json` | CC-BY-4.0 | [dndbeyond.com/srd](https://www.dndbeyond.com/srd) |
+| `tde5e_core.json` | Open RPG Creative License (ORC) | [ulisses-spiele.de — ORC](https://ulisses-spiele.de/die-deutsche-orc-ist-da/) |
+| `brp_ugc.json` | Open RPG Creative License (ORC) | [chaosium.com/orc-license](https://www.chaosium.com/orc-license/) |
 
 ## Ranges and variance (weakest … strongest)
 
