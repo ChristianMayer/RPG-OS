@@ -3,6 +3,7 @@
 
 /**
  * @file expression.hpp
+ * @ingroup rpg_os_universal
  * @brief AST formula evaluator (universal / dynamic mode).
  *
  * Parses the restricted formula grammar used by ruleset JSON derived stats,

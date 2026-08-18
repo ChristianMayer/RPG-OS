@@ -3,6 +3,7 @@
 
 /**
  * @file variance.hpp
+ * @ingroup rpg_os_core
  * @brief Variance / range selection for stat values.
  *
  * Data records (creatures, archetypes, items) may express a value either as a

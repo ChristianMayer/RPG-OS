@@ -3,6 +3,7 @@
 
 /**
  * @file json.hpp
+ * @ingroup rpg_os_core
  * @brief JSON value type used throughout rpg_os.
  *
  * The engine is JSON-driven end to end: rulesets, event payloads, environment

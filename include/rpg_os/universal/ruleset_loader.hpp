@@ -3,6 +3,7 @@
 
 /**
  * @file ruleset_loader.hpp
+ * @ingroup rpg_os_universal
  * @brief Ruleset loading and validation (universal / dynamic mode).
  *
  * Parses a ruleset JSON document into a @c Ruleset model: the schema
@@ -215,12 +216,12 @@ public:
   std::string id;
   std::string name;
   std::string source;
-  std::string licence;        ///< licence governing the ruleset content (required)
-  std::string licenceSource;  ///< optional URL where the rights holder states the licence
-  std::string licenceNotice;  ///< optional verbatim notice the licence requires (e.g. ORC Notice)
-  std::string attribution;    ///< optional attribution/credit statement the licence requires
-  std::string comment;        ///< optional free-form note for the ruleset author
-  std::string ns;      ///< namespace used by the code generator
+  std::string licence;       ///< licence governing the ruleset content (required)
+  std::string licenceSource; ///< optional URL where the rights holder states the licence
+  std::string licenceNotice; ///< optional verbatim notice the licence requires (e.g. ORC Notice)
+  std::string attribution;   ///< optional attribution/credit statement the licence requires
+  std::string comment;       ///< optional free-form note for the ruleset author
+  std::string ns;            ///< namespace used by the code generator
   std::string
       spellResource; ///< resource pool that spell casting draws its cost from (empty = none)
   int32_t schemaVersion{0};

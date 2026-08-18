@@ -3,6 +3,7 @@
 
 /**
  * @file game_session.hpp
+ * @ingroup rpg_os_universal
  * @brief The application-facing facade ("OS kernel").
  *
  * An application that drives a tabletop session should talk to one object:

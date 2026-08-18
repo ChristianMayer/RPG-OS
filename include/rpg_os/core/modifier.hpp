@@ -3,6 +3,7 @@
 
 /**
  * @file modifier.hpp
+ * @ingroup rpg_os_core
  * @brief Modifier stack pipeline.
  *
  * Derived stats are computed as: base value, then @b Overrides, then @b Add

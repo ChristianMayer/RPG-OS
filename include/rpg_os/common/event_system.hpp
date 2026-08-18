@@ -3,6 +3,7 @@
 
 /**
  * @file event_system.hpp
+ * @ingroup rpg_os_core
  * @brief Shared event system for reactive rules.
  *
  * Many tabletop rules are reactive: "when damage is taken, make a wound

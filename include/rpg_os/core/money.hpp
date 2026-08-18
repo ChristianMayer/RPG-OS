@@ -3,6 +3,7 @@
 
 /**
  * @file money.hpp
+ * @ingroup rpg_os_core
  * @brief Generic currency model (denominations + an amount).
  *
  * Tabletop games express wealth in coins of different value (D&D's copper /

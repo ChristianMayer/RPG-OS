@@ -1,6 +1,6 @@
 # Documentation
 
-RPG-OS ships generated API documentation rendered with
+RPG OS ships generated API documentation rendered with
 [Doxygen](https://www.doxygen.nl/) and the
 [Doxygen Awesome](https://github.com/jothepro/doxygen-awesome-css) theme
 (vendored under [`docs/doxygen-awesome/`](doxygen-awesome/)).
@@ -101,6 +101,16 @@ automatically (forks have no write access to the upstream `gh-pages` branch).
 
 - `README.md` (the repository root readme) is the front page
   (`USE_MDFILE_AS_MAINPAGE`).
+- **Users and developers are separated by two curated guide pages** in
+  `docs/guides/`, both part of the Doxygen input:
+  - `user-guide.md` — the user-facing path: the universal and the generated
+    libraries, the examples, and how to create a new ruleset JSON. Linked from
+    the front page as "User Guide".
+  - `developer-guide.md` — the contributor-facing path: architecture, the
+    shared template core, the code generator, testing, the WASM port and the
+    conventions. Linked from the front page as "Developer Guide".
+  Keep the two audiences in mind when editing either page, and keep the links
+  between `README.md`, the guides, and the reference coherent.
 - All public headers under `include/rpg_os/` are documented with Doxygen
   comments — including the "why" behind each design decision (see the
   project's documentation conventions in `AGENTS.md`).

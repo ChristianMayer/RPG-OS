@@ -3,6 +3,7 @@
 
 /**
  * @file types.hpp
+ * @ingroup rpg_os_core
  * @brief Shared value types used by both the universal and the specific mode.
  *
  * This header is the vocabulary every other header builds on. The types live

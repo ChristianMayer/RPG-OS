@@ -3,6 +3,7 @@
 
 /**
  * @file checks.hpp
+ * @defgroup rpg_os_core Shared core — mechanics and value types
  * @brief Generic, data-driven check resolution.
  *
  * A "check" is the heart of a tabletop ruleset: the engine must roll some

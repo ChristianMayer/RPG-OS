@@ -3,6 +3,7 @@
 
 /**
  * @file entity.hpp
+ * @ingroup rpg_os_core
  * @brief Shared entity value semantics.
  *
  * The universal @c DynamicEntity and the generated specific-mode characters

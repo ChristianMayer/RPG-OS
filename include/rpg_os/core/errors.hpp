@@ -3,6 +3,7 @@
 
 /**
  * @file errors.hpp
+ * @ingroup rpg_os_core
  * @brief Bookkeeping error codes.
  *
  * The bookkeeping layer (inventory, equipment, currency, advancement, ...)

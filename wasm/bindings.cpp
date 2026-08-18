@@ -3,7 +3,7 @@
 
 /**
  * @file bindings.cpp
- * @brief Emscripten (WebAssembly) bindings for the universal RPG-OS engine.
+ * @brief Emscripten (WebAssembly) bindings for the universal RPG OS engine.
  *
  * A flat extern "C" API that compiles the header-only universal engine to
  * WASM for the npm package `@mundus-mirabilis/rpg-os`. The ruleset JSON is

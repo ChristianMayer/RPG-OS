@@ -3,6 +3,7 @@
 
 /**
  * @file equipment.hpp
+ * @ingroup rpg_os_core
  * @brief Worn gear: a slot -> item map.
  */
 #pragma once

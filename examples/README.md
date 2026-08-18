@@ -2,7 +2,8 @@
 
 Small, self-contained programs that demonstrate the `rpg_os` library on the
 shipped rulesets. Each example lives in its own subdirectory and is registered
-as an executable in the build.
+as an executable in the build. They are the fastest way to see both modes in
+action — for the guided tour, see the [User Guide](../docs/guides/user-guide.md).
 
 - `universal_mode/` — the dynamic engine: loads any ruleset JSON at runtime and
   resolves rules generically (derived stats, named checks, DSA skill checks,

@@ -3,6 +3,7 @@
 
 /**
  * @file inventory.hpp
+ * @ingroup rpg_os_core
  * @brief Carried items: weight and a flat inventory.
  */
 #pragma once

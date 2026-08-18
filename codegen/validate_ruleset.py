@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 # SPDX-License-Identifier: Apache-2.0
 
-"""Validates RPG-OS ruleset JSON files against rulesets/ruleset.schema.json.
+"""Validates RPG OS ruleset JSON files against rulesets/ruleset.schema.json.
 
 Uses the `jsonschema` package when installed (full draft-07 validation);
 otherwise falls back to stdlib-only structural checks covering the same

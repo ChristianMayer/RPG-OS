@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://rpg-os.invalid/schemas/ruleset.schema.json",
-  "title": "RPG-OS Ruleset",
-  "description": "Schema for a RPG-OS ruleset file. The ruleset defines the schema (rules) of one game system; the engine resolves them in universal (dynamic) mode or via generated (specific) code. Every ruleset must state its licence and may carry an optional comment. IMPORTANT: the ruleset content is NOT covered by RPG-OS's Apache-2.0 licence — each ruleset is governed by the licence stated in its own 'licence' field (with an optional 'licence_source' URL pointing to where the rights holder states that licence). Numeric data values may be expressed as a plain integer, a dice expression string (e.g. \"2d6+1\"), or a range object {\"min\": ..., \"max\": ...}; the engine picks such values per a requested variance (weakest / weak / average / strong / strongest / random).",
+  "title": "RPG OS Ruleset",
+  "description": "Schema for a RPG OS ruleset file. The ruleset defines the schema (rules) of one game system; the engine resolves them in universal (dynamic) mode or via generated (specific) code. Every ruleset must state its licence and may carry an optional comment. IMPORTANT: the ruleset content is NOT covered by RPG OS's Apache-2.0 licence — each ruleset is governed by the licence stated in its own 'licence' field (with an optional 'licence_source' URL pointing to where the rights holder states that licence). Numeric data values may be expressed as a plain integer, a dice expression string (e.g. \"2d6+1\"), or a range object {\"min\": ..., \"max\": ...}; the engine picks such values per a requested variance (weakest / weak / average / strong / strongest / random).",
   "type": "object",
   "required": ["schema_version", "ruleset_id", "licence", "attributes"],
   "additionalProperties": false,
@@ -23,7 +23,7 @@
     "licence": {
       "type": "string",
       "minLength": 1,
-      "description": "REQUIRED. The ruleset's OWN licence (e.g. 'CC-BY-4.0'), or a statement for proprietary sources. This is the licence that governs the ruleset content — it is NOT the Apache-2.0 licence of the RPG-OS engine itself."
+      "description": "REQUIRED. The ruleset's OWN licence (e.g. 'CC-BY-4.0'), or a statement for proprietary sources. This is the licence that governs the ruleset content — it is NOT the Apache-2.0 licence of the RPG OS engine itself."
     },
     "licence_source": {
       "type": "string",

@@ -16,9 +16,15 @@
 // under the Creative Commons Attribution 4.0 International License, available at
 // creativecommons.org. Comment        : Data transcription of the D&D 5e SRD 5.2.1 (Wizards of the
 // Coast, Open Game Content). Not affiliated with WotC. Rules and stats are informational for use
-// with the RPG-OS engine.
+// with the RPG OS engine.
 // ============================================================================
 
+/**
+ * @file dnd5e_srd_static.hpp
+ * @ingroup rpg_os_specific
+ * @brief Strongly typed Dungeons & Dragons 5th Edition (SRD 5.2.1) class,
+ * generated from the ruleset schema by the RPG OS code generator.
+ */
 #pragma once
 
 #include <array>

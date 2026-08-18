@@ -43,7 +43,7 @@ struct HpBar {
   int32_t displayed{0};
 };
 
-/// The RPG-OS sheet behind an EnTT entity — the component that carries the
+/// The RPG OS sheet behind an EnTT entity — the component that carries the
 /// actual rules state (stats, pools, conditions, effects).
 struct Sheet {
   std::shared_ptr<rpg_os::DynamicEntity> entity;
@@ -61,8 +61,8 @@ int main(int argc, char **argv) {
 
   entt::registry registry;
 
-  // EnTT -> RPG-OS: an EnTT entity carries a Sheet component that owns the
-  // live DynamicEntity; the id map links RPG-OS ids back to EnTT entities so
+  // EnTT -> RPG OS: an EnTT entity carries a Sheet component that owns the
+  // live DynamicEntity; the id map links RPG OS ids back to EnTT entities so
   // events can update components.
   std::unordered_map<rpg_os::EntityId, entt::entity> idToEntt;
 
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
   const rpg_os::EntityId heroId = addUnit("character", "hero", 0, 0);
   const rpg_os::EntityId enemyId = addUnit("creature", "gotongi", 5, 0);
 
-  // RPG-OS -> EnTT: an observer event updates the HpBar component of exactly
+  // RPG OS -> EnTT: an observer event updates the HpBar component of exactly
   // the EnTT entity whose sheet changed — the "UI health bar" use case from
   // the code review, without polling.
   (void)engine.registerEventListener(

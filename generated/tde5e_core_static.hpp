@@ -11,7 +11,7 @@
 // Licence        : Open RPG Creative License (ORC). This product is licensed under the ORC License
 // located at the Library of Congress at TX00[number TBD] and available online at various locations.
 // All warranties are disclaimed as set forth therein. The Dark Eye (Das Schwarze Auge) is (c)
-// Ulisses Spiele GmbH; this is a fan-made reference data file for RPG-OS, not affiliated with or
+// Ulisses Spiele GmbH; this is a fan-made reference data file for RPG OS, not affiliated with or
 // endorsed by Ulisses Spiele. Licence Source : https://ulisses-spiele.de/die-deutsche-orc-ist-da/
 // Licence Notice : THE DARK EYE 5TH EDITION CORE RULES NOTICE - This product is licensed under the
 // ORC License located at the Library of Congress at TX 9-307-067 and available online at various
@@ -24,6 +24,12 @@
 // COU SGC INT CHA DEX AGI CON STR follow the official English localization.
 // ============================================================================
 
+/**
+ * @file tde5e_core_static.hpp
+ * @ingroup rpg_os_specific
+ * @brief Strongly typed The Dark Eye 5th Edition (Core Rules) class,
+ * generated from the ruleset schema by the RPG OS code generator.
+ */
 #pragma once
 
 #include <array>

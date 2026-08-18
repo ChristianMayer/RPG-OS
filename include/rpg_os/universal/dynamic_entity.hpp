@@ -3,6 +3,7 @@
 
 /**
  * @file dynamic_entity.hpp
+ * @ingroup rpg_os_universal
  * @brief Dynamic entity (universal mode).
  *
  * Entities hold base attribute values, skill ratings, resource pools, and

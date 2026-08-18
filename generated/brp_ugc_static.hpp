@@ -11,7 +11,7 @@
 // ISBN 978-1-56882-470-3) Licence        : Open RPG Creative License (ORC). This product is
 // licensed under the ORC License (Chaosium Inc., 2023) and is available for personal and commercial
 // use. Basic Roleplaying is a trademark of Chaosium Inc.; this is a fan-made reference data file
-// for RPG-OS, not affiliated with or endorsed by Chaosium Inc. Licence Source :
+// for RPG OS, not affiliated with or endorsed by Chaosium Inc. Licence Source :
 // https://www.chaosium.com/orc-license/ Licence Notice : BRP: Universal Game Engine Notice - This
 // product is licensed under the ORC License held in the Library of Congress at TX 9-307-067 and
 // available online at various locations including www.chaosium.com/orclicense,
@@ -20,7 +20,7 @@
 // product is based on the following Licensed Material: "Basic Roleplaying: Universal Game Engine,"
 // copyright © 2024 Chaosium Inc., by Jason Durall and Steve Perrin. Comment        : Fan
 // transcription of the Basic Roleplaying: Universal Game Engine Handouts Pack (Chaosium, 2023,
-// ORC-licensed) for RPG-OS. Attributes are the eight characteristics (STR CON SIZ INT POW DEX APP
+// ORC-licensed) for RPG OS. Attributes are the eight characteristics (STR CON SIZ INT POW DEX APP
 // EDU, 3-18 scale) plus Luck and Sanity. Derived stats: Max Hit Points = ceil((CON+SIZ)/2), Max
 // Power Points = POW, each characteristic's x5 value (for characteristic rolls, e.g. STR_5 =
 // STR*5), and the combat abstractions Attack (= Brawl), Parry (= Dodge) and Initiative (= DEX) used
@@ -44,6 +44,12 @@
 // transcribed as data records.
 // ============================================================================
 
+/**
+ * @file brp_ugc_static.hpp
+ * @ingroup rpg_os_specific
+ * @brief Strongly typed Basic Roleplaying: Universal Game Engine class,
+ * generated from the ruleset schema by the RPG OS code generator.
+ */
 #pragma once
 
 #include <array>

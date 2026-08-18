@@ -3,6 +3,7 @@
 
 /**
  * @file advancement.hpp
+ * @ingroup rpg_os_core
  * @brief Experience and advancement state.
  */
 #pragma once
