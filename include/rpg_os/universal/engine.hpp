@@ -25,7 +25,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <expected>
+#ifndef __EMSCRIPTEN__
 #include <fstream>
+#endif
 #include <memory>
 #include <rpg_os/common/event_system.hpp>
 #include <rpg_os/common/json.hpp>
@@ -38,7 +40,9 @@
 #include <rpg_os/universal/check_resolver.hpp>
 #include <rpg_os/universal/dynamic_entity.hpp>
 #include <rpg_os/universal/ruleset_loader.hpp>
+#ifndef __EMSCRIPTEN__
 #include <sstream>
+#endif
 #include <string>
 #include <string_view>
 #include <vector>
@@ -69,8 +73,15 @@ public:
     }
   }
 
+#ifndef __EMSCRIPTEN__
   /// Loads a ruleset from a file (UTF-8). Returns false on I/O or validation
   /// failure; see `lastError()`.
+  ///
+  /// @par Why compiled out on WebAssembly?
+  /// The WASM binding has no filesystem (`-sFILESYSTEM=0`) and receives
+  /// ruleset text via `loadRulesetFromJson`, so the iostream machinery
+  /// (`<fstream>`/`<sstream>`, `std::locale`) is excluded from the WASM
+  /// binary — it is a significant chunk of its size. Native builds keep it.
   bool loadRulesetFromFile(std::string_view path) {
     const std::string pathStr(path);
     std::ifstream file(pathStr);
@@ -87,6 +98,7 @@ public:
     buffer << file.rdbuf();
     return loadRulesetFromJson(buffer.str());
   }
+#endif
 
   /// Re-runs validation on the loaded ruleset; false when no ruleset is
   /// loaded or validation fails (loading already validates). Useful after a

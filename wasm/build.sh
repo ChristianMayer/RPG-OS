@@ -35,15 +35,22 @@ fi
 
 # em++ (not emcc): the binding is C++ and needs the C++ standard library
 # linked (emcc would leave operator new/delete undefined).
+# Size notes: -Oz + -flto + -fno-rtti minimise code size; -sFILESYSTEM=0 drops
+# the virtual filesystem (the bindings only ever receive JSON strings);
+# -fwasm-exceptions uses the native WebAssembly exception-handling proposal
+# (smaller and faster than the JS-emulated EH runtime). No ccall/cwrap: the
+# JS wrapper calls the exported _rpg_os_* functions directly.
 em++ "${SCRIPT_DIR}/bindings.cpp" \
-  -std=c++23 -O3 \
+  -std=c++23 -Oz -flto \
   -I "${ROOT_DIR}/include" \
   -I "${ROOT_DIR}/include/rpg_os/third_party" \
-  -fexceptions -sDISABLE_EXCEPTION_CATCHING=0 \
+  -fno-rtti \
+  -fwasm-exceptions \
+  -sFILESYSTEM=0 \
   -sALLOW_MEMORY_GROWTH=1 \
   -sMODULARIZE=1 -sEXPORT_ES6=1 \
   -sENVIRONMENT=web,worker,node \
-  -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,stringToUTF8,UTF8ToString,lengthBytesUTF8,HEAPU8,HEAP32 \
+  -sEXPORTED_RUNTIME_METHODS=stringToUTF8,UTF8ToString,lengthBytesUTF8 \
   -sEXPORTED_FUNCTIONS=_malloc,_free \
   -sINCOMING_MODULE_JS_API=onRuntimeInitialized,locateFile \
   -o "${OUT_DIR}/rpg-os-universal.js"
