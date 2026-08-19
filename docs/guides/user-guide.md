@@ -33,20 +33,21 @@ ruleset, entity creation, check resolution, combat and the event bus.
 
 int main() {
   rpg_os::RulesetEngine engine;
-  engine.loadRulesetFromFile("rulesets/dnd5e_srd.json");   // any ruleset JSON
+  engine.loadRulesetFromFile("rulesets/tde5e_core.json");   // any ruleset JSON
 
   // Create a creature from a named bestiary entry.
-  auto goblin = engine.createCreature("goblin_warrior");
+  auto gotongi = engine.createCreature("gotongi");
+  std::cout << gotongi->getStat("Attack") << "\n";   // a derived stat of a TDE beast
 
   // Named entities (archetypes) and resources work the same way.
-  auto geron = engine.createEntity("geron");     // TDE archetype
-  std::cout << goblin.getStat("COU") << " " << geron.getResource("LP") << "\n";
+  auto geron = engine.createEntity("geron");         // a TDE hero archetype
+  std::cout << geron->getStat("COU") << " " << geron->resource("LP") << "\n";
 
-  // Resolve a named check from the ruleset's check_types.
+  // Resolve a named skill check from the ruleset's skills.
   rpg_os::CheckParams params;
   rpg_os::DefaultRandom rng;
-  const rpg_os::CheckResult result = engine.executeSkillCheck("Climbing", geron, params, rng);
-  std::cout << "Climbing: " << result.total << "\n";
+  const rpg_os::CheckResult result = engine.executeSkillCheck("climbing", *geron, params, rng);
+  std::cout << "Climbing: " << (result.isSuccess ? "success" : "failure") << "\n";
 }
 ```
 
@@ -89,7 +90,7 @@ const rpg_os::Json ruleset = rpg_os::Json::parse(file_contents);
 const auto geron = rpg_os::generated::tde5e::Character::fromArchetype(ruleset, "geron");
 
 std::cout << geron.courage();             // 12
-std::cout << geron.resource("LP");        // 31
+std::cout << geron.lifePoints;            // 31
 const auto climb = geron.checkClimbing(rpg_os::CheckParams{}, rng);
 ```
 

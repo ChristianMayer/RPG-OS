@@ -123,7 +123,8 @@
           "name": { "type": "string", "description": "Human name used to derive C++ identifiers." },
           "min": { "type": "integer" },
           "max": { "type": "integer" },
-          "default": { "type": "integer" }
+          "default": { "type": "integer" },
+          "wide": { "type": "boolean", "description": "Keeps the generated member int32_t even when the declared min/max bounds fit a smaller type. Use for stats that grow beyond their base bounds at runtime (level, hit-point maxima, armor rating, proficiency bonus)." }
         }
       }
     },

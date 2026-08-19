@@ -23,7 +23,8 @@ import pathlib
 import re
 import sys
 
-BANNER = """// Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
+BANNER = """// clang-format off
+// Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 // ============================================================================
@@ -39,6 +40,7 @@ BANNER = """// Copyright (c) 2026 Christian Mayer and the Mundus Mirabilis contr
 // Attribution    : {attribution}
 // Comment        : {comment}
 // ============================================================================
+// clang-format on
 """
 
 CXX_KEYWORDS = {
@@ -74,6 +76,51 @@ def camel_case(text: str) -> str:
     if name in CXX_KEYWORDS:
         name += "_"
     return name
+
+
+def pascal_case(text: str) -> str:
+    """Converts 'Body Control' or 'climbing' to PascalCase ('BodyControl')."""
+    parts = words(text)
+    if not parts:
+        return "Value"
+    name = "".join(p[:1].upper() + p[1:].lower() for p in parts)
+    if name in CXX_KEYWORDS:
+        name += "_"
+    return name
+
+
+# Check-recipe enum strings -> rpg_os C++ enumerator names, shared by
+# _recipe_init so every mapping lives in exactly one place.
+_RECIPE_ENUMS = {
+    "resolution": {
+        "threshold": "Threshold", "pool": "Pool", "opposed": "Opposed",
+        "resistance": "Resistance",
+    },
+    "comparison": {"ge": "GreaterEqual", "le": "LessEqual"},
+    "threshold_source": {
+        "difficulty": "Difficulty", "actor_stat": "ActorStat",
+        "target_stat": "TargetStat",
+    },
+    "critical_style": {
+        "none": "None", "face": "Face", "double": "DoubleRoll",
+        "percentile": "PercentileBand",
+    },
+    "grading": {"none": "None", "percentile": "Percentile", "pool_quality": "PoolQuality"},
+    "difficulty_mode": {"to_threshold": "ToThreshold", "to_stat": "ToStat"},
+    "difficulty_multiplier": {"none": "None", "double_halve": "DoubleHalve"},
+}
+
+
+def _recipe_enum(field: str, value, default: str) -> str:
+    """Maps a check-recipe JSON enum string to its rpg_os enumerator name.
+    An absent value falls back to `default`; an *unknown* value is an
+    authoring error and raises (never silently coerced)."""
+    mapping = _RECIPE_ENUMS[field]
+    if value is None:
+        return default
+    if value not in mapping:
+        raise ValueError(f"unknown {field} '{value}' in check recipe")
+    return mapping[value]
 
 
 # Die sizes that have a dedicated user-defined literal suffix (_d2 ... _d100)
@@ -506,9 +553,11 @@ class Generator:
         for s in self.skills:
             self.skill_members[s["id"]] = camel_case(s.get("name", s["id"]))
 
-        # Stat ids that are kept wide (int32_t): these can grow beyond a byte
-        # (level, hit-point maxima, armor, proficiency) or back derived pools.
-        self.wide_attr_ids = {"proficiency_bonus", "level", "HitPoints_Max", "Armor_Rating"}
+        # Stat ids the ruleset declares "wide" (int32_t): stats that can grow
+        # beyond a byte even when their base bounds fit one (level, hit-point
+        # maxima, armor rating, proficiency bonus) or back derived pools.
+        # Declared per attribute in the ruleset JSON, never hard-coded here.
+        self.wide_attr_ids = {a["id"] for a in self.attrs if a.get("wide")}
 
         # id -> storage type for every emitted member (attributes + skills).
         # The narrowest type that covers the ruleset-declared bounds is chosen
@@ -613,6 +662,7 @@ class Generator:
         lines.append("#include <rpg_os/core/money.hpp>")
         lines.append("#include <rpg_os/core/spellbook.hpp>")
         lines.append("#include <rpg_os/core/variance.hpp>")
+        lines.append("#include <rpg_os/specific/sheet.hpp>")
         lines.append("#include <initializer_list>")
         lines.append("")
 
@@ -620,7 +670,7 @@ class Generator:
             lines.append(f"namespace {ns} {{")
         lines.append("")
         lines.extend(self._class_doc())
-        lines.append("class Character {")
+        lines.append("class Character : public rpg_os::specific::SheetBase<Character> {")
         lines.append("public:")
         lines.extend(self._constructor())
         lines.append("")
@@ -629,14 +679,14 @@ class Generator:
         lines.extend(self._resource_members())
         lines.extend(self._bookkeeping_members())
         lines.extend(self._runtime_state_members())
-        lines.extend(self._save_load_methods())
+        lines.extend(self._to_json())
+        lines.extend(self._restore_from_json())
         lines.extend(self._derived_getters())
         lines.extend(self._get_stat())
         lines.extend(self._check_methods())
         lines.extend(self._per_skill_checks())
         lines.extend(self._cost_table_accessors())
         lines.extend(self._data_loaders())
-        lines.extend(self._data_section_loaders())
         lines.append("};")
         lines.append("")
         for ns in reversed(self._namespace_parts()):
@@ -756,12 +806,13 @@ class Generator:
             "  std::unordered_set<std::string> traits;",
         ]
 
-    def _save_load_methods(self) -> list[str]:
-        """Save/load for the living sheet, distinct from the ruleset-record
-        loader (@ref _data_loaders): `toJson` snapshots the current state and
-        `restoreFromJson` puts it back, matching the universal
-        DynamicEntity::toJson/fromJson save-state shape so a save file is
-        portable between the two modes."""
+    def _to_json(self) -> list[str]:
+        """Serializes the living sheet's current state — attributes, skills,
+        resource current values, conditions with durations, the effect
+        timeline, temp HP, resistances, afflictions, traits, inventory,
+        equipment, money, spell slots and advancement — in the same save-state
+        shape as the universal @c rpg_os::DynamicEntity::toJson, so a save file
+        is portable between the two modes."""
         lines = [
             "",
             "  // ---- save / load (snapshot the living sheet, not a ruleset record) ----",
@@ -823,6 +874,14 @@ class Generator:
             "    for (const auto& type : resistances) { resistancesJson.push_back(type); }",
             '    out["resistances"] = resistancesJson;',
             "  }",
+        ]
+        return lines
+
+    def _restore_from_json(self) -> list[str]:
+        """Restores the living state written by @ref toJson. State absent from
+        `in` is left unchanged. Distinct from @ref fromJson, which loads a
+        *ruleset* archetype / creature record from scratch."""
+        lines = [
             "",
             "  /// Restores the living state written by @ref toJson. State absent from `in` is",
             "  /// left unchanged. Distinct from @ref fromJson, which loads a *ruleset*",
@@ -917,19 +976,14 @@ class Generator:
         """
         lines: list[str] = []
         resolution = cfg.get("resolution", "threshold")
-        lines.append("    .resolution = rpg_os::Resolution::" + {
-            "threshold": "Threshold", "pool": "Pool", "opposed": "Opposed",
-            "resistance": "Resistance",
-        }.get(resolution, "Threshold") + ",")
+        source = cfg.get("threshold_source")
+        lines.append("    .resolution = rpg_os::Resolution::" +
+                     _recipe_enum("resolution", cfg.get("resolution"), "Threshold") + ",")
         lines.append(f'    .dice = {dice_literal(cfg.get("dice", "1d20"))},')
-        lines.append("    .comparison = rpg_os::Comparison::" + {
-            "ge": "GreaterEqual", "le": "LessEqual",
-        }.get(cfg.get("comparison", "ge"), "GreaterEqual") + ",")
-        source = cfg.get("threshold_source", "difficulty")
-        lines.append("    .thresholdSource = rpg_os::ThresholdSource::" + {
-            "difficulty": "Difficulty", "actor_stat": "ActorStat",
-            "target_stat": "TargetStat",
-        }.get(source, "Difficulty") + ",")
+        lines.append("    .comparison = rpg_os::Comparison::" +
+                     _recipe_enum("comparison", cfg.get("comparison"), "GreaterEqual") + ",")
+        lines.append("    .thresholdSource = rpg_os::ThresholdSource::" +
+                     _recipe_enum("threshold_source", source, "Difficulty") + ",")
         if cfg.get("threshold_stat"):
             lines.append(f'    .thresholdStat = "{cfg["threshold_stat"]}",')
         if cfg.get("bonus_stats"):
@@ -946,32 +1000,26 @@ class Generator:
             lines.append(f'    .parryStat = "{cfg["parry_stat"]}",')
         if cfg.get("compare_levels"):
             lines.append("    .compareLevels = true,")
-        lines.append("    .criticalStyle = rpg_os::CriticalStyle::" + {
-            "none": "None", "face": "Face", "double": "DoubleRoll",
-            "percentile": "PercentileBand",
-        }.get(cfg.get("critical_style", "none"), "None") + ",")
+        lines.append("    .criticalStyle = rpg_os::CriticalStyle::" +
+                     _recipe_enum("critical_style", cfg.get("critical_style"), "None") + ",")
         if cfg.get("critical_face"):
             lines.append(f"    .criticalFace = {cfg['critical_face']},")
         if cfg.get("critical_confirm"):
             lines.append("    .criticalConfirm = true,")
-        lines.append("    .fumbleStyle = rpg_os::CriticalStyle::" + {
-            "none": "None", "face": "Face", "double": "DoubleRoll",
-            "percentile": "PercentileBand",
-        }.get(cfg.get("fumble_style", "none"), "None") + ",")
+        lines.append("    .fumbleStyle = rpg_os::CriticalStyle::" +
+                     _recipe_enum("critical_style", cfg.get("fumble_style"), "None") + ",")
         if cfg.get("fumble_face"):
             lines.append(f"    .fumbleFace = {cfg['fumble_face']},")
         if cfg.get("fumble_confirm"):
             lines.append("    .fumbleConfirm = true,")
-        lines.append("    .grading = rpg_os::Grading::" + {
-            "none": "None", "percentile": "Percentile",
-            "pool_quality": "PoolQuality",
-        }.get(cfg.get("grading", "none"), "None") + ",")
-        lines.append("    .difficultyMode = rpg_os::DifficultyMode::" + {
-            "to_threshold": "ToThreshold", "to_stat": "ToStat",
-        }.get(cfg.get("difficulty_mode", "to_threshold"), "ToThreshold") + ",")
-        lines.append("    .difficultyMultiplier = rpg_os::DifficultyMultiplier::" + {
-            "none": "None", "double_halve": "DoubleHalve",
-        }.get(cfg.get("difficulty_multiplier", "none"), "None") + ",")
+        lines.append("    .grading = rpg_os::Grading::" +
+                     _recipe_enum("grading", cfg.get("grading"), "None") + ",")
+        lines.append("    .difficultyMode = rpg_os::DifficultyMode::" +
+                     _recipe_enum("difficulty_mode", cfg.get("difficulty_mode"), "ToThreshold") +
+                     ",")
+        lines.append("    .difficultyMultiplier = rpg_os::DifficultyMultiplier::" +
+                     _recipe_enum("difficulty_multiplier", cfg.get("difficulty_multiplier"),
+                                  "None") + ",")
         needs_target = resolution in ("opposed", "resistance") or (
             resolution == "threshold" and source == "target_stat")
         return lines, needs_target
@@ -1005,23 +1053,26 @@ class Generator:
             return []
         lines = ["  // ---- per-skill checks (each skill's own linked attributes as a pool) ----"]
         for s in self.skills:
-            if len(s.get("attributes", [])) != 3:
+            attrs = s.get("attributes", [])
+            if len(attrs) != 3:
+                # A pool check rolls against exactly three linked attributes.
                 continue
-            method = "check" + camel_case(s["name"] if s.get("name") else s["id"])[:1].upper() + \
-                     camel_case(s["name"] if s.get("name") else s["id"])[1:]
-            attrs = s["attributes"]
+            method = "check" + pascal_case(s["name"] if s.get("name") else s["id"])
+            recipe_cfg = {
+                "resolution": "pool",
+                "dice": "3d20",
+                "pool_attributes": attrs,
+                "pool_stat": s["id"],
+                "critical_style": "double",
+                "fumble_style": "double",
+                "grading": "pool_quality",
+                "difficulty_mode": "to_stat",
+            }
+            init_lines, _ = self._recipe_init(recipe_cfg)
             lines.append("  template <rpg_os::RandomNumberGenerator Rng>")
             lines.append(f"  [[nodiscard]] rpg_os::CheckResult {method}(const rpg_os::CheckParams& params, Rng& rng) const {{")
             lines.append("    static const rpg_os::CheckRecipe recipe{")
-            lines.append("      .resolution = rpg_os::Resolution::Pool,")
-            lines.append(f'      .dice = {dice_literal("3d20")},')
-            lines.append(f"      .poolAttributes = {{\"{attrs[0]}\", \"{attrs[1]}\", \"{attrs[2]}\"}},")
-            lines.append("      .numPoolAttributes = 3,")
-            lines.append(f'      .poolStat = "{s["id"]}",')
-            lines.append("      .criticalStyle = rpg_os::CriticalStyle::DoubleRoll,")
-            lines.append("      .fumbleStyle = rpg_os::CriticalStyle::DoubleRoll,")
-            lines.append("      .grading = rpg_os::Grading::PoolQuality,")
-            lines.append("      .difficultyMode = rpg_os::DifficultyMode::ToStat,")
+            lines.extend(init_lines)
             lines.append("    };")
             lines.append("    return rpg_os::resolveCheck(*this, rpg_os::NullStatProvider{}, recipe, params, rng);")
             lines.append("  }")
@@ -1116,114 +1167,6 @@ class Generator:
         lines.append("      advancement.level = record.at(\"level\").get<int32_t>();")
         lines.append("    }")
         lines.append("  }")
-        lines.append("")
-        lines.append("  /// Loads a single archetype by id; throws std::invalid_argument when missing.")
-        lines.append("  static Character fromArchetype(const rpg_os::Json& rulesetJson, std::string_view id) {")
-        lines.append("    rpg_os::DefaultRandom rng;")
-        lines.append("    return fromArchetype(rulesetJson, id, rpg_os::Variance::Random, rng);")
-        lines.append("  }")
-        lines.append("")
-        lines.append("  /// Loads a single archetype by id, picking ranged values per `variance`.")
-        lines.append("  template <rpg_os::RandomNumberGenerator Rng>")
-        lines.append("  static Character fromArchetype(const rpg_os::Json& rulesetJson, std::string_view id,")
-        lines.append("                                rpg_os::Variance variance, Rng& rng) {")
-        lines.append("    for (const auto& record : rulesetJson.at(\"data\").at(\"archetypes\")) {")
-        lines.append("      if (record.value(\"id\", \"\") == id) {")
-        lines.append("        Character character;")
-        lines.append("        character.fromJson(record, variance, rng);")
-        lines.append("        return character;")
-        lines.append("      }")
-        lines.append("    }")
-        lines.append("    throw std::invalid_argument(\"unknown archetype '\" + std::string(id) + \"'\");")
-        lines.append("  }")
-        lines.append("")
-        lines.append("  /// Loads every archetype record from the ruleset JSON's data section.")
-        lines.append("  static std::vector<Character> loadArchetypes(const rpg_os::Json& rulesetJson) {")
-        lines.append("    rpg_os::DefaultRandom rng;")
-        lines.append("    return loadArchetypes(rulesetJson, rpg_os::Variance::Random, rng);")
-        lines.append("  }")
-        lines.append("")
-        lines.append("  /// Loads every archetype record, picking ranged values per `variance`.")
-        lines.append("  template <rpg_os::RandomNumberGenerator Rng>")
-        lines.append("  static std::vector<Character> loadArchetypes(const rpg_os::Json& rulesetJson,")
-        lines.append("                                                 rpg_os::Variance variance, Rng& rng) {")
-        lines.append("    std::vector<Character> out;")
-        lines.append("    for (const auto& record : rulesetJson.at(\"data\").at(\"archetypes\")) {")
-        lines.append("      Character character;")
-        lines.append("      character.fromJson(record, variance, rng);")
-        lines.append("      out.push_back(std::move(character));")
-        lines.append("    }")
-        lines.append("    return out;")
-        lines.append("  }")
-        lines.append("")
-        lines.append("  /// Loads a single creature from data.creatures by id; throws")
-        lines.append("  /// std::invalid_argument when missing (ranged values at random).")
-        lines.append("  static Character fromCreature(const rpg_os::Json& rulesetJson, std::string_view id) {")
-        lines.append("    rpg_os::DefaultRandom rng;")
-        lines.append("    return fromCreature(rulesetJson, id, rpg_os::Variance::Random, rng);")
-        lines.append("  }")
-        lines.append("")
-        lines.append("  /// Loads a single creature by id, picking ranged values per `variance`.")
-        lines.append("  template <rpg_os::RandomNumberGenerator Rng>")
-        lines.append("  static Character fromCreature(const rpg_os::Json& rulesetJson, std::string_view id,")
-        lines.append("                                rpg_os::Variance variance, Rng& rng) {")
-        lines.append("    for (const auto& record : rulesetJson.at(\"data\").at(\"creatures\")) {")
-        lines.append("      if (record.value(\"id\", \"\") == id) {")
-        lines.append("        Character character;")
-        lines.append("        character.fromJson(record, variance, rng);")
-        lines.append("        return character;")
-        lines.append("      }")
-        lines.append("    }")
-        lines.append("    throw std::invalid_argument(\"unknown creature '\" + std::string(id) + \"'\");")
-        lines.append("  }")
-        lines.append("")
-        lines.append("  /// Loads every creature record from the ruleset JSON's data section.")
-        lines.append("  static std::vector<Character> loadCreatures(const rpg_os::Json& rulesetJson) {")
-        lines.append("    rpg_os::DefaultRandom rng;")
-        lines.append("    return loadCreatures(rulesetJson, rpg_os::Variance::Random, rng);")
-        lines.append("  }")
-        lines.append("")
-        lines.append("  /// Loads every creature record, picking ranged values per `variance`.")
-        lines.append("  template <rpg_os::RandomNumberGenerator Rng>")
-        lines.append("  static std::vector<Character> loadCreatures(const rpg_os::Json& rulesetJson,")
-        lines.append("                                               rpg_os::Variance variance, Rng& rng) {")
-        lines.append("    std::vector<Character> out;")
-        lines.append("    for (const auto& record : rulesetJson.at(\"data\").at(\"creatures\")) {")
-        lines.append("      Character character;")
-        lines.append("      character.fromJson(record, variance, rng);")
-        lines.append("      out.push_back(std::move(character));")
-        lines.append("    }")
-        lines.append("    return out;")
-        lines.append("  }")
-        return lines
-
-
-    def _data_section_loaders(self) -> list[str]:
-        """Typed loaders for every free-form data section (spells, conditions,
-        poisons, diseases, items, ...). The records stay raw JSON — their shape
-        is ruleset-specific by design — but the generated code hands them to
-        the application so nothing in the ruleset's data database is out of
-        reach."""
-        lines = ["", "  // ---- free-form data section loaders ----",
-                 "  /// Loads every record from a named `data` section as raw JSON.",
-                 "  static std::vector<rpg_os::Json> loadSection(const rpg_os::Json& rulesetJson,",
-                 "                                               std::string_view section) {",
-                 "    std::vector<rpg_os::Json> out;",
-                 "    const auto& data = rulesetJson.at(\"data\");",
-                 "    if (data.contains(section)) {",
-                 "      for (const auto& record : data.at(section)) {",
-                 "        out.push_back(record);",
-                 "      }",
-                 "    }",
-                 "    return out;",
-                 "  }"]
-        for section in ("spells", "conditions", "poisons", "diseases", "items", "curses"):
-            method = f"load{section[:1].upper()}{section[1:]}"
-            lines.append("")
-            lines.append(f"  /// Loads every {section} record from the ruleset JSON.")
-            lines.append(f"  static std::vector<rpg_os::Json> {method}(const rpg_os::Json& rulesetJson) {{")
-            lines.append(f"    return loadSection(rulesetJson, \"{section}\");")
-            lines.append("  }")
         return lines
 
 
@@ -1237,15 +1180,18 @@ def main() -> int:
     parser.add_argument("--out", required=True, help="output directory")
     args = parser.parse_args()
 
-    ruleset_path = pathlib.Path(args.ruleset)
-    ruleset = json.loads(ruleset_path.read_text(encoding="utf-8"))
-    header = generate(ruleset)
-
-    ruleset_id = ruleset["ruleset_id"]
-    out_dir = pathlib.Path(args.out)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / f"{ruleset_id}_static.hpp"
-    out_file.write_text(header, encoding="utf-8")
+    try:
+        ruleset_path = pathlib.Path(args.ruleset)
+        ruleset = json.loads(ruleset_path.read_text(encoding="utf-8"))
+        header = generate(ruleset)
+        ruleset_id = ruleset["ruleset_id"]
+        out_dir = pathlib.Path(args.out)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_file = out_dir / f"{ruleset_id}_static.hpp"
+        out_file.write_text(header, encoding="utf-8")
+    except (OSError, json.JSONDecodeError, KeyError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
     print(f"wrote {out_file}")
     return 0
 

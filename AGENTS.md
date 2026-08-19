@@ -89,7 +89,7 @@ step regenerates them into a temp dir and checks `git diff --exit-code`.
 | `include/rpg_os/common/` | Shared value types, JSON alias, event system |
 | `include/rpg_os/core/` | Shared header-only template core (concepts, dice, math, modifier, cost tables, checks, entity) |
 | `include/rpg_os/universal/` | Universal (dynamic) mode: ruleset loader, AST evaluator, dynamic entity, check resolver, engine facade |
-| `include/rpg_os/specific/` | Runtime support used by generated code (`data_loader.hpp`) |
+| `include/rpg_os/specific/` | Shared runtime support used by generated code (`sheet.hpp`, a CRTP base implementing the common data-database loaders) |
 | `include/rpg_os/third_party/` | Vendored headers (`nlohmann/json.hpp`, `doctest/`) — never edit, never format |
 | `src/` | Reserved for a future out-of-line TU; the library is header-only today |
 | `codegen/` | `rpg_os_codegen.py` + `validate_ruleset.py` — Python 3 (stdlib only) code generator and schema validator |

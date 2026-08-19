@@ -30,7 +30,19 @@ add_executable(rpg_os_tests
   test_combat_session.cpp
   test_codegen_output.cpp
   test_data_api.cpp
-  test_bookkeeping.cpp
+  test_money.cpp
+  test_inventory.cpp
+  test_equipment.cpp
+  test_effects.cpp
+  test_spellcasting.cpp
+  test_conditions.cpp
+  test_traits.cpp
+  test_advancement.cpp
+  test_game_session.cpp
+  test_check_resolver.cpp
+  test_world_state.cpp
+  test_types.cpp
+  test_errors.cpp
 )
 
 target_link_libraries(rpg_os_tests PRIVATE rpg_os::rpg_os)

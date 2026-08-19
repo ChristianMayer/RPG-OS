@@ -51,6 +51,12 @@ inline ScriptedRng script(std::initializer_list<int> values) {
   return ScriptedRng{std::vector<int>(values)};
 }
 
+/// Absolute path to a ruleset JSON file under the repo's `rulesets/` directory
+/// (RPG_OS_SOURCE_DIR is defined by tests/CMakeLists.txt).
+inline std::string rulesetPath(const char *name) {
+  return std::string(RPG_OS_SOURCE_DIR) + "/rulesets/" + name;
+}
+
 /// A minimal StatProvider backed by an unordered map (used as a test double).
 ///
 /// @par Why a map instead of a real entity?

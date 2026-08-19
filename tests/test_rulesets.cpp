@@ -18,14 +18,6 @@
 #include <rpg_os/universal/engine.hpp>
 #include <string>
 
-namespace {
-
-std::string rulesetPath(const char *name) {
-  return std::string(RPG_OS_SOURCE_DIR) + "/rulesets/" + name;
-}
-
-} // namespace
-
 TEST_CASE("dnd5e_srd: loads and resolves real SRD values") {
   rpg_os::RulesetEngine engine;
   REQUIRE(engine.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));

@@ -21,8 +21,18 @@ from pathlib import Path
 
 SCHEMA_PATH = Path(__file__).resolve().parent.parent / "rulesets" / "ruleset.schema.json"
 
-# A dice/range expression, e.g. "2d6", "1d4+1", "2d6-2", "3d10+6".
-_VARIANT_STRING = re.compile(r"^[+-]?([0-9]+d[0-9]+|[0-9]+)([+-][0-9]+d[0-9]+|[+-][0-9]+)*$")
+# A dice/range expression, e.g. "2d6", "1d4+1", "2d6-2", "3d10+6". The
+# pattern is read from the schema's variantValue definition so the grammar
+# lives in exactly one place.
+def _variant_string_pattern() -> str:
+    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    for candidate in schema["definitions"]["variantValue"]["oneOf"]:
+        if isinstance(candidate, dict) and candidate.get("type") == "string":
+            return candidate["pattern"]
+    raise RuntimeError("variantValue string pattern not found in schema")
+
+
+_VARIANT_STRING = re.compile(_variant_string_pattern())
 
 # An http(s) URL — the only accepted form for the optional 'licence_source'.
 _URL = re.compile(r"^https?://\S+$")

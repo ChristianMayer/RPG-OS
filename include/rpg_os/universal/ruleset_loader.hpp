@@ -221,7 +221,7 @@ public:
   std::string licenceNotice; ///< optional verbatim notice the licence requires (e.g. ORC Notice)
   std::string attribution;   ///< optional attribution/credit statement the licence requires
   std::string comment;       ///< optional free-form note for the ruleset author
-  std::string ns;            ///< namespace used by the code generator
+  std::string cppNamespace;  ///< namespace used by the code generator
   std::string
       spellResource; ///< resource pool that spell casting draws its cost from (empty = none)
   int32_t schemaVersion{0};
@@ -356,6 +356,68 @@ inline bool Ruleset::isCondition(std::string_view conditionId) const {
     }
   }
   return false;
+}
+
+/// Looks up a raw data record by id in a named `data` section (e.g. "spells",
+/// "poisons", "diseases", "conditions", "items", "archetypes", "creatures").
+/// Returns nullptr when the section or the record does not exist.
+///
+/// @par Why a free function on Ruleset?
+/// The universal engine (@ref RulesetEngine) and a character sheet
+/// (@ref DynamicEntity) both look up raw records by id; one scan keeps the two
+/// halves of universal mode in agreement about which records exist.
+[[nodiscard]] inline const Json *findDataRecord(const Ruleset &ruleset, std::string_view section,
+                                                std::string_view id) {
+  if (!ruleset.data.is_object()) {
+    return nullptr;
+  }
+  const auto it = ruleset.data.find(std::string(section));
+  if (it == ruleset.data.end() || !it->is_array()) {
+    return nullptr;
+  }
+  for (const Json &record : *it) {
+    if (record.value("id", "") == id) {
+      return &record;
+    }
+  }
+  return nullptr;
+}
+
+/// Reads a spell's resource cost exactly as @ref RulesetEngine::castSpell
+/// spends it: the `cost` field, else `ae_cost`, else `level` (one point per
+/// spell level). Returns 0 when the record declares none of these.
+///
+/// @par Why a shared reader?
+/// The affordability check in the combat simulator must agree with what
+/// casting actually spends; one reader keeps the two in lockstep.
+[[nodiscard]] inline int32_t spellCost(const Json &spell) {
+  if (spell.contains("cost") && spell.at("cost").is_number_integer()) {
+    return spell.at("cost").get<int32_t>();
+  }
+  if (spell.contains("ae_cost") && spell.at("ae_cost").is_number_integer()) {
+    return spell.at("ae_cost").get<int32_t>();
+  }
+  if (spell.contains("level") && spell.at("level").is_number_integer()) {
+    return spell.at("level").get<int32_t>();
+  }
+  return 0;
+}
+
+/// Finds the id of the ruleset's primary hit-point pool (the first resource
+/// pool with a minimum of 0), e.g. "LP" for The Dark Eye and "HP" for D&D 5e.
+///
+/// @par Why "minimum of 0" as the heuristic?
+/// The primary hit-point pool is the one a creature is reduced to 0 in to die;
+/// in both shipped rulesets it is the pool whose minimum is 0 (LP, HP), while
+/// secondary pools (Astral Energy, Karma) start above 0. The heuristic avoids
+/// hard-coding pool names into the engine.
+[[nodiscard]] inline std::string resolveHitPointPool(const Ruleset &ruleset) {
+  for (const ResourcePoolDef &pool : ruleset.resourcePools) {
+    if (pool.minValue == 0) {
+      return pool.id;
+    }
+  }
+  return {};
 }
 
 /**
@@ -809,7 +871,7 @@ inline Ruleset RulesetLoader::load(const Json &root) {
   out.licenceNotice = root.value("licence_notice", "");
   out.attribution = root.value("attribution", "");
   out.comment = root.value("comment", "");
-  out.ns = root.value("namespace", "rpg_os::generated::" + out.id);
+  out.cppNamespace = root.value("namespace", "rpg_os::generated::" + out.id);
   out.spellResource = root.value("spell_resource", "");
 
   parseAttributes(root, out);

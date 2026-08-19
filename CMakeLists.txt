@@ -125,16 +125,17 @@ target_include_directories(rpg_os SYSTEM INTERFACE
 # --------------------------------------------------------------------------
 find_package(Python3 COMPONENTS Interpreter)
 if(Python3_Interpreter_FOUND)
+  # The shipped rulesets. Adding a system = appending one id here; the
+  # generated header name (<ruleset_id>_static.hpp) is derived by the script.
+  set(RPG_OS_RULESETS dnd5e_srd tde5e_core brp_ugc)
+  foreach(ruleset_id IN LISTS RPG_OS_RULESETS)
+    list(APPEND _rpg_os_codegen_commands
+      COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/codegen/rpg_os_codegen.py
+              --ruleset ${PROJECT_SOURCE_DIR}/rulesets/${ruleset_id}.json
+              --out ${PROJECT_SOURCE_DIR}/generated)
+  endforeach()
   add_custom_target(rpg_os_codegen
-    COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/codegen/rpg_os_codegen.py
-            --ruleset ${PROJECT_SOURCE_DIR}/rulesets/dnd5e_srd.json
-            --out ${PROJECT_SOURCE_DIR}/generated
-    COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/codegen/rpg_os_codegen.py
-            --ruleset ${PROJECT_SOURCE_DIR}/rulesets/tde5e_core.json
-            --out ${PROJECT_SOURCE_DIR}/generated
-    COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/codegen/rpg_os_codegen.py
-            --ruleset ${PROJECT_SOURCE_DIR}/rulesets/brp_ugc.json
-            --out ${PROJECT_SOURCE_DIR}/generated
+    ${_rpg_os_codegen_commands}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     COMMENT "Regenerating codegen outputs from the rulesets")
   if(RPG_OS_RUN_CODEGEN)

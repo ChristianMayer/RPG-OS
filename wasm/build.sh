@@ -65,5 +65,10 @@ done
 # Ship the licence alongside the package.
 cp "${ROOT_DIR}/LICENSE" "${SCRIPT_DIR}/package/LICENSE"
 
+# Ship the shared WASM wrapper (index.mjs imports it as ./core.mjs). The
+# canonical source is web/demo/rpg-core.js so the npm package and the demo
+# page share one implementation.
+cp "${ROOT_DIR}/web/demo/rpg-core.js" "${SCRIPT_DIR}/package/core.mjs"
+
 echo "built ${OUT_DIR}/rpg-os-universal.js (+ .wasm)"
-echo "packaged rulesets + LICENSE under ${SCRIPT_DIR}/package/"
+echo "packaged rulesets + LICENSE + core.mjs under ${SCRIPT_DIR}/package/"

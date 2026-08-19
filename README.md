@@ -196,7 +196,7 @@ include/rpg_os/
 ├── common/       shared value types, JSON, event system
 ├── core/         shared header-only template core (checks, dice, entity, …)
 ├── universal/    dynamic mode: loader, evaluator, engine, combat
-├── specific/     runtime support used by generated code
+├── specific/     shared CRTP base (sheet.hpp) for generated sheets
 └── third_party/  vendored headers (never edit)
 codegen/          rpg_os_codegen.py + validate_ruleset.py
 rulesets/         the ruleset JSON files + ruleset.schema.json

@@ -37,10 +37,10 @@ if(RPG_OS_BUILD_DOCS)
 endif()
 
 # The root VERSION file is the single source for the version shown in the docs
-# (Doxyfile PROJECT_NUMBER = "$(RPG_OS_VERSION)"). Read it here and inject its
-# content as the RPG_OS_VERSION environment variable when invoking Doxygen.
-file(READ "${PROJECT_SOURCE_DIR}/VERSION" _rpg_os_docs_version_raw)
-string(STRIP "${_rpg_os_docs_version_raw}" _rpg_os_docs_version)
+# (Doxyfile PROJECT_NUMBER = "$(RPG_OS_VERSION)"). The root CMakeLists already
+# read it into RPG_OS_VERSION; inject that value as the environment variable
+# when invoking Doxygen.
+set(_rpg_os_docs_version "${RPG_OS_VERSION}")
 
 # Doxygen resolves relative paths from its working directory, so run it from
 # the source root; the committed Doxyfile then emits ./html there. The output

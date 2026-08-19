@@ -21,14 +21,6 @@
 #include <rpg_os/universal/combat.hpp>
 #include <string>
 
-namespace {
-
-std::string rulesetPath(const char *name) {
-  return std::string(RPG_OS_SOURCE_DIR) + "/rulesets/" + name;
-}
-
-} // namespace
-
 TEST_CASE("combat: attack check type and hit-point pool are resolved") {
   rpg_os::RulesetEngine engine;
   REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));

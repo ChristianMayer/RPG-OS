@@ -157,7 +157,12 @@ export class RpgOs {
   meta(): RulesetMeta;
   entries(): RulesetEntry[];
   createEntity(id: string, options?: CreateEntityOptions): Entity;
-  createEntityFromSheet(id: string, stats: Record<string, number>): Entity;
+  /**
+   * Creates an entity from an arbitrary character sheet — a plain stats map
+   * like `{ COU: 12, Attack: 12, ... }` or a full `DynamicEntity` save form
+   * (`{ stats: {...}, resources: {...}, ... }`).
+   */
+  createEntityFromSheet(id: string, stats: Record<string, number> | object): Entity;
   check(checkType: string, actor: Entity, target?: Entity | null, options?: CheckOptions): CheckResult;
   specFromId(id: string, weapon?: string): CombatantSpec;
   specFromEntity(entity: Entity, weapon?: string): CombatantSpec;

@@ -32,7 +32,6 @@
 #include <cstdint>
 #include <functional>
 #include <rpg_os/common/json.hpp>
-#include <rpg_os/common/types.hpp>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -166,7 +165,7 @@ public:
     for (auto &kv : m_listeners) {
       auto &entries = kv.second;
       for (auto it = entries.begin(); it != entries.end(); ++it) {
-        if (it->id == listenerId) {
+        if (it->m_id == listenerId) {
           entries.erase(it);
           return true;
         }
@@ -185,20 +184,20 @@ public:
       return;
     }
     for (const Entry &entry : it->second) {
-      entry.callback(data);
+      entry.m_callback(data);
     }
   }
 
   /// Number of listeners for a type (diagnostics / tests).
-  [[nodiscard]] std::size_t listenerCount(EventType type) const {
+  [[nodiscard]] std::size_t listenerCount(EventType type) const noexcept {
     const auto it = m_listeners.find(type);
     return it == m_listeners.end() ? 0 : it->second.size();
   }
 
 private:
   struct Entry {
-    uint64_t id;
-    Callback callback;
+    uint64_t m_id;
+    Callback m_callback;
   };
   std::unordered_map<EventType, std::vector<Entry>> m_listeners;
   uint64_t m_nextId{1};
