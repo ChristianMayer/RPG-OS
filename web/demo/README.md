@@ -109,3 +109,11 @@ python3 -m http.server -d web/demo 8000
 
 This is exactly what the `deploy-demo` job of the CI `docs.yml` workflow
 automates (after the docs deploy, so ordering is guaranteed).
+
+In VS Code the same flow is one click: the **"Run Web Demo"** task
+(`.vscode/tasks.json`) builds the WASM assets + rulesets, generates the
+leaderboards and starts the server; the **"Debug Web Demo"** launch
+configuration (F5, while the "Serve Web Demo" task is running) opens the page
+in a browser with the JS debugger attached. See the
+[Developer Guide](../../docs/guides/developer-guide.md), "Running the web
+demo locally".

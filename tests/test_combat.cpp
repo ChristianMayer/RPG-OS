@@ -304,6 +304,22 @@ TEST_CASE("combat: a mage archetype spec carries its known spells") {
         magus.spellIds.end());
 }
 
+TEST_CASE("combat: pickSpell ignores non-damaging spells even with a stale damage field") {
+  rpg_os::RulesetEngine engine;
+  REQUIRE(engine.loadRulesetFromFile(rulesetPath("dnd5e_srd.json")));
+  // The sphinx knows only non-damaging spells (detect, buffs, resists). Its
+  // `heroes_feast` carries a stale bare `damage: "2d10"` next to its real
+  // effects (a resist) — pickSpell must not treat it as a damaging spell, or
+  // the sphinx would waste every turn casting it and never attack.
+  rpg_os::CombatantSpec sphinx;
+  REQUIRE(rpg_os::makeCombatantSpec(engine, "sphinx_of_valor", sphinx));
+  CHECK_FALSE(sphinx.spellIds.empty());
+  rpg_os::DefaultRandom rng(7);
+  auto fighter = rpg_os::createFighter(engine, sphinx, rng);
+  REQUIRE(fighter != nullptr);
+  CHECK(rpg_os::detail::pickSpell(engine, *fighter, sphinx.spellIds).empty());
+}
+
 TEST_CASE("combat: pickSpell ranks spells by affordability and expected damage") {
   rpg_os::RulesetEngine engine;
   REQUIRE(engine.loadRulesetFromFile(rulesetPath("tde5e_core.json")));

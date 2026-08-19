@@ -372,10 +372,14 @@ template <RandomNumberGenerator Rng>
 namespace detail {
 
 /// The expected damage of a spell record, used only to rank spells so the
-/// caster picks its strongest option. Handles both the bare `damage` field
-/// and the structured `effects` array (sums the `dice` of every damage-kind
-/// effect). A spell with no damage at all (a buff, a heal, a utility effect)
-/// ranks as zero and is never chosen as a fight action.
+/// caster picks its strongest option. Mirrors how @ref castSpell resolves a
+/// spell: a structured `effects` array takes precedence over the bare `damage`
+/// field, so a spell whose effects are non-damaging (a buff, a resist, a
+/// condition) ranks as zero even if the record still carries a stale `damage`
+/// value. A spell with no actual damage at all is never chosen as a fight
+/// action — otherwise a caster wastes its turns casting something that deals
+/// nothing (the extracted SRD spells often keep a leftover `damage` field next
+/// to their real `effects`).
 [[nodiscard]] inline double spellAverageDamage(const Json &spell) {
   double total = 0.0;
   const auto addDice = [&](const Json &value) {
@@ -385,15 +389,14 @@ namespace detail {
       total += DiceExpression(value.get<std::string>()).expectedValue();
     }
   };
-  if (spell.contains("damage")) {
-    addDice(spell.at("damage"));
-  }
   if (spell.contains("effects") && spell.at("effects").is_array()) {
     for (const Json &effect : spell.at("effects")) {
       if (effect.value("kind", "") == "damage" && effect.contains("dice")) {
         addDice(effect.at("dice"));
       }
     }
+  } else if (spell.contains("damage")) {
+    addDice(spell.at("damage"));
   }
   return total;
 }

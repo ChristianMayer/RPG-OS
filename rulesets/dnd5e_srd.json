@@ -3354,7 +3354,8 @@
           "INT": 18,
           "WIS": 15,
           "CHA": 18,
-          "HitPoints_Max": "20d10+40"
+          "HitPoints_Max": "20d10+40",
+          "proficiency_bonus": 4
         },
         "senses": "Darkvision 120 ft.; Passive Perception 20",
         "languages": "Deep Speech; telepathy 120 ft.",
@@ -3407,7 +3408,8 @@
           "CON": 14,
           "WIS": 10,
           "CHA": 6,
-          "HitPoints_Max": "12d10+24"
+          "HitPoints_Max": "12d10+24",
+          "proficiency_bonus": 3
         },
         "resistances": "Bludgeoning, Lightning, Piercing, Slashing",
         "immunities": "Poison, Thunder; Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious",
@@ -3452,7 +3454,8 @@
           "INT": 1,
           "WIS": 3,
           "CHA": 1,
-          "HitPoints_Max": "6d8+6"
+          "HitPoints_Max": "6d8+6",
+          "proficiency_bonus": 2
         },
         "immunities": "Poison, Psychic; Charmed, Deafened, Exhaustion, Frightened, Paralyzed, Petrified, Poisoned",
         "senses": "Blindsight 60 ft.; Passive Perception 6",
@@ -3491,7 +3494,8 @@
           "INT": 1,
           "WIS": 5,
           "CHA": 1,
-          "HitPoints_Max": "4d6"
+          "HitPoints_Max": "4d6",
+          "proficiency_bonus": 2
         },
         "immunities": "Poison, Psychic; Charmed, Deafened, Exhaustion, Frightened, Paralyzed, Petrified, Poisoned",
         "senses": "Blindsight 60 ft.; Passive Perception 7",
@@ -3529,7 +3533,8 @@
           "INT": 1,
           "WIS": 3,
           "CHA": 1,
-          "HitPoints_Max": "5d10"
+          "HitPoints_Max": "5d10",
+          "proficiency_bonus": 2
         },
         "immunities": "Poison, Psychic; Charmed, Deafened,",
         "senses": "Blindsight 60 ft.; Passive Perception 6",
@@ -3569,7 +3574,8 @@
           "CON": 14,
           "WIS": 13,
           "CHA": 6,
-          "HitPoints_Max": "6d10+12"
+          "HitPoints_Max": "6d10+12",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft., Tremorsense 60 ft.;",
         "languages": "None",
@@ -3616,7 +3622,8 @@
           "INT": 16,
           "WIS": 11,
           "CHA": 10,
-          "HitPoints_Max": "15d8+30"
+          "HitPoints_Max": "15d8+30",
+          "proficiency_bonus": 3
         },
         "skills": {
           "acrobatics": 7,
@@ -3674,7 +3681,8 @@
           "INT": 10,
           "WIS": 10,
           "CHA": 6,
-          "HitPoints_Max": "3d6"
+          "HitPoints_Max": "3d6",
+          "proficiency_bonus": 2
         },
         "id": "awakened_shrub",
         "actions": [
@@ -3705,7 +3713,8 @@
           "INT": 10,
           "WIS": 10,
           "CHA": 7,
-          "HitPoints_Max": "7d12+14"
+          "HitPoints_Max": "7d12+14",
+          "proficiency_bonus": 2
         },
         "vulnerabilities": "Fire",
         "resistances": "Bludgeoning, Piercing",
@@ -3745,7 +3754,8 @@
           "INT": 2,
           "WIS": 10,
           "CHA": 5,
-          "HitPoints_Max": "3d10+3"
+          "HitPoints_Max": "3d10+3",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 10",
         "languages": "None",
@@ -3783,7 +3793,8 @@
           "CON": 15,
           "WIS": 13,
           "CHA": 10,
-          "HitPoints_Max": "6d8+12"
+          "HitPoints_Max": "6d8+12",
+          "proficiency_bonus": 2
         },
         "immunities": "Fire, Poison; Poisoned",
         "senses": "Passive Perception 11",
@@ -3831,7 +3842,8 @@
           "INT": 20,
           "WIS": 16,
           "CHA": 22,
-          "HitPoints_Max": "23d12+138"
+          "HitPoints_Max": "23d12+138",
+          "proficiency_bonus": 6
         },
         "skills": {
           "perception": 9
@@ -3891,7 +3903,8 @@
           "INT": 10,
           "WIS": 10,
           "CHA": 10,
-          "HitPoints_Max": "2d8+2"
+          "HitPoints_Max": "2d8+2",
+          "proficiency_bonus": 2
         },
         "id": "bandit",
         "actions": [
@@ -3933,7 +3946,8 @@
           "CON": 14,
           "WIS": 11,
           "CHA": 14,
-          "HitPoints_Max": "8d8+16"
+          "HitPoints_Max": "8d8+16",
+          "proficiency_bonus": 2
         },
         "gear": "Pistol, Scimitar, Studded Leather Armor",
         "senses": "Passive Perception 10",
@@ -3988,7 +4002,8 @@
           "INT": 12,
           "WIS": 14,
           "CHA": 14,
-          "HitPoints_Max": "13d8+52"
+          "HitPoints_Max": "13d8+52",
+          "proficiency_bonus": 3
         },
         "resistances": "Cold",
         "immunities": "Fire, Poison; Poisoned",
@@ -4056,7 +4071,8 @@
           "INT": 2,
           "WIS": 8,
           "CHA": 7,
-          "HitPoints_Max": "8d8+16"
+          "HitPoints_Max": "8d8+16",
+          "proficiency_bonus": 2
         },
         "id": "basilisk",
         "actions": [
@@ -4094,7 +4110,8 @@
           "INT": 9,
           "WIS": 11,
           "CHA": 14,
-          "HitPoints_Max": "9d8+18"
+          "HitPoints_Max": "9d8+18",
+          "proficiency_bonus": 2
         },
         "resistances": "Cold",
         "immunities": "Fire, Poison; Frightened, Poisoned",
@@ -4146,7 +4163,8 @@
           "INT": 7,
           "WIS": 14,
           "CHA": 12,
-          "HitPoints_Max": "16d12+64"
+          "HitPoints_Max": "16d12+64",
+          "proficiency_bonus": 4
         },
         "immunities": "Lightning",
         "senses": "Darkvision 90 ft.; Passive Perception 16",
@@ -4196,7 +4214,8 @@
           "CON": 17,
           "WIS": 11,
           "CHA": 9,
-          "HitPoints_Max": "9d8+27"
+          "HitPoints_Max": "9d8+27",
+          "proficiency_bonus": 2
         },
         "gear": "Greataxe, Hide Armor",
         "senses": "Passive Perception 10",
@@ -4242,7 +4261,8 @@
           "INT": 10,
           "WIS": 11,
           "CHA": 13,
-          "HitPoints_Max": "6d8+6"
+          "HitPoints_Max": "6d8+6",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 4,
@@ -4285,7 +4305,8 @@
           "INT": 12,
           "WIS": 11,
           "CHA": 15,
-          "HitPoints_Max": "15d10+45"
+          "HitPoints_Max": "15d10+45",
+          "proficiency_bonus": 3
         },
         "immunities": "Acid",
         "senses": "Blindsight 30 ft., Darkvision 120 ft.;",
@@ -4336,7 +4357,8 @@
           "INT": 14,
           "WIS": 13,
           "CHA": 19,
-          "HitPoints_Max": "17d12+85"
+          "HitPoints_Max": "17d12+85",
+          "proficiency_bonus": 5
         },
         "skills": {
           "perception": 11,
@@ -4393,7 +4415,8 @@
           "INT": 16,
           "WIS": 15,
           "CHA": 22,
-          "HitPoints_Max": "21d20+147"
+          "HitPoints_Max": "21d20+147",
+          "proficiency_bonus": 7
         },
         "skills": {
           "perception": 16,
@@ -4446,7 +4469,8 @@
           "INT": 1,
           "WIS": 6,
           "CHA": 1,
-          "HitPoints_Max": "8d10+24"
+          "HitPoints_Max": "8d10+24",
+          "proficiency_bonus": 2
         },
         "immunities": "Acid, Cold, Lightning, Slashing; Charmed, Deafened, Exhaustion, Frightened, Grappled, Prone, Restrained",
         "senses": "Blindsight 60 ft.; Passive Perception 8",
@@ -4497,7 +4521,8 @@
           "INT": 10,
           "WIS": 13,
           "CHA": 11,
-          "HitPoints_Max": "4d8+4"
+          "HitPoints_Max": "4d8+4",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 5,
@@ -4539,7 +4564,8 @@
           "CON": 15,
           "WIS": 11,
           "CHA": 15,
-          "HitPoints_Max": "10d8+20"
+          "HitPoints_Max": "10d8+20",
+          "proficiency_bonus": 2
         },
         "immunities": "Lightning",
         "senses": "Blindsight 10 ft., Darkvision 60 ft.; Passive Perception 14",
@@ -4583,7 +4609,8 @@
           "CON": 19,
           "WIS": 13,
           "CHA": 17,
-          "HitPoints_Max": "16d10+64"
+          "HitPoints_Max": "16d10+64",
+          "proficiency_bonus": 4
         },
         "immunities": "Lightning",
         "senses": "Blindsight 30 ft., Darkvision 120 ft.; Passive Perception 19",
@@ -4627,7 +4654,8 @@
           "INT": 16,
           "WIS": 15,
           "CHA": 20,
-          "HitPoints_Max": "17d12+102"
+          "HitPoints_Max": "17d12+102",
+          "proficiency_bonus": 5
         },
         "immunities": "Lightning",
         "senses": "Blindsight 60 ft., Darkvision 120 ft.; Passive Perception 22",
@@ -4685,7 +4713,8 @@
           "INT": 18,
           "WIS": 17,
           "CHA": 25,
-          "HitPoints_Max": "26d20+208"
+          "HitPoints_Max": "26d20+208",
+          "proficiency_bonus": 7
         },
         "immunities": "Lightning",
         "senses": "Blindsight 60 ft., Darkvision 120 ft.; Passive Perception 27",
@@ -4743,7 +4772,8 @@
           "CON": 18,
           "WIS": 14,
           "CHA": 16,
-          "HitPoints_Max": "17d10+68"
+          "HitPoints_Max": "17d10+68",
+          "proficiency_bonus": 4
         },
         "resistances": "Cold",
         "immunities": "Fire, Poison; Poisoned",
@@ -4805,7 +4835,8 @@
           "INT": 10,
           "WIS": 11,
           "CHA": 13,
-          "HitPoints_Max": "4d8+4"
+          "HitPoints_Max": "4d8+4",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 4,
@@ -4845,7 +4876,8 @@
           "INT": 12,
           "WIS": 11,
           "CHA": 15,
-          "HitPoints_Max": "13d10+39"
+          "HitPoints_Max": "13d10+39",
+          "proficiency_bonus": 3
         },
         "immunities": "Fire",
         "senses": "Blindsight 30 ft., Darkvision 120 ft.; Passive Perception 16",
@@ -4894,7 +4926,8 @@
           "INT": 14,
           "WIS": 13,
           "CHA": 17,
-          "HitPoints_Max": "15d12+75"
+          "HitPoints_Max": "15d12+75",
+          "proficiency_bonus": 5
         },
         "skills": {
           "history": 7,
@@ -4951,7 +4984,8 @@
           "INT": 16,
           "WIS": 15,
           "CHA": 22,
-          "HitPoints_Max": "19d20+133"
+          "HitPoints_Max": "19d20+133",
+          "proficiency_bonus": 6
         },
         "immunities": "Fire",
         "senses": "Blindsight 60 ft., Darkvision 120 ft.; Passive Perception 24",
@@ -5012,7 +5046,8 @@
           "CON": 15,
           "WIS": 11,
           "CHA": 15,
-          "HitPoints_Max": "6d8+12"
+          "HitPoints_Max": "6d8+12",
+          "proficiency_bonus": 2
         },
         "immunities": "Lightning",
         "senses": "Blindsight 10 ft., Darkvision 60 ft.; Passive Perception 14",
@@ -5060,7 +5095,8 @@
           "CON": 19,
           "WIS": 13,
           "CHA": 17,
-          "HitPoints_Max": "15d10+60"
+          "HitPoints_Max": "15d10+60",
+          "proficiency_bonus": 3
         },
         "immunities": "Lightning",
         "senses": "Blindsight 30 ft., Darkvision 120 ft.; Passive Perception 17",
@@ -5113,7 +5149,8 @@
           "INT": 16,
           "WIS": 15,
           "CHA": 20,
-          "HitPoints_Max": "17d12+102"
+          "HitPoints_Max": "17d12+102",
+          "proficiency_bonus": 5
         },
         "skills": {
           "insight": 7,
@@ -5171,7 +5208,8 @@
           "INT": 18,
           "WIS": 17,
           "CHA": 25,
-          "HitPoints_Max": "24d20+192"
+          "HitPoints_Max": "24d20+192",
+          "proficiency_bonus": 7
         },
         "immunities": "Lightning",
         "senses": "Blindsight 60 ft., Darkvision 120 ft.;",
@@ -5235,7 +5273,8 @@
           "INT": 11,
           "WIS": 12,
           "CHA": 11,
-          "HitPoints_Max": "10d8+20"
+          "HitPoints_Max": "10d8+20",
+          "proficiency_bonus": 2
         },
         "gear": "Chain Shirt, Javelins (6), Morningstar",
         "senses": "Darkvision 60 ft.; Passive Perception 11",
@@ -5296,7 +5335,8 @@
           "INT": 8,
           "WIS": 11,
           "CHA": 9,
-          "HitPoints_Max": "6d8+6"
+          "HitPoints_Max": "6d8+6",
+          "proficiency_bonus": 2
         },
         "skills": {
           "stealth": 6,
@@ -5345,7 +5385,8 @@
           "CON": 21,
           "WIS": 10,
           "CHA": 5,
-          "HitPoints_Max": "9d10+45"
+          "HitPoints_Max": "9d10+45",
+          "proficiency_bonus": 3
         },
         "senses": "Darkvision 60 ft., Tremorsense 120 ft.; Passive Perception 16",
         "languages": "None",
@@ -5391,7 +5432,8 @@
           "INT": 9,
           "WIS": 13,
           "CHA": 11,
-          "HitPoints_Max": "6d10+12"
+          "HitPoints_Max": "6d10+12",
+          "proficiency_bonus": 2
         },
         "gear": "Breastplate, Longbow, Pike",
         "senses": "Passive Perception 13",
@@ -5446,7 +5488,8 @@
           "INT": 11,
           "WIS": 12,
           "CHA": 14,
-          "HitPoints_Max": "10d8+40"
+          "HitPoints_Max": "10d8+40",
+          "proficiency_bonus": 3
         },
         "resistances": "Bludgeoning, Cold, Piercing, Slashing",
         "immunities": "Fire, Poison; Poisoned",
@@ -5495,7 +5538,8 @@
           "CON": 19,
           "WIS": 14,
           "CHA": 10,
-          "HitPoints_Max": "12d10+48"
+          "HitPoints_Max": "12d10+48",
+          "proficiency_bonus": 3
         },
         "senses": "Darkvision 60 ft.; Passive Perception 18",
         "languages": "Understands Draconic but can’t speak",
@@ -5554,7 +5598,8 @@
           "INT": 5,
           "WIS": 11,
           "CHA": 5,
-          "HitPoints_Max": "9d10+27"
+          "HitPoints_Max": "9d10+27",
+          "proficiency_bonus": 2
         },
         "immunities": "Poison; Poisoned",
         "senses": "Darkvision 60 ft.; Passive Perception 14",
@@ -5602,7 +5647,8 @@
           "INT": 3,
           "WIS": 8,
           "CHA": 1,
-          "HitPoints_Max": "13d10+52"
+          "HitPoints_Max": "13d10+52",
+          "proficiency_bonus": 4
         },
         "resistances": "Bludgeoning, Piercing, Slashing",
         "immunities": "Acid, Poison, Psychic; Charmed, Exhaustion, Frightened, Paralyzed, Petrified, Poisoned",
@@ -5656,7 +5702,8 @@
           "INT": 13,
           "WIS": 14,
           "CHA": 7,
-          "HitPoints_Max": "14d10+14"
+          "HitPoints_Max": "14d10+14",
+          "proficiency_bonus": 3
         },
         "skills": {
           "stealth": 5
@@ -5711,7 +5758,8 @@
           "INT": 12,
           "WIS": 16,
           "CHA": 16,
-          "HitPoints_Max": "16d12+96"
+          "HitPoints_Max": "16d12+96",
+          "proficiency_bonus": 4
         },
         "senses": "Passive Perception 21",
         "languages": "Common, Giant",
@@ -5776,7 +5824,8 @@
           "CON": 12,
           "WIS": 13,
           "CHA": 5,
-          "HitPoints_Max": "5d6+5"
+          "HitPoints_Max": "5d6+5",
+          "proficiency_bonus": 2
         },
         "immunities": "Petrified",
         "senses": "Darkvision 60 ft.; Passive Perception 11",
@@ -5819,7 +5868,8 @@
           "INT": 10,
           "WIS": 10,
           "CHA": 10,
-          "HitPoints_Max": "1d8"
+          "HitPoints_Max": "1d8",
+          "proficiency_bonus": 2
         },
         "id": "commoner",
         "traits": [
@@ -5857,7 +5907,8 @@
           "CON": 13,
           "WIS": 11,
           "CHA": 13,
-          "HitPoints_Max": "4d8+4"
+          "HitPoints_Max": "4d8+4",
+          "proficiency_bonus": 2
         },
         "immunities": "Acid",
         "senses": "Blindsight 10 ft., Darkvision 60 ft.; Passive Perception 14",
@@ -5901,7 +5952,8 @@
           "INT": 16,
           "WIS": 13,
           "CHA": 15,
-          "HitPoints_Max": "14d10+42"
+          "HitPoints_Max": "14d10+42",
+          "proficiency_bonus": 3
         },
         "immunities": "Acid",
         "senses": "Blindsight 30 ft., Darkvision 120 ft.; Passive Perception 17",
@@ -5950,7 +6002,8 @@
           "INT": 18,
           "WIS": 15,
           "CHA": 18,
-          "HitPoints_Max": "16d12+80"
+          "HitPoints_Max": "16d12+80",
+          "proficiency_bonus": 5
         },
         "skills": {
           "deception": 9,
@@ -6005,7 +6058,8 @@
           "INT": 20,
           "WIS": 17,
           "CHA": 22,
-          "HitPoints_Max": "21d20+147"
+          "HitPoints_Max": "21d20+147",
+          "proficiency_bonus": 7
         },
         "immunities": "Acid",
         "senses": "Blindsight 60 ft., Darkvision 120 ft.;",
@@ -6066,7 +6120,8 @@
           "CON": 17,
           "WIS": 20,
           "CHA": 18,
-          "HitPoints_Max": "8d8+24"
+          "HitPoints_Max": "8d8+24",
+          "proficiency_bonus": 2
         },
         "resistances": "Bludgeoning, Piercing, Slashing",
         "immunities": "Psychic, Radiant",
@@ -6127,7 +6182,8 @@
           "CON": 11,
           "WIS": 10,
           "CHA": 4,
-          "HitPoints_Max": "11d8"
+          "HitPoints_Max": "11d8",
+          "proficiency_bonus": 2
         },
         "resistances": "Bludgeoning, Piercing, Slashing",
         "immunities": "Necrotic, Poison; Charmed, Exhaustion, Frightened, Grappled, Incapacitated, Paralyzed, Petrified, Poisoned, Prone, Restrained, Stunned",
@@ -6174,7 +6230,8 @@
           "INT": 10,
           "WIS": 11,
           "CHA": 10,
-          "HitPoints_Max": "2d8"
+          "HitPoints_Max": "2d8",
+          "proficiency_bonus": 2
         },
         "skills": {
           "deception": 2,
@@ -6212,7 +6269,8 @@
           "CON": 12,
           "WIS": 14,
           "CHA": 13,
-          "HitPoints_Max": "8d8+8"
+          "HitPoints_Max": "8d8+8",
+          "proficiency_bonus": 2
         },
         "gear": "Holy Symbol, Leather Armor",
         "senses": "Passive Perception 12",
@@ -6268,7 +6326,8 @@
           "INT": 2,
           "WIS": 10,
           "CHA": 5,
-          "HitPoints_Max": "5d6+5"
+          "HitPoints_Max": "5d6+5",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 60 ft.; Passive Perception 10",
         "languages": "None",
@@ -6312,7 +6371,8 @@
           "INT": 3,
           "WIS": 13,
           "CHA": 6,
-          "HitPoints_Max": "6d8+12"
+          "HitPoints_Max": "6d8+12",
+          "proficiency_bonus": 2
         },
         "immunities": "Blinded, Charmed, Deafened, Frightened, Stunned, Unconscious",
         "senses": "Darkvision 120 ft.; Passive Perception 15",
@@ -6356,7 +6416,8 @@
           "CON": 18,
           "WIS": 20,
           "CHA": 20,
-          "HitPoints_Max": "27d8+108"
+          "HitPoints_Max": "27d8+108",
+          "proficiency_bonus": 4
         },
         "resistances": "Radiant",
         "immunities": "Charmed, Exhaustion, Frightened",
@@ -6417,7 +6478,8 @@
           "INT": 15,
           "WIS": 16,
           "CHA": 20,
-          "HitPoints_Max": "19d10+114"
+          "HitPoints_Max": "19d10+114",
+          "proficiency_bonus": 4
         },
         "immunities": "Lightning, Thunder",
         "senses": "Darkvision 120 ft.; Passive Perception 13",
@@ -6492,7 +6554,8 @@
           "INT": 11,
           "WIS": 12,
           "CHA": 14,
-          "HitPoints_Max": "8d8+16"
+          "HitPoints_Max": "8d8+16",
+          "proficiency_bonus": 2
         },
         "skills": {
           "deception": 6,
@@ -6537,7 +6600,8 @@
           "INT": 10,
           "WIS": 12,
           "CHA": 12,
-          "HitPoints_Max": "23d20+115"
+          "HitPoints_Max": "23d20+115",
+          "proficiency_bonus": 6
         },
         "resistances": "Fire",
         "senses": "Darkvision 120 ft.; Passive Perception 11",
@@ -6589,7 +6653,8 @@
           "INT": 5,
           "WIS": 8,
           "CHA": 3,
-          "HitPoints_Max": "4d6+4"
+          "HitPoints_Max": "4d6+4",
+          "proficiency_bonus": 2
         },
         "resistances": "Cold, Fire, Lightning",
         "immunities": "Poison; Poisoned",
@@ -6630,7 +6695,8 @@
           "INT": 13,
           "WIS": 16,
           "CHA": 12,
-          "HitPoints_Max": "13d10+52"
+          "HitPoints_Max": "13d10+52",
+          "proficiency_bonus": 3
         },
         "senses": "Darkvision 120 ft.; Passive Perception 16",
         "languages": "Elvish, Undercommon",
@@ -6689,7 +6755,8 @@
           "INT": 12,
           "WIS": 16,
           "CHA": 11,
-          "HitPoints_Max": "8d8+8"
+          "HitPoints_Max": "8d8+8",
+          "proficiency_bonus": 2
         },
         "gear": "Studded Leather Armor",
         "senses": "Passive Perception 15",
@@ -6755,7 +6822,8 @@
           "INT": 14,
           "WIS": 15,
           "CHA": 18,
-          "HitPoints_Max": "5d8"
+          "HitPoints_Max": "5d8",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 14",
         "languages": "Elvish, Sylvan",
@@ -6821,7 +6889,8 @@
           "INT": 5,
           "WIS": 10,
           "CHA": 5,
-          "HitPoints_Max": "14d10+70"
+          "HitPoints_Max": "14d10+70",
+          "proficiency_bonus": 3
         },
         "vulnerabilities": "Thunder",
         "immunities": "Poison; Exhaustion, Paralyzed, Petrified, Poisoned, Unconscious",
@@ -6874,7 +6943,8 @@
           "INT": 16,
           "WIS": 15,
           "CHA": 19,
-          "HitPoints_Max": "17d10+119"
+          "HitPoints_Max": "17d10+119",
+          "proficiency_bonus": 4
         },
         "immunities": "Fire",
         "senses": "Darkvision 120 ft.; Passive Perception 12",
@@ -6940,7 +7010,8 @@
           "CON": 18,
           "WIS": 14,
           "CHA": 18,
-          "HitPoints_Max": "21d8+84"
+          "HitPoints_Max": "21d8+84",
+          "proficiency_bonus": 4
         },
         "resistances": "Cold",
         "immunities": "Fire, Poison; Poisoned",
@@ -6994,7 +7065,8 @@
           "INT": 7,
           "WIS": 12,
           "CHA": 8,
-          "HitPoints_Max": "8d8+8"
+          "HitPoints_Max": "8d8+8",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 13",
         "languages": "None",
@@ -7052,7 +7124,8 @@
           "INT": 6,
           "WIS": 10,
           "CHA": 8,
-          "HitPoints_Max": "10d10+30"
+          "HitPoints_Max": "10d10+30",
+          "proficiency_bonus": 2
         },
         "immunities": "Blinded, Charmed, Deafened, Frightened, Stunned, Unconscious",
         "gear": "Battleaxe, Morningstar",
@@ -7104,7 +7177,8 @@
           "CON": 16,
           "WIS": 10,
           "CHA": 7,
-          "HitPoints_Max": "11d10+33"
+          "HitPoints_Max": "11d10+33",
+          "proficiency_bonus": 3
         },
         "resistances": "Bludgeoning, Piercing, Slashing",
         "immunities": "Fire, Poison; Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious",
@@ -7151,7 +7225,8 @@
           "INT": 10,
           "WIS": 14,
           "CHA": 13,
-          "HitPoints_Max": "13d12+78"
+          "HitPoints_Max": "13d12+78",
+          "proficiency_bonus": 4
         },
         "immunities": "Fire",
         "senses": "Passive Perception 16",
@@ -7201,7 +7276,8 @@
           "INT": 6,
           "WIS": 10,
           "CHA": 5,
-          "HitPoints_Max": "15d8+60"
+          "HitPoints_Max": "15d8+60",
+          "proficiency_bonus": 3
         },
         "immunities": "Lightning, Poison; Charmed, Exhaustion, Frightened, Paralyzed, Petrified, Poisoned",
         "senses": "Darkvision 60 ft.; Passive Perception 10",
@@ -7248,7 +7324,8 @@
           "INT": 9,
           "WIS": 10,
           "CHA": 12,
-          "HitPoints_Max": "13d12+65"
+          "HitPoints_Max": "13d12+65",
+          "proficiency_bonus": 3
         },
         "immunities": "Cold",
         "senses": "Passive Perception 13",
@@ -7305,7 +7382,8 @@
           "INT": 1,
           "WIS": 3,
           "CHA": 1,
-          "HitPoints_Max": "3d8"
+          "HitPoints_Max": "3d8",
+          "proficiency_bonus": 2
         },
         "id": "shrieker_fungus",
         "reactions": [
@@ -7328,7 +7406,8 @@
           "INT": 1,
           "WIS": 3,
           "CHA": 1,
-          "HitPoints_Max": "4d8"
+          "HitPoints_Max": "4d8",
+          "proficiency_bonus": 2
         },
         "immunities": "Blinded, Charmed, Deafened, Frightened",
         "senses": "Blindsight 30 ft.; Passive Perception 6",
@@ -7368,7 +7447,8 @@
           "CON": 16,
           "WIS": 11,
           "CHA": 7,
-          "HitPoints_Max": "9d8+27"
+          "HitPoints_Max": "9d8+27",
+          "proficiency_bonus": 2
         },
         "immunities": "Poison; Exhaustion, Petrified, Poisoned",
         "senses": "Darkvision 60 ft.; Passive Perception 10",
@@ -7412,7 +7492,8 @@
           "INT": 1,
           "WIS": 6,
           "CHA": 1,
-          "HitPoints_Max": "6d10+30"
+          "HitPoints_Max": "6d10+30",
+          "proficiency_bonus": 2
         },
         "immunities": "Acid; Blinded, Charmed, Deafened, Exhaustion, Frightened, Prone",
         "senses": "Blindsight 60 ft.; Passive Perception 8",
@@ -7456,7 +7537,8 @@
           "INT": 11,
           "WIS": 10,
           "CHA": 8,
-          "HitPoints_Max": "8d8"
+          "HitPoints_Max": "8d8",
+          "proficiency_bonus": 2
         },
         "resistances": "Necrotic",
         "immunities": "Poison; Charmed, Exhaustion, Poisoned",
@@ -7507,7 +7589,8 @@
           "CON": 10,
           "WIS": 12,
           "CHA": 17,
-          "HitPoints_Max": "10d8"
+          "HitPoints_Max": "10d8",
+          "proficiency_bonus": 2
         },
         "resistances": "Acid, Bludgeoning, Cold, Fire, Lightning, Piercing, Slashing, Thunder",
         "immunities": "Necrotic, Poison; Charmed, Exhaustion, Frightened, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained",
@@ -7557,7 +7640,8 @@
           "INT": 7,
           "WIS": 10,
           "CHA": 6,
-          "HitPoints_Max": "5d8"
+          "HitPoints_Max": "5d8",
+          "proficiency_bonus": 2
         },
         "immunities": "Poison; Charmed, Exhaustion, Poisoned",
         "senses": "Darkvision 60 ft.; Passive Perception 10",
@@ -7603,7 +7687,8 @@
           "INT": 3,
           "WIS": 10,
           "CHA": 6,
-          "HitPoints_Max": "7d8+21"
+          "HitPoints_Max": "7d8+21",
+          "proficiency_bonus": 2
         },
         "immunities": "Prone",
         "senses": "Darkvision 60 ft.; Passive Perception 10",
@@ -7647,7 +7732,8 @@
           "INT": 19,
           "WIS": 17,
           "CHA": 16,
-          "HitPoints_Max": "18d10+90"
+          "HitPoints_Max": "18d10+90",
+          "proficiency_bonus": 4
         },
         "resistances": "Cold, Fire, Lightning",
         "immunities": "Poison; Poisoned",
@@ -7708,7 +7794,8 @@
           "INT": 10,
           "WIS": 12,
           "CHA": 15,
-          "HitPoints_Max": "15d8+45"
+          "HitPoints_Max": "15d8+45",
+          "proficiency_bonus": 3
         },
         "gear": "Shield, Spears (3), Studded Leather Armor",
         "senses": "Passive Perception 11",
@@ -7756,7 +7843,8 @@
           "CON": 11,
           "WIS": 10,
           "CHA": 7,
-          "HitPoints_Max": "6d8"
+          "HitPoints_Max": "6d8",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 10",
         "languages": "Gnoll",
@@ -7804,7 +7892,8 @@
           "INT": 10,
           "WIS": 8,
           "CHA": 8,
-          "HitPoints_Max": "2d6"
+          "HitPoints_Max": "2d6",
+          "proficiency_bonus": 2
         },
         "gear": "Daggers (3)",
         "senses": "Darkvision 60 ft.; Passive Perception 9",
@@ -7848,7 +7937,8 @@
           "INT": 10,
           "WIS": 8,
           "CHA": 8,
-          "HitPoints_Max": "3d6"
+          "HitPoints_Max": "3d6",
+          "proficiency_bonus": 2
         },
         "gear": "Leather Armor, Scimitar, Shield, Shortbow",
         "senses": "Darkvision 60 ft.; Passive Perception 9",
@@ -7904,7 +7994,8 @@
           "INT": 10,
           "WIS": 8,
           "CHA": 10,
-          "HitPoints_Max": "6d6"
+          "HitPoints_Max": "6d6",
+          "proficiency_bonus": 2
         },
         "skills": {
           "stealth": 6
@@ -7957,7 +8048,8 @@
           "INT": 14,
           "WIS": 11,
           "CHA": 16,
-          "HitPoints_Max": "8d8+24"
+          "HitPoints_Max": "8d8+24",
+          "proficiency_bonus": 2
         },
         "immunities": "Fire",
         "senses": "Blindsight 10 ft., Darkvision 60 ft.; Passive Perception 14",
@@ -8005,7 +8097,8 @@
           "INT": 16,
           "WIS": 13,
           "CHA": 20,
-          "HitPoints_Max": "17d10+85"
+          "HitPoints_Max": "17d10+85",
+          "proficiency_bonus": 6
         },
         "senses": "Blindsight 30 ft., Darkvision 120 ft.; Passive Perception 19",
         "languages": "Common, Draconic CR 10 (XP 5,900; PB +4)",
@@ -8056,7 +8149,8 @@
           "INT": 16,
           "WIS": 15,
           "CHA": 24,
-          "HitPoints_Max": "18d12+126"
+          "HitPoints_Max": "18d12+126",
+          "proficiency_bonus": 6
         },
         "skills": {
           "insight": 8,
@@ -8113,7 +8207,8 @@
           "WIS": 17,
           "CON": 29,
           "CHA": 28,
-          "HitPoints_Max": "28d20+252"
+          "HitPoints_Max": "28d20+252",
+          "proficiency_bonus": 7
         },
         "immunities": "Fire",
         "senses": "Blindsight 60 ft., Darkvision 120 ft.; Passive Perception 27",
@@ -8180,7 +8275,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 7,
-          "HitPoints_Max": "12d10+48"
+          "HitPoints_Max": "12d10+48",
+          "proficiency_bonus": 3
         },
         "skills": {
           "perception": 7
@@ -8220,7 +8316,8 @@
           "INT": 1,
           "WIS": 6,
           "CHA": 2,
-          "HitPoints_Max": "3d8+9"
+          "HitPoints_Max": "3d8+9",
+          "proficiency_bonus": 2
         },
         "resistances": "Acid, Cold, Fire",
         "immunities": "Blinded, Charmed, Deafened, Exhaustion, Frightened, Grappled, Prone, Restrained",
@@ -8267,7 +8364,8 @@
           "CON": 13,
           "WIS": 11,
           "CHA": 13,
-          "HitPoints_Max": "7d8+7"
+          "HitPoints_Max": "7d8+7",
+          "proficiency_bonus": 2
         },
         "immunities": "Poison; Poisoned",
         "senses": "Blindsight 10 ft., Darkvision 60 ft.; Passive Perception 14",
@@ -8314,7 +8412,8 @@
           "INT": 16,
           "WIS": 13,
           "CHA": 15,
-          "HitPoints_Max": "16d10+48"
+          "HitPoints_Max": "16d10+48",
+          "proficiency_bonus": 3
         },
         "immunities": "Poison; Poisoned",
         "senses": "Blindsight 30 ft., Darkvision 120 ft.; Passive Perception 17",
@@ -8362,7 +8461,8 @@
           "WIS": 15,
           "CON": 21,
           "CHA": 18,
-          "HitPoints_Max": "18d12+90"
+          "HitPoints_Max": "18d12+90",
+          "proficiency_bonus": 5
         },
         "immunities": "Poison; Poisoned",
         "senses": "Blindsight 60 ft., Darkvision 120 ft.; Passive Perception 22",
@@ -8419,7 +8519,8 @@
           "INT": 20,
           "WIS": 17,
           "CHA": 22,
-          "HitPoints_Max": "23d20+161"
+          "HitPoints_Max": "23d20+161",
+          "proficiency_bonus": 7
         },
         "immunities": "Poison; Poisoned",
         "senses": "Blindsight 60 ft., Darkvision 120 ft.; Passive Perception 27",
@@ -8477,7 +8578,8 @@
           "INT": 13,
           "WIS": 14,
           "CHA": 14,
-          "HitPoints_Max": "11d8+33"
+          "HitPoints_Max": "11d8+33",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 14",
         "languages": "Common, Elvish, Sylvan",
@@ -8539,7 +8641,8 @@
           "INT": 3,
           "WIS": 14,
           "CHA": 5,
-          "HitPoints_Max": "12d8"
+          "HitPoints_Max": "12d8",
+          "proficiency_bonus": 2
         },
         "skills": {
           "stealth": 4
@@ -8586,7 +8689,8 @@
           "INT": 2,
           "WIS": 13,
           "CHA": 8,
-          "HitPoints_Max": "7d10+21"
+          "HitPoints_Max": "7d10+21",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 15",
         "languages": "None",
@@ -8628,7 +8732,8 @@
           "INT": 9,
           "WIS": 8,
           "CHA": 6,
-          "HitPoints_Max": "2d8+2"
+          "HitPoints_Max": "2d8+2",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 30 ft.; Passive Perception 13",
         "languages": "None",
@@ -8671,7 +8776,8 @@
           "INT": 16,
           "WIS": 19,
           "CHA": 18,
-          "HitPoints_Max": "16d10+48"
+          "HitPoints_Max": "16d10+48",
+          "proficiency_bonus": 4
         },
         "immunities": "Poison; Charmed, Paralyzed, Poisoned, Restrained",
         "senses": "Darkvision 60 ft.; Passive Perception 14",
@@ -8731,7 +8837,8 @@
           "INT": 10,
           "WIS": 11,
           "CHA": 10,
-          "HitPoints_Max": "2d8+2"
+          "HitPoints_Max": "2d8+2",
+          "proficiency_bonus": 2
         },
         "gear": "Chain Shirt, Shield, Spear",
         "senses": "Passive Perception 12",
@@ -8772,7 +8879,8 @@
           "INT": 12,
           "WIS": 14,
           "CHA": 13,
-          "HitPoints_Max": "10d8+30"
+          "HitPoints_Max": "10d8+30",
+          "proficiency_bonus": 2
         },
         "gear": "Breastplate, Javelins (6), Longsword, Shield",
         "senses": "Passive Perception 14",
@@ -8824,7 +8932,8 @@
           "CON": 16,
           "WIS": 15,
           "CHA": 14,
-          "HitPoints_Max": "14d8+42"
+          "HitPoints_Max": "14d8+42",
+          "proficiency_bonus": 3
         },
         "resistances": "Damage type chosen for the Draconic Origin trait below",
         "senses": "Blindsight 10 ft., Darkvision 60 ft.; Passive Perception 15",
@@ -8879,7 +8988,8 @@
           "INT": 7,
           "WIS": 10,
           "CHA": 13,
-          "HitPoints_Max": "7d8+7"
+          "HitPoints_Max": "7d8+7",
+          "proficiency_bonus": 2
         },
         "id": "harpy",
         "actions": [
@@ -8915,7 +9025,8 @@
           "INT": 6,
           "WIS": 13,
           "CHA": 6,
-          "HitPoints_Max": "9d8+18"
+          "HitPoints_Max": "9d8+18",
+          "proficiency_bonus": 2
         },
         "immunities": "Fire",
         "senses": "Darkvision 60 ft.; Passive Perception 15",
@@ -8962,7 +9073,8 @@
           "CON": 20,
           "WIS": 12,
           "CHA": 13,
-          "HitPoints_Max": "15d10+75"
+          "HitPoints_Max": "15d10+75",
+          "proficiency_bonus": 3
         },
         "resistances": "Cold, Fire, Lightning",
         "immunities": "Poison; Poisoned",
@@ -9011,7 +9123,8 @@
           "INT": 5,
           "WIS": 9,
           "CHA": 6,
-          "HitPoints_Max": "10d12+40"
+          "HitPoints_Max": "10d12+40",
+          "proficiency_bonus": 3
         },
         "senses": "Passive Perception 12",
         "languages": "Giant",
@@ -9061,7 +9174,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 8,
-          "HitPoints_Max": "4d10+4"
+          "HitPoints_Max": "4d10+4",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 15",
         "languages": "None",
@@ -9110,7 +9224,8 @@
           "INT": 10,
           "WIS": 10,
           "CHA": 9,
-          "HitPoints_Max": "2d8+2"
+          "HitPoints_Max": "2d8+2",
+          "proficiency_bonus": 2
         },
         "id": "hobgoblin_warrior",
         "traits": [
@@ -9155,7 +9270,8 @@
           "INT": 12,
           "WIS": 10,
           "CHA": 13,
-          "HitPoints_Max": "9d8+18"
+          "HitPoints_Max": "9d8+18",
+          "proficiency_bonus": 2
         },
         "gear": "Greatsword, Half Plate Armor, Longbow",
         "senses": "Darkvision 60 ft.; Passive Perception 10",
@@ -9206,7 +9322,8 @@
           "CON": 14,
           "WIS": 10,
           "CHA": 7,
-          "HitPoints_Max": "1d4+2"
+          "HitPoints_Max": "1d4+2",
+          "proficiency_bonus": 2
         },
         "immunities": "Poison; Charmed, Poisoned",
         "senses": "Darkvision 60 ft.; Passive Perception 10",
@@ -9247,7 +9364,8 @@
           "CON": 21,
           "WIS": 16,
           "CHA": 18,
-          "HitPoints_Max": "19d10+95"
+          "HitPoints_Max": "19d10+95",
+          "proficiency_bonus": 4
         },
         "resistances": "Cold",
         "immunities": "Fire, Poison; Poisoned",
@@ -9301,7 +9419,8 @@
           "INT": 2,
           "WIS": 10,
           "CHA": 7,
-          "HitPoints_Max": "16d12+80"
+          "HitPoints_Max": "16d12+80",
+          "proficiency_bonus": 3
         },
         "immunities": "Blinded, Charmed, Deafened, Frightened, Stunned, Unconscious",
         "senses": "Darkvision 60 ft.; Passive Perception 16",
@@ -9349,7 +9468,8 @@
           "INT": 18,
           "WIS": 15,
           "CHA": 18,
-          "HitPoints_Max": "24d10+96"
+          "HitPoints_Max": "24d10+96",
+          "proficiency_bonus": 5
         },
         "immunities": "Cold, Fire, Poison; Poisoned",
         "senses": "Blindsight 120 ft.; Passive Perception 17",
@@ -9407,7 +9527,8 @@
           "INT": 11,
           "WIS": 12,
           "CHA": 14,
-          "HitPoints_Max": "6d4+6"
+          "HitPoints_Max": "6d4+6",
+          "proficiency_bonus": 2
         },
         "resistances": "Cold",
         "immunities": "Fire, Poison; Poisoned",
@@ -9457,7 +9578,8 @@
           "INT": 15,
           "WIS": 12,
           "CHA": 20,
-          "HitPoints_Max": "12d8+12"
+          "HitPoints_Max": "12d8+12",
+          "proficiency_bonus": 2
         },
         "resistances": "Cold, Fire, Poison, Psychic",
         "senses": "Darkvision 60 ft.; Passive Perception 15",
@@ -9519,7 +9641,8 @@
           "INT": 10,
           "WIS": 15,
           "CHA": 11,
-          "HitPoints_Max": "13d10+26"
+          "HitPoints_Max": "13d10+26",
+          "proficiency_bonus": 3
         },
         "resistances": "Bludgeoning, Piercing, Slashing",
         "immunities": "Poison; Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious",
@@ -9574,7 +9697,8 @@
           "INT": 3,
           "WIS": 11,
           "CHA": 1,
-          "HitPoints_Max": "24d10+120"
+          "HitPoints_Max": "24d10+120",
+          "proficiency_bonus": 5
         },
         "id": "iron_golem",
         "traits": [
@@ -9624,7 +9748,8 @@
           "CON": 14,
           "WIS": 11,
           "CHA": 15,
-          "HitPoints_Max": "8d8+16"
+          "HitPoints_Max": "8d8+16",
+          "proficiency_bonus": 2
         },
         "immunities": "Frightened",
         "gear": "Greatsword, Heavy Crossbow, Plate Armor",
@@ -9676,7 +9801,8 @@
           "INT": 8,
           "WIS": 7,
           "CHA": 8,
-          "HitPoints_Max": "3d6-3"
+          "HitPoints_Max": "3d6-3",
+          "proficiency_bonus": 2
         },
         "gear": "Daggers (3)",
         "senses": "Darkvision 60 ft.; Passive Perception 8",
@@ -9723,7 +9849,8 @@
           "INT": 22,
           "WIS": 18,
           "CHA": 20,
-          "HitPoints_Max": "26d20+208"
+          "HitPoints_Max": "26d20+208",
+          "proficiency_bonus": 7
         },
         "skills": {
           "history": 13,
@@ -9771,7 +9898,8 @@
           "INT": 14,
           "WIS": 15,
           "CHA": 16,
-          "HitPoints_Max": "13d10+26"
+          "HitPoints_Max": "13d10+26",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 12",
         "languages": "Abyssal, Common",
@@ -9827,7 +9955,8 @@
           "CON": 11,
           "WIS": 11,
           "CHA": 3,
-          "HitPoints_Max": "2d8"
+          "HitPoints_Max": "2d8",
+          "proficiency_bonus": 2
         },
         "resistances": "Cold",
         "immunities": "Fire, Poison; Charmed, Frightened, Poisoned",
@@ -9870,7 +9999,8 @@
           "INT": 21,
           "WIS": 14,
           "CHA": 16,
-          "HitPoints_Max": "42d8+126"
+          "HitPoints_Max": "42d8+126",
+          "proficiency_bonus": 7
         },
         "resistances": "Cold, Lightning",
         "immunities": "Necrotic, Poison; Charmed, Exhaustion, Frightened, Paralyzed, Poisoned",
@@ -9953,7 +10083,8 @@
           "CON": 11,
           "WIS": 12,
           "CHA": 11,
-          "HitPoints_Max": "18d8"
+          "HitPoints_Max": "18d8",
+          "proficiency_bonus": 3
         },
         "gear": "Wand",
         "senses": "Passive Perception 14",
@@ -10018,7 +10149,8 @@
           "INT": 20,
           "WIS": 15,
           "CHA": 16,
-          "HitPoints_Max": "31d8+31"
+          "HitPoints_Max": "31d8+31",
+          "proficiency_bonus": 4
         },
         "immunities": "Psychic; Charmed (with Mind Blank)",
         "gear": "Wand",
@@ -10093,7 +10225,8 @@
           "CON": 12,
           "WIS": 11,
           "CHA": 10,
-          "HitPoints_Max": "3d6+3"
+          "HitPoints_Max": "3d6+3",
+          "proficiency_bonus": 2
         },
         "immunities": "Fire",
         "senses": "Darkvision 60 ft.; Passive Perception 10",
@@ -10138,7 +10271,8 @@
           "INT": 7,
           "WIS": 12,
           "CHA": 8,
-          "HitPoints_Max": "8d10+24"
+          "HitPoints_Max": "8d10+24",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 11",
         "languages": "Common",
@@ -10190,7 +10324,8 @@
           "INT": 18,
           "WIS": 16,
           "CHA": 20,
-          "HitPoints_Max": "21d10+105"
+          "HitPoints_Max": "21d10+105",
+          "proficiency_bonus": 5
         },
         "skills": {
           "perception": 8
@@ -10241,7 +10376,8 @@
           "CON": 16,
           "WIS": 13,
           "CHA": 15,
-          "HitPoints_Max": "17d8+51"
+          "HitPoints_Max": "17d8+51",
+          "proficiency_bonus": 3
         },
         "senses": "Darkvision 150 ft.; Passive Perception 14",
         "languages": "Common plus one other language",
@@ -10304,7 +10440,8 @@
           "CON": 10,
           "WIS": 11,
           "CHA": 10,
-          "HitPoints_Max": "5d6"
+          "HitPoints_Max": "5d6",
+          "proficiency_bonus": 2
         },
         "vulnerabilities": "Fire",
         "immunities": "Poison; Exhaustion, Poisoned",
@@ -10352,7 +10489,8 @@
           "CON": 10,
           "WIS": 11,
           "CHA": 12,
-          "HitPoints_Max": "6d6"
+          "HitPoints_Max": "6d6",
+          "proficiency_bonus": 2
         },
         "vulnerabilities": "Fire",
         "immunities": "Cold, Poison; Exhaustion, Poisoned",
@@ -10405,7 +10543,8 @@
           "INT": 7,
           "WIS": 10,
           "CHA": 10,
-          "HitPoints_Max": "4d6+4"
+          "HitPoints_Max": "4d6+4",
+          "proficiency_bonus": 2
         },
         "skills": {
           "stealth": 3
@@ -10446,7 +10585,8 @@
           "CON": 10,
           "WIS": 10,
           "CHA": 12,
-          "HitPoints_Max": "5d6"
+          "HitPoints_Max": "5d6",
+          "proficiency_bonus": 2
         },
         "immunities": "Fire, Poison; Exhaustion, Poisoned",
         "senses": "Darkvision 60 ft.; Passive Perception 10",
@@ -10493,7 +10633,8 @@
           "CON": 12,
           "WIS": 14,
           "CHA": 12,
-          "HitPoints_Max": "2d8+2"
+          "HitPoints_Max": "2d8+2",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 12",
         "languages": "Common, Primordial (Aquan)",
@@ -10534,7 +10675,8 @@
           "INT": 8,
           "WIS": 10,
           "CHA": 9,
-          "HitPoints_Max": "6d10+12"
+          "HitPoints_Max": "6d10+12",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 10",
         "languages": "Abyssal, Primordial (Aquan)",
@@ -10592,7 +10734,8 @@
           "INT": 5,
           "WIS": 13,
           "CHA": 8,
-          "HitPoints_Max": "9d8+18"
+          "HitPoints_Max": "9d8+18",
+          "proficiency_bonus": 2
         },
         "immunities": "Acid; Prone",
         "senses": "Darkvision 60 ft.; Passive Perception 11",
@@ -10648,7 +10791,8 @@
           "CON": 16,
           "WIS": 16,
           "CHA": 9,
-          "HitPoints_Max": "10d10+30"
+          "HitPoints_Max": "10d10+30",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 17",
         "languages": "Abyssal",
@@ -10696,7 +10840,8 @@
           "INT": 6,
           "WIS": 12,
           "CHA": 12,
-          "HitPoints_Max": "9d8+18"
+          "HitPoints_Max": "9d8+18",
+          "proficiency_bonus": 2
         },
         "vulnerabilities": "Fire",
         "immunities": "Necrotic, Poison; Charmed, Exhaustion, Frightened, Paralyzed, Poisoned",
@@ -10737,7 +10882,8 @@
           "INT": 11,
           "WIS": 19,
           "CHA": 16,
-          "HitPoints_Max": "25d8+75"
+          "HitPoints_Max": "25d8+75",
+          "proficiency_bonus": 5
         },
         "vulnerabilities": "Fire",
         "immunities": "Necrotic, Poison; Charmed, Exhaustion, Frightened, Paralyzed, Poisoned",
@@ -10814,7 +10960,8 @@
           "INT": 19,
           "WIS": 12,
           "CHA": 15,
-          "HitPoints_Max": "16d10+96"
+          "HitPoints_Max": "16d10+96",
+          "proficiency_bonus": 5
         },
         "id": "nalfeshnee",
         "traits": [
@@ -10862,7 +11009,8 @@
           "INT": 16,
           "WIS": 14,
           "CHA": 16,
-          "HitPoints_Max": "15d8+45"
+          "HitPoints_Max": "15d8+45",
+          "proficiency_bonus": 3
         },
         "resistances": "Cold, Fire",
         "immunities": "Charmed",
@@ -10930,7 +11078,8 @@
           "INT": 10,
           "WIS": 13,
           "CHA": 15,
-          "HitPoints_Max": "8d10+24"
+          "HitPoints_Max": "8d10+24",
+          "proficiency_bonus": 2
         },
         "immunities": "Fire",
         "senses": "Passive Perception 11",
@@ -10978,7 +11127,8 @@
           "INT": 12,
           "WIS": 14,
           "CHA": 16,
-          "HitPoints_Max": "2d8"
+          "HitPoints_Max": "2d8",
+          "proficiency_bonus": 2
         },
         "skills": {
           "deception": 5,
@@ -11019,7 +11169,8 @@
           "INT": 2,
           "WIS": 6,
           "CHA": 1,
-          "HitPoints_Max": "7d10+14"
+          "HitPoints_Max": "7d10+14",
+          "proficiency_bonus": 2
         },
         "resistances": "Acid",
         "immunities": "Lightning, Slashing; Charmed, Deafened, Exhaustion, Frightened, Grappled, Prone, Restrained",
@@ -11064,7 +11215,8 @@
           "INT": 5,
           "WIS": 7,
           "CHA": 7,
-          "HitPoints_Max": "8d10+24"
+          "HitPoints_Max": "8d10+24",
+          "proficiency_bonus": 2
         },
         "gear": "Greatclub, Javelins (3)",
         "senses": "Darkvision 60 ft.; Passive Perception 8",
@@ -11111,7 +11263,8 @@
           "CON": 16,
           "WIS": 12,
           "CHA": 15,
-          "HitPoints_Max": "14d10+42"
+          "HitPoints_Max": "14d10+42",
+          "proficiency_bonus": 3
         },
         "resistances": "Cold",
         "senses": "Darkvision 60 ft.; Passive Perception 14",
@@ -11179,7 +11332,8 @@
           "CON": 19,
           "WIS": 13,
           "CHA": 6,
-          "HitPoints_Max": "11d10+44"
+          "HitPoints_Max": "11d10+44",
+          "proficiency_bonus": 3
         },
         "senses": "Darkvision 120 ft.; Passive Perception 11",
         "languages": "Otyugh; telepathy 120 ft. (doesn’t allow the receiving creature to respond telepathically)",
@@ -11227,7 +11381,8 @@
           "INT": 3,
           "WIS": 12,
           "CHA": 7,
-          "HitPoints_Max": "7d10+21"
+          "HitPoints_Max": "7d10+21",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 15",
         "languages": "None",
@@ -11269,7 +11424,8 @@
           "INT": 10,
           "WIS": 15,
           "CHA": 13,
-          "HitPoints_Max": "7d10+21"
+          "HitPoints_Max": "7d10+21",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 16",
         "languages": "Understands Celestial, Common, Elvish, and Sylvan but can’t speak",
@@ -11313,7 +11469,8 @@
           "INT": 6,
           "WIS": 10,
           "CHA": 6,
-          "HitPoints_Max": "7d10+7"
+          "HitPoints_Max": "7d10+7",
+          "proficiency_bonus": 2
         },
         "skills": {
           "stealth": 7
@@ -11360,7 +11517,8 @@
           "INT": 8,
           "WIS": 12,
           "CHA": 14,
-          "HitPoints_Max": "6d8+6"
+          "HitPoints_Max": "6d8+6",
+          "proficiency_bonus": 2
         },
         "gear": "Daggers (6), Leather Armor",
         "senses": "Passive Perception 11",
@@ -11400,7 +11558,8 @@
           "CON": 14,
           "WIS": 14,
           "CHA": 17,
-          "HitPoints_Max": "13d8+26"
+          "HitPoints_Max": "13d8+26",
+          "proficiency_bonus": 3
         },
         "gear": "Pistol, Rapier",
         "senses": "Passive Perception 15",
@@ -11458,7 +11617,8 @@
           "INT": 22,
           "WIS": 18,
           "CHA": 24,
-          "HitPoints_Max": "27d10+189"
+          "HitPoints_Max": "27d10+189",
+          "proficiency_bonus": 6
         },
         "resistances": "Cold",
         "immunities": "Fire, Poison; Poisoned",
@@ -11526,7 +11686,8 @@
           "CON": 24,
           "WIS": 22,
           "CHA": 25,
-          "HitPoints_Max": "21d10+147"
+          "HitPoints_Max": "21d10+147",
+          "proficiency_bonus": 5
         },
         "resistances": "Radiant",
         "immunities": "Charmed, Exhaustion, Frightened",
@@ -11589,7 +11750,8 @@
           "CON": 12,
           "WIS": 14,
           "CHA": 11,
-          "HitPoints_Max": "2d8+2"
+          "HitPoints_Max": "2d8+2",
+          "proficiency_bonus": 2
         },
         "gear": "Chain Shirt, Holy Symbol, Mace",
         "senses": "Passive Perception 12",
@@ -11648,7 +11810,8 @@
           "INT": 13,
           "WIS": 16,
           "CHA": 13,
-          "HitPoints_Max": "7d8+7"
+          "HitPoints_Max": "7d8+7",
+          "proficiency_bonus": 2
         },
         "gear": "Chain Shirt, Holy Symbol, Mace",
         "senses": "Passive Perception 15",
@@ -11712,7 +11875,8 @@
           "INT": 10,
           "WIS": 12,
           "CHA": 10,
-          "HitPoints_Max": "3d4+3"
+          "HitPoints_Max": "3d4+3",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 10 ft., Darkvision 60 ft.; Passive Perception 15",
         "languages": "Understands Common and Draconic but can’t speak",
@@ -11759,7 +11923,8 @@
           "INT": 1,
           "WIS": 8,
           "CHA": 4,
-          "HitPoints_Max": "15d20+90"
+          "HitPoints_Max": "15d20+90",
+          "proficiency_bonus": 5
         },
         "senses": "Blindsight 30 ft., Tremorsense 60 ft.; Passive Perception 9",
         "languages": "None",
@@ -11813,7 +11978,8 @@
           "CON": 10,
           "WIS": 10,
           "CHA": 10,
-          "HitPoints_Max": "10d4"
+          "HitPoints_Max": "10d4",
+          "proficiency_bonus": 2
         },
         "resistances": "Cold, Fire, Lightning",
         "immunities": "Poison; Poisoned",
@@ -11862,7 +12028,8 @@
           "CON": 18,
           "WIS": 16,
           "CHA": 20,
-          "HitPoints_Max": "26d8+104"
+          "HitPoints_Max": "26d8+104",
+          "proficiency_bonus": 5
         },
         "vulnerabilities": "Piercing damage from weapons wielded by creatures under the effect of a Bless spell",
         "immunities": "Charmed, Frightened",
@@ -11927,7 +12094,8 @@
           "INT": 12,
           "WIS": 11,
           "CHA": 15,
-          "HitPoints_Max": "10d8+30"
+          "HitPoints_Max": "10d8+30",
+          "proficiency_bonus": 2
         },
         "immunities": "Fire",
         "senses": "Blindsight 10 ft., Darkvision 60 ft.; Passive Perception 14",
@@ -11971,7 +12139,8 @@
           "CON": 21,
           "WIS": 11,
           "CHA": 19,
-          "HitPoints_Max": "17d10+85"
+          "HitPoints_Max": "17d10+85",
+          "proficiency_bonus": 4
         },
         "immunities": "Fire",
         "senses": "Blindsight 30 ft., Darkvision 120 ft.; Passive Perception 18",
@@ -12015,7 +12184,8 @@
           "INT": 16,
           "WIS": 13,
           "CHA": 23,
-          "HitPoints_Max": "19d12+133"
+          "HitPoints_Max": "19d12+133",
+          "proficiency_bonus": 6
         },
         "immunities": "Fire",
         "senses": "Blindsight 60 ft., Darkvision 120 ft.; Passive Perception 23",
@@ -12071,7 +12241,8 @@
           "INT": 18,
           "WIS": 15,
           "CHA": 27,
-          "HitPoints_Max": "26d20+234"
+          "HitPoints_Max": "26d20+234",
+          "proficiency_bonus": 7
         },
         "immunities": "Fire",
         "senses": "Blindsight 60 ft., Darkvision 120 ft.; Passive Perception 26",
@@ -12128,7 +12299,8 @@
           "INT": 4,
           "WIS": 10,
           "CHA": 5,
-          "HitPoints_Max": "17d12+85"
+          "HitPoints_Max": "17d12+85",
+          "proficiency_bonus": 4
         },
         "immunities": "Cold, Fire",
         "senses": "Darkvision 60 ft., Tremorsense 60 ft.; Passive Perception 10",
@@ -12174,7 +12346,8 @@
           "INT": 3,
           "WIS": 10,
           "CHA": 9,
-          "HitPoints_Max": "16d20+80"
+          "HitPoints_Max": "16d20+80",
+          "proficiency_bonus": 4
         },
         "senses": "Passive Perception 18",
         "languages": "None",
@@ -12227,7 +12400,8 @@
           "INT": 7,
           "WIS": 16,
           "CHA": 6,
-          "HitPoints_Max": "11d10+33"
+          "HitPoints_Max": "11d10+33",
+          "proficiency_bonus": 3
         },
         "senses": "Darkvision 60 ft.; Passive Perception 16",
         "languages": "None",
@@ -12281,7 +12455,8 @@
           "INT": 2,
           "WIS": 13,
           "CHA": 6,
-          "HitPoints_Max": "6d8+6"
+          "HitPoints_Max": "6d8+6",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 11",
         "languages": "None",
@@ -12328,7 +12503,8 @@
           "CON": 12,
           "WIS": 13,
           "CHA": 9,
-          "HitPoints_Max": "4d8+4"
+          "HitPoints_Max": "4d8+4",
+          "proficiency_bonus": 2
         },
         "resistances": "Acid, Cold",
         "senses": "Darkvision 120 ft.; Passive Perception 15",
@@ -12379,7 +12555,8 @@
           "INT": 11,
           "WIS": 10,
           "CHA": 12,
-          "HitPoints_Max": "12d10+24"
+          "HitPoints_Max": "12d10+24",
+          "proficiency_bonus": 3
         },
         "vulnerabilities": "Cold",
         "immunities": "Fire",
@@ -12427,7 +12604,8 @@
           "INT": 12,
           "WIS": 10,
           "CHA": 14,
-          "HitPoints_Max": "7d8"
+          "HitPoints_Max": "7d8",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 2,
@@ -12475,7 +12653,8 @@
           "INT": 11,
           "WIS": 13,
           "CHA": 11,
-          "HitPoints_Max": "3d8+3"
+          "HitPoints_Max": "3d8+3",
+          "proficiency_bonus": 2
         },
         "skills": {
           "nature": 4,
@@ -12525,7 +12704,8 @@
           "INT": 12,
           "WIS": 12,
           "CHA": 13,
-          "HitPoints_Max": "7d8+21"
+          "HitPoints_Max": "7d8+21",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 11",
         "languages": "Common, Giant, Primordial (Aquan)",
@@ -12570,7 +12750,8 @@
           "CON": 13,
           "WIS": 10,
           "CHA": 8,
-          "HitPoints_Max": "5d8+5"
+          "HitPoints_Max": "5d8+5",
+          "proficiency_bonus": 2
         },
         "vulnerabilities": "Radiant",
         "resistances": "Acid, Cold, Fire, Lightning, Thunder",
@@ -12619,7 +12800,8 @@
           "CON": 16,
           "WIS": 10,
           "CHA": 5,
-          "HitPoints_Max": "13d10+39"
+          "HitPoints_Max": "13d10+39",
+          "proficiency_bonus": 3
         },
         "resistances": "Cold, Fire",
         "immunities": "Lightning; Deafened, Exhaustion",
@@ -12665,7 +12847,8 @@
           "INT": 7,
           "WIS": 10,
           "CHA": 3,
-          "HitPoints_Max": "15d10+60"
+          "HitPoints_Max": "15d10+60",
+          "proficiency_bonus": 3
         },
         "immunities": "Poison; Charmed, Exhaustion, Frightened, Paralyzed, Petrified, Poisoned",
         "senses": "Blindsight 10 ft., Darkvision 60 ft.; Passive Perception 10",
@@ -12713,7 +12896,8 @@
           "INT": 12,
           "WIS": 11,
           "CHA": 15,
-          "HitPoints_Max": "6d8+18"
+          "HitPoints_Max": "6d8+18",
+          "proficiency_bonus": 2
         },
         "immunities": "Cold",
         "senses": "Blindsight 10 ft., Darkvision 60 ft.; Passive Perception 14",
@@ -12758,7 +12942,8 @@
           "CON": 21,
           "WIS": 11,
           "CHA": 19,
-          "HitPoints_Max": "16d10+80"
+          "HitPoints_Max": "16d10+80",
+          "proficiency_bonus": 4
         },
         "immunities": "Cold",
         "senses": "Blindsight 30 ft., Darkvision 120 ft.; Passive Perception 18",
@@ -12804,7 +12989,8 @@
           "INT": 16,
           "WIS": 13,
           "CHA": 22,
-          "HitPoints_Max": "16d12+112"
+          "HitPoints_Max": "16d12+112",
+          "proficiency_bonus": 5
         },
         "immunities": "Cold",
         "senses": "Blindsight 60 ft., Darkvision 120 ft.; Passive Perception 21",
@@ -12864,7 +13050,8 @@
           "CON": 29,
           "WIS": 15,
           "CHA": 26,
-          "HitPoints_Max": "24d20+216"
+          "HitPoints_Max": "24d20+216",
+          "proficiency_bonus": 7
         },
         "immunities": "Cold",
         "senses": "Blindsight 60 ft., Darkvision 120 ft.; Passive Perception 26",
@@ -12926,7 +13113,8 @@
           "CON": 15,
           "WIS": 8,
           "CHA": 5,
-          "HitPoints_Max": "2d8+4"
+          "HitPoints_Max": "2d8+4",
+          "proficiency_bonus": 2
         },
         "vulnerabilities": "Bludgeoning",
         "immunities": "Poison; Exhaustion, Poisoned",
@@ -12974,7 +13162,8 @@
           "INT": 2,
           "WIS": 8,
           "CHA": 5,
-          "HitPoints_Max": "3d10+6"
+          "HitPoints_Max": "3d10+6",
+          "proficiency_bonus": 2
         },
         "vulnerabilities": "Bludgeoning",
         "immunities": "Poison; Exhaustion, Poisoned",
@@ -13013,7 +13202,8 @@
           "CON": 15,
           "WIS": 8,
           "CHA": 5,
-          "HitPoints_Max": "6d10+12"
+          "HitPoints_Max": "6d10+12",
+          "proficiency_bonus": 2
         },
         "vulnerabilities": "Bludgeoning",
         "immunities": "Poison; Exhaustion, Poisoned",
@@ -13061,7 +13251,8 @@
           "INT": 25,
           "WIS": 25,
           "CHA": 30,
-          "HitPoints_Max": "22d10+176"
+          "HitPoints_Max": "22d10+176",
+          "proficiency_bonus": 7
         },
         "immunities": "Poison, Radiant; Charmed, Exhaustion, Frightened, Poisoned",
         "senses": "Truesight 120 ft.; Passive Perception 24",
@@ -13123,7 +13314,8 @@
           "INT": 10,
           "WIS": 10,
           "CHA": 11,
-          "HitPoints_Max": "5d8"
+          "HitPoints_Max": "5d8",
+          "proficiency_bonus": 2
         },
         "resistances": "Acid, Bludgeoning, Cold, Fire, Lightning, Piercing, Slashing, Thunder",
         "immunities": "Necrotic, Poison; Charmed, Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious",
@@ -13167,7 +13359,8 @@
           "CON": 13,
           "WIS": 12,
           "CHA": 11,
-          "HitPoints_Max": "7d4+7"
+          "HitPoints_Max": "7d4+7",
+          "proficiency_bonus": 2
         },
         "resistances": "Necrotic, Psychic, Radiant",
         "senses": "Darkvision 60 ft.; Passive Perception 11",
@@ -13216,7 +13409,8 @@
           "INT": 18,
           "WIS": 18,
           "CHA": 18,
-          "HitPoints_Max": "20d10+60"
+          "HitPoints_Max": "20d10+60",
+          "proficiency_bonus": 4
         },
         "resistances": "Necrotic, Radiant",
         "immunities": "Psychic; Charmed, Frightened",
@@ -13283,7 +13477,8 @@
           "INT": 16,
           "WIS": 23,
           "CHA": 18,
-          "HitPoints_Max": "19d10+95"
+          "HitPoints_Max": "19d10+95",
+          "proficiency_bonus": 6
         },
         "resistances": "Necrotic, Radiant",
         "immunities": "Psychic; Charmed, Frightened",
@@ -13348,7 +13543,8 @@
           "INT": 16,
           "WIS": 15,
           "CHA": 16,
-          "HitPoints_Max": "18d10+36"
+          "HitPoints_Max": "18d10+36",
+          "proficiency_bonus": 3
         },
         "immunities": "Poison; Charmed, Poisoned",
         "senses": "Darkvision 60 ft.; Passive Perception 12",
@@ -13412,7 +13608,8 @@
           "CON": 10,
           "WIS": 13,
           "CHA": 11,
-          "HitPoints_Max": "4d4"
+          "HitPoints_Max": "4d4",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 13",
         "languages": "Common, Elvish, Sylvan",
@@ -13463,7 +13660,8 @@
           "INT": 12,
           "WIS": 14,
           "CHA": 16,
-          "HitPoints_Max": "6d8"
+          "HitPoints_Max": "6d8",
+          "proficiency_bonus": 2
         },
         "gear": "Hand Crossbow, Shortsword, Thieves’ Tools",
         "senses": "Passive Perception 16",
@@ -13521,7 +13719,8 @@
           "INT": 2,
           "WIS": 8,
           "CHA": 6,
-          "HitPoints_Max": "2d4"
+          "HitPoints_Max": "2d4",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 9",
         "languages": "None",
@@ -13560,7 +13759,8 @@
           "INT": 10,
           "WIS": 12,
           "CHA": 9,
-          "HitPoints_Max": "11d12+55"
+          "HitPoints_Max": "11d12+55",
+          "proficiency_bonus": 3
         },
         "senses": "Darkvision 60 ft.; Passive Perception 14",
         "languages": "Giant",
@@ -13619,7 +13819,8 @@
           "INT": 3,
           "WIS": 11,
           "CHA": 1,
-          "HitPoints_Max": "21d10+105"
+          "HitPoints_Max": "21d10+105",
+          "proficiency_bonus": 4
         },
         "id": "stone_golem",
         "traits": [
@@ -13670,7 +13871,8 @@
           "CON": 20,
           "WIS": 20,
           "CHA": 18,
-          "HitPoints_Max": "20d12+100"
+          "HitPoints_Max": "20d12+100",
+          "proficiency_bonus": 5
         },
         "resistances": "Cold",
         "immunities": "Lightning, Thunder",
@@ -13737,7 +13939,8 @@
           "INT": 15,
           "WIS": 12,
           "CHA": 20,
-          "HitPoints_Max": "13d8+13"
+          "HitPoints_Max": "13d8+13",
+          "proficiency_bonus": 2
         },
         "resistances": "Cold, Fire, Poison, Psychic",
         "senses": "Darkvision 60 ft.; Passive Perception 15",
@@ -13797,7 +14000,8 @@
           "INT": 3,
           "WIS": 11,
           "CHA": 11,
-          "HitPoints_Max": "34d20+340"
+          "HitPoints_Max": "34d20+340",
+          "proficiency_bonus": 9
         },
         "skills": {
           "perception": 9
@@ -13862,7 +14066,8 @@
           "CON": 14,
           "WIS": 10,
           "CHA": 11,
-          "HitPoints_Max": "5d8+10"
+          "HitPoints_Max": "5d8+10",
+          "proficiency_bonus": 2
         },
         "gear": "Heavy Crossbow, Leather Armor, Mace",
         "senses": "Passive Perception 10",
@@ -13911,7 +14116,8 @@
           "INT": 11,
           "WIS": 10,
           "CHA": 11,
-          "HitPoints_Max": "11d8+33"
+          "HitPoints_Max": "11d8+33",
+          "proficiency_bonus": 2
         },
         "gear": "Chain Mail, Heavy Crossbow, Warhammer",
         "senses": "Passive Perception 10",
@@ -13962,7 +14168,8 @@
           "INT": 12,
           "WIS": 16,
           "CHA": 12,
-          "HitPoints_Max": "12d12+60"
+          "HitPoints_Max": "12d12+60",
+          "proficiency_bonus": 4
         },
         "vulnerabilities": "Fire",
         "resistances": "Bludgeoning, Piercing",
@@ -14015,7 +14222,8 @@
           "INT": 7,
           "WIS": 9,
           "CHA": 7,
-          "HitPoints_Max": "9d10+45"
+          "HitPoints_Max": "9d10+45",
+          "proficiency_bonus": 3
         },
         "senses": "Darkvision 60 ft.; Passive Perception 15",
         "languages": "Giant",
@@ -14063,7 +14271,8 @@
           "INT": 1,
           "WIS": 9,
           "CHA": 1,
-          "HitPoints_Max": "4d6"
+          "HitPoints_Max": "4d6",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 9",
         "languages": "None",
@@ -14105,7 +14314,8 @@
           "INT": 11,
           "WIS": 17,
           "CHA": 16,
-          "HitPoints_Max": "13d10+26"
+          "HitPoints_Max": "13d10+26",
+          "proficiency_bonus": 3
         },
         "immunities": "Poison; Charmed, Paralyzed, Poisoned",
         "senses": "Darkvision 60 ft.; Passive Perception 13",
@@ -14171,7 +14381,8 @@
           "CON": 15,
           "WIS": 10,
           "CHA": 14,
-          "HitPoints_Max": "10d8+20"
+          "HitPoints_Max": "10d8+20",
+          "proficiency_bonus": 2
         },
         "resistances": "Necrotic",
         "immunities": "Charmed (except from its vampire master)",
@@ -14223,7 +14434,8 @@
           "INT": 11,
           "WIS": 10,
           "CHA": 12,
-          "HitPoints_Max": "12d8+36"
+          "HitPoints_Max": "12d8+36",
+          "proficiency_bonus": 3
         },
         "resistances": "Necrotic",
         "senses": "Darkvision 60 ft.; Passive Perception 13",
@@ -14278,7 +14490,8 @@
           "INT": 17,
           "WIS": 15,
           "CHA": 18,
-          "HitPoints_Max": "23d8+92"
+          "HitPoints_Max": "23d8+92",
+          "proficiency_bonus": 5
         },
         "resistances": "Necrotic",
         "senses": "Darkvision 120 ft.; Passive Perception 17",
@@ -14338,7 +14551,8 @@
           "INT": 8,
           "WIS": 13,
           "CHA": 8,
-          "HitPoints_Max": "16d10+64"
+          "HitPoints_Max": "16d10+64",
+          "proficiency_bonus": 3
         },
         "resistances": "Cold, Fire, Lightning",
         "immunities": "Poison; Poisoned",
@@ -14389,7 +14603,8 @@
           "INT": 8,
           "WIS": 11,
           "CHA": 8,
-          "HitPoints_Max": "2d8"
+          "HitPoints_Max": "2d8",
+          "proficiency_bonus": 2
         },
         "id": "warrior_infantry",
         "traits": [
@@ -14426,7 +14641,8 @@
           "CON": 14,
           "WIS": 11,
           "CHA": 10,
-          "HitPoints_Max": "10d8+20"
+          "HitPoints_Max": "10d8+20",
+          "proficiency_bonus": 2
         },
         "gear": "Greatsword, Heavy Crossbow, Splint Armor",
         "senses": "Passive Perception 12",
@@ -14481,7 +14697,8 @@
           "INT": 5,
           "WIS": 10,
           "CHA": 8,
-          "HitPoints_Max": "12d10+48"
+          "HitPoints_Max": "12d10+48",
+          "proficiency_bonus": 3
         },
         "resistances": "Acid, Fire",
         "immunities": "Poison; Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious",
@@ -14527,7 +14744,8 @@
           "INT": 11,
           "WIS": 12,
           "CHA": 12,
-          "HitPoints_Max": "18d8+54"
+          "HitPoints_Max": "18d8+54",
+          "proficiency_bonus": 3
         },
         "gear": "Handaxes (4)",
         "senses": "Darkvision 60 ft.; Passive Perception 17",
@@ -14589,7 +14807,8 @@
           "CON": 15,
           "WIS": 11,
           "CHA": 8,
-          "HitPoints_Max": "15d8+30"
+          "HitPoints_Max": "15d8+30",
+          "proficiency_bonus": 2
         },
         "gear": "Javelins (6)",
         "senses": "Passive Perception 12",
@@ -14651,7 +14870,8 @@
           "CON": 12,
           "WIS": 10,
           "CHA": 8,
-          "HitPoints_Max": "11d8+11"
+          "HitPoints_Max": "11d8+11",
+          "proficiency_bonus": 2
         },
         "gear": "Hand Crossbow",
         "senses": "Darkvision 60 ft.; Passive Perception 14",
@@ -14708,7 +14928,8 @@
           "INT": 10,
           "WIS": 13,
           "CHA": 11,
-          "HitPoints_Max": "16d8+48"
+          "HitPoints_Max": "16d8+48",
+          "proficiency_bonus": 2
         },
         "gear": "Longbow",
         "senses": "Darkvision 60 ft.; Passive Perception 15",
@@ -14772,7 +14993,8 @@
           "CON": 14,
           "WIS": 11,
           "CHA": 10,
-          "HitPoints_Max": "11d8+22"
+          "HitPoints_Max": "11d8+22",
+          "proficiency_bonus": 2
         },
         "gear": "Longbow",
         "senses": "Darkvision 60 ft.; Passive Perception 14",
@@ -14838,7 +15060,8 @@
           "CON": 14,
           "WIS": 10,
           "CHA": 11,
-          "HitPoints_Max": "5d8+10"
+          "HitPoints_Max": "5d8+10",
+          "proficiency_bonus": 2
         },
         "immunities": "Cold",
         "senses": "Blindsight 10 ft., Darkvision 60 ft.;",
@@ -14885,7 +15108,8 @@
           "INT": 6,
           "WIS": 11,
           "CHA": 12,
-          "HitPoints_Max": "13d10+52"
+          "HitPoints_Max": "13d10+52",
+          "proficiency_bonus": 3
         },
         "immunities": "Cold",
         "senses": "Blindsight 30 ft., Darkvision 120 ft.; Passive Perception 16",
@@ -14936,7 +15160,8 @@
           "INT": 8,
           "WIS": 12,
           "CHA": 12,
-          "HitPoints_Max": "16d12+96"
+          "HitPoints_Max": "16d12+96",
+          "proficiency_bonus": 5
         },
         "skills": {
           "perception": 11,
@@ -14980,7 +15205,8 @@
           "INT": 10,
           "WIS": 13,
           "CHA": 18,
-          "HitPoints_Max": "18d20+144"
+          "HitPoints_Max": "18d20+144",
+          "proficiency_bonus": 6
         },
         "immunities": "Cold",
         "senses": "Blindsight 60 ft., Darkvision 120 ft.; Passive Perception 23",
@@ -15028,7 +15254,8 @@
           "INT": 10,
           "WIS": 13,
           "CHA": 15,
-          "HitPoints_Max": "11d8+33"
+          "HitPoints_Max": "11d8+33",
+          "proficiency_bonus": 2
         },
         "resistances": "Necrotic",
         "immunities": "Poison; Exhaustion, Poisoned",
@@ -15086,7 +15313,8 @@
           "CON": 10,
           "WIS": 14,
           "CHA": 11,
-          "HitPoints_Max": "11d4"
+          "HitPoints_Max": "11d4",
+          "proficiency_bonus": 2
         },
         "resistances": "Acid, Bludgeoning, Cold, Fire, Necrotic, Piercing, Slashing",
         "immunities": "Lightning, Poison; Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious",
@@ -15135,7 +15363,8 @@
           "INT": 7,
           "WIS": 12,
           "CHA": 8,
-          "HitPoints_Max": "10d10+20"
+          "HitPoints_Max": "10d10+20",
+          "proficiency_bonus": 2
         },
         "immunities": "Cold",
         "senses": "Passive Perception 15",
@@ -15182,7 +15411,8 @@
           "INT": 7,
           "WIS": 11,
           "CHA": 8,
-          "HitPoints_Max": "4d10+4"
+          "HitPoints_Max": "4d10+4",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 14",
         "languages": "Goblin, Worg",
@@ -15223,7 +15453,8 @@
           "CON": 16,
           "WIS": 14,
           "CHA": 15,
-          "HitPoints_Max": "9d8+27"
+          "HitPoints_Max": "9d8+27",
+          "proficiency_bonus": 3
         },
         "resistances": "Acid, Bludgeoning, Cold, Fire, Piercing, Slashing",
         "immunities": "Necrotic, Poison; Charmed, Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious",
@@ -15268,7 +15499,8 @@
           "CON": 16,
           "WIS": 12,
           "CHA": 6,
-          "HitPoints_Max": "15d10+45"
+          "HitPoints_Max": "15d10+45",
+          "proficiency_bonus": 3
         },
         "senses": "Darkvision 120 ft.; Passive Perception 14",
         "languages": "None",
@@ -15322,7 +15554,8 @@
           "INT": 11,
           "WIS": 10,
           "CHA": 11,
-          "HitPoints_Max": "8d8+48"
+          "HitPoints_Max": "8d8+48",
+          "proficiency_bonus": 3
         },
         "skills": {
           "perception": 6,
@@ -15375,7 +15608,8 @@
           "INT": 3,
           "WIS": 6,
           "CHA": 5,
-          "HitPoints_Max": "2d8+6"
+          "HitPoints_Max": "2d8+6",
+          "proficiency_bonus": 2
         },
         "immunities": "Poison; Exhaustion, Poisoned",
         "senses": "Darkvision 60 ft.; Passive Perception 8",
@@ -15414,7 +15648,8 @@
           "INT": 3,
           "WIS": 6,
           "CHA": 5,
-          "HitPoints_Max": "9d10+36"
+          "HitPoints_Max": "9d10+36",
+          "proficiency_bonus": 2
         },
         "immunities": "Poison; Exhaustion, Poisoned",
         "senses": "Darkvision 60 ft.; Passive Perception 8",
@@ -15456,7 +15691,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 5,
-          "HitPoints_Max": "6d10+18"
+          "HitPoints_Max": "6d10+18",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 15",
         "languages": "None",
@@ -15505,7 +15741,8 @@
           "CON": 15,
           "WIS": 12,
           "CHA": 5,
-          "HitPoints_Max": "8d12+16"
+          "HitPoints_Max": "8d12+16",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 11",
         "languages": "None",
@@ -15543,7 +15780,8 @@
           "INT": 6,
           "WIS": 12,
           "CHA": 7,
-          "HitPoints_Max": "3d8+6"
+          "HitPoints_Max": "3d8+6",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 13",
         "languages": "None",
@@ -15596,7 +15834,8 @@
           "INT": 4,
           "WIS": 14,
           "CHA": 6,
-          "HitPoints_Max": "12d12+12"
+          "HitPoints_Max": "12d12+12",
+          "proficiency_bonus": 2
         },
         "skills": {
           "stealth": 5
@@ -15637,7 +15876,8 @@
           "INT": 4,
           "WIS": 12,
           "CHA": 6,
-          "HitPoints_Max": "1d6"
+          "HitPoints_Max": "1d6",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 11",
         "languages": "None",
@@ -15677,7 +15917,8 @@
           "CON": 16,
           "WIS": 12,
           "CHA": 5,
-          "HitPoints_Max": "1d4+3"
+          "HitPoints_Max": "1d4+3",
+          "proficiency_bonus": 2
         },
         "resistances": "Poison",
         "senses": "Darkvision 30 ft.; Passive Perception 13",
@@ -15717,7 +15958,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 4,
-          "HitPoints_Max": "1d4-1"
+          "HitPoints_Max": "1d4-1",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 60 ft.; Passive Perception 11",
         "languages": "None",
@@ -15753,7 +15995,8 @@
           "CON": 14,
           "WIS": 12,
           "CHA": 7,
-          "HitPoints_Max": "3d8+6"
+          "HitPoints_Max": "3d8+6",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 15",
         "languages": "None",
@@ -15794,7 +16037,8 @@
           "CON": 10,
           "WIS": 14,
           "CHA": 5,
-          "HitPoints_Max": "2d6"
+          "HitPoints_Max": "2d6",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 16",
         "languages": "None",
@@ -15837,7 +16081,8 @@
           "INT": 2,
           "WIS": 9,
           "CHA": 5,
-          "HitPoints_Max": "2d8+4"
+          "HitPoints_Max": "2d8+4",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 9",
         "languages": "None",
@@ -15877,7 +16122,8 @@
           "INT": 2,
           "WIS": 13,
           "CHA": 7,
-          "HitPoints_Max": "3d10+6"
+          "HitPoints_Max": "3d10+6",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 13",
         "languages": "None",
@@ -15927,7 +16173,8 @@
           "INT": 2,
           "WIS": 11,
           "CHA": 5,
-          "HitPoints_Max": "2d10+6"
+          "HitPoints_Max": "2d10+6",
+          "proficiency_bonus": 2
         },
         "id": "camel",
         "actions": [
@@ -15961,7 +16208,8 @@
           "CON": 10,
           "WIS": 12,
           "CHA": 7,
-          "HitPoints_Max": "1d4"
+          "HitPoints_Max": "1d4",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 13",
         "languages": "None",
@@ -16007,7 +16255,8 @@
           "INT": 1,
           "WIS": 10,
           "CHA": 3,
-          "HitPoints_Max": "2d10+2"
+          "HitPoints_Max": "2d10+2",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 2,
@@ -16046,7 +16295,8 @@
           "CON": 12,
           "WIS": 8,
           "CHA": 2,
-          "HitPoints_Max": "1d4+1"
+          "HitPoints_Max": "1d4+1",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 30 ft.; Passive Perception 9",
         "languages": "None",
@@ -16088,7 +16338,8 @@
           "CON": 13,
           "WIS": 10,
           "CHA": 5,
-          "HitPoints_Max": "2d10+2"
+          "HitPoints_Max": "2d10+2",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 10",
         "languages": "None",
@@ -16131,7 +16382,8 @@
           "CON": 11,
           "WIS": 14,
           "CHA": 5,
-          "HitPoints_Max": "1d8"
+          "HitPoints_Max": "1d8",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 14",
         "languages": "None",
@@ -16174,7 +16426,8 @@
           "INT": 3,
           "WIS": 12,
           "CHA": 7,
-          "HitPoints_Max": "3d10+6"
+          "HitPoints_Max": "3d10+6",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 15",
         "languages": "None",
@@ -16218,7 +16471,8 @@
           "CON": 15,
           "WIS": 11,
           "CHA": 7,
-          "HitPoints_Max": "2d10+4"
+          "HitPoints_Max": "2d10+4",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 10",
         "languages": "None",
@@ -16255,7 +16509,8 @@
           "CON": 12,
           "WIS": 14,
           "CHA": 7,
-          "HitPoints_Max": "1d6+1"
+          "HitPoints_Max": "1d6+1",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 16",
         "languages": "None",
@@ -16293,7 +16548,8 @@
           "INT": 3,
           "WIS": 11,
           "CHA": 6,
-          "HitPoints_Max": "8d12+24"
+          "HitPoints_Max": "8d12+24",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 10",
         "languages": "None",
@@ -16337,7 +16593,8 @@
           "INT": 2,
           "WIS": 10,
           "CHA": 6,
-          "HitPoints_Max": "2d10"
+          "HitPoints_Max": "2d10",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 2
@@ -16374,7 +16631,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 5,
-          "HitPoints_Max": "2d4"
+          "HitPoints_Max": "2d4",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 10 ft.; Passive Perception 11",
         "languages": "None",
@@ -16417,7 +16675,8 @@
           "INT": 1,
           "WIS": 8,
           "CHA": 3,
-          "HitPoints_Max": "1d4-1"
+          "HitPoints_Max": "1d4-1",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 1,
@@ -16458,7 +16717,8 @@
           "INT": 5,
           "WIS": 12,
           "CHA": 7,
-          "HitPoints_Max": "16d12+64"
+          "HitPoints_Max": "16d12+64",
+          "proficiency_bonus": 3
         },
         "senses": "Passive Perception 14",
         "languages": "None",
@@ -16505,7 +16765,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 5,
-          "HitPoints_Max": "2d8+6"
+          "HitPoints_Max": "2d8+6",
+          "proficiency_bonus": 2
         },
         "resistances": "Poison",
         "senses": "Darkvision 60 ft.; Passive Perception 13",
@@ -16549,7 +16810,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 6,
-          "HitPoints_Max": "4d10"
+          "HitPoints_Max": "4d10",
+          "proficiency_bonus": 2
         },
         "id": "giant_bat",
         "actions": [
@@ -16583,7 +16845,8 @@
           "INT": 2,
           "WIS": 7,
           "CHA": 5,
-          "HitPoints_Max": "5d10+15"
+          "HitPoints_Max": "5d10+15",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 8",
         "languages": "None",
@@ -16623,7 +16886,8 @@
           "INT": 1,
           "WIS": 7,
           "CHA": 3,
-          "HitPoints_Max": "2d6+2"
+          "HitPoints_Max": "2d6+2",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 30 ft.; Passive Perception 8",
         "languages": "None",
@@ -16660,7 +16924,8 @@
           "INT": 1,
           "WIS": 10,
           "CHA": 3,
-          "HitPoints_Max": "8d12+8"
+          "HitPoints_Max": "8d12+8",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 10 ft.; Passive Perception 12",
         "languages": "None",
@@ -16702,7 +16967,8 @@
           "INT": 1,
           "WIS": 9,
           "CHA": 3,
-          "HitPoints_Max": "3d8"
+          "HitPoints_Max": "3d8",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 30 ft.; Passive Perception 9",
         "languages": "None",
@@ -16743,7 +17009,8 @@
           "INT": 2,
           "WIS": 10,
           "CHA": 7,
-          "HitPoints_Max": "9d12+27"
+          "HitPoints_Max": "9d12+27",
+          "proficiency_bonus": 3
         },
         "senses": "Passive Perception 10",
         "languages": "None",
@@ -16799,7 +17066,8 @@
           "INT": 8,
           "WIS": 14,
           "CHA": 10,
-          "HitPoints_Max": "4d10+4"
+          "HitPoints_Max": "4d10+4",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 6
@@ -16837,7 +17105,8 @@
           "INT": 7,
           "WIS": 14,
           "CHA": 10,
-          "HitPoints_Max": "5d12+10"
+          "HitPoints_Max": "5d12+10",
+          "proficiency_bonus": 2
         },
         "resistances": "Necrotic, Radiant",
         "senses": "Darkvision 90 ft.; Passive Perception 14",
@@ -16878,7 +17147,8 @@
           "INT": 1,
           "WIS": 7,
           "CHA": 3,
-          "HitPoints_Max": "1d6+1"
+          "HitPoints_Max": "1d6+1",
+          "proficiency_bonus": 2
         },
         "resistances": "Fire",
         "senses": "Blindsight 30 ft.; Passive Perception 8",
@@ -16921,7 +17191,8 @@
           "INT": 2,
           "WIS": 10,
           "CHA": 3,
-          "HitPoints_Max": "4d8"
+          "HitPoints_Max": "4d8",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 2,
@@ -16968,7 +17239,8 @@
           "INT": 3,
           "WIS": 12,
           "CHA": 6,
-          "HitPoints_Max": "3d10+3"
+          "HitPoints_Max": "3d10+3",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 3
@@ -17005,7 +17277,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 7,
-          "HitPoints_Max": "6d10+12"
+          "HitPoints_Max": "6d10+12",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 13",
         "languages": "None",
@@ -17048,7 +17321,8 @@
           "CON": 13,
           "WIS": 10,
           "CHA": 5,
-          "HitPoints_Max": "3d10+3"
+          "HitPoints_Max": "3d10+3",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 10",
         "languages": "None",
@@ -17091,7 +17365,8 @@
           "INT": 5,
           "WIS": 10,
           "CHA": 4,
-          "HitPoints_Max": "7d10+7"
+          "HitPoints_Max": "7d10+7",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 4,
@@ -17135,7 +17410,8 @@
           "INT": 10,
           "WIS": 14,
           "CHA": 10,
-          "HitPoints_Max": "3d10+3"
+          "HitPoints_Max": "3d10+3",
+          "proficiency_bonus": 2
         },
         "resistances": "Necrotic, Radiant",
         "senses": "Darkvision 120 ft.; Passive Perception 16",
@@ -17187,7 +17463,8 @@
           "CON": 11,
           "WIS": 10,
           "CHA": 4,
-          "HitPoints_Max": "2d6"
+          "HitPoints_Max": "2d6",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 12",
         "languages": "None",
@@ -17230,7 +17507,8 @@
           "INT": 1,
           "WIS": 9,
           "CHA": 3,
-          "HitPoints_Max": "7d10+14"
+          "HitPoints_Max": "7d10+14",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 60 ft.; Passive Perception 9",
         "languages": "None",
@@ -17276,7 +17554,8 @@
           "CON": 11,
           "WIS": 12,
           "CHA": 5,
-          "HitPoints_Max": "3d10"
+          "HitPoints_Max": "3d10",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 11",
         "languages": "None",
@@ -17319,7 +17598,8 @@
           "CON": 21,
           "WIS": 10,
           "CHA": 5,
-          "HitPoints_Max": "8d12+40"
+          "HitPoints_Max": "8d12+40",
+          "proficiency_bonus": 3
         },
         "senses": "Blindsight 60 ft.; Passive Perception 13",
         "languages": "None",
@@ -17363,7 +17643,8 @@
           "CON": 12,
           "WIS": 11,
           "CHA": 4,
-          "HitPoints_Max": "4d10+4"
+          "HitPoints_Max": "4d10+4",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 14",
         "languages": "None",
@@ -17409,7 +17690,8 @@
           "INT": 2,
           "WIS": 10,
           "CHA": 3,
-          "HitPoints_Max": "6d10+6"
+          "HitPoints_Max": "6d10+6",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 10",
         "languages": "None",
@@ -17451,7 +17733,8 @@
           "INT": 2,
           "WIS": 10,
           "CHA": 3,
-          "HitPoints_Max": "2d8+2"
+          "HitPoints_Max": "2d8+2",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 10 ft.; Passive Perception 12",
         "languages": "None",
@@ -17491,7 +17774,8 @@
           "INT": 6,
           "WIS": 12,
           "CHA": 7,
-          "HitPoints_Max": "3d10+9"
+          "HitPoints_Max": "3d10+9",
+          "proficiency_bonus": 2
         },
         "resistances": "Necrotic",
         "senses": "Darkvision 60 ft.; Passive Perception 13",
@@ -17535,7 +17819,8 @@
           "CON": 10,
           "WIS": 10,
           "CHA": 3,
-          "HitPoints_Max": "5d8"
+          "HitPoints_Max": "5d8",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 10",
         "languages": "None",
@@ -17575,7 +17860,8 @@
           "INT": 4,
           "WIS": 12,
           "CHA": 5,
-          "HitPoints_Max": "2d8"
+          "HitPoints_Max": "2d8",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 13",
         "languages": "None",
@@ -17617,7 +17903,8 @@
           "INT": 3,
           "WIS": 12,
           "CHA": 4,
-          "HitPoints_Max": "2d8+2"
+          "HitPoints_Max": "2d8+2",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 10 ft., Darkvision 60 ft.;",
         "languages": "None",
@@ -17664,7 +17951,8 @@
           "INT": 2,
           "WIS": 10,
           "CHA": 5,
-          "HitPoints_Max": "1d8"
+          "HitPoints_Max": "1d8",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 2
@@ -17701,7 +17989,8 @@
           "CON": 8,
           "WIS": 14,
           "CHA": 6,
-          "HitPoints_Max": "1d4-1"
+          "HitPoints_Max": "1d4-1",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 16",
         "languages": "None",
@@ -17738,7 +18027,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 4,
-          "HitPoints_Max": "11d10+22"
+          "HitPoints_Max": "11d10+22",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 13",
         "languages": "None",
@@ -17782,7 +18072,8 @@
           "INT": 1,
           "WIS": 10,
           "CHA": 4,
-          "HitPoints_Max": "6d10+12"
+          "HitPoints_Max": "6d10+12",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 60 ft.; Passive Perception 12",
         "languages": "None",
@@ -17825,7 +18116,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 5,
-          "HitPoints_Max": "1d8+1"
+          "HitPoints_Max": "1d8+1",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 13",
         "languages": "None",
@@ -17868,7 +18160,8 @@
           "CON": 11,
           "WIS": 12,
           "CHA": 6,
-          "HitPoints_Max": "1d6"
+          "HitPoints_Max": "1d6",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 90 ft.; Passive Perception 15",
         "languages": "None",
@@ -17909,7 +18202,8 @@
           "INT": 3,
           "WIS": 12,
           "CHA": 7,
-          "HitPoints_Max": "12d12+12"
+          "HitPoints_Max": "12d12+12",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 120 ft.; Passive Perception 13",
         "languages": "None",
@@ -17953,7 +18247,8 @@
           "INT": 3,
           "WIS": 12,
           "CHA": 8,
-          "HitPoints_Max": "4d10"
+          "HitPoints_Max": "4d10",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 13",
         "languages": "None",
@@ -18000,7 +18295,8 @@
           "CON": 10,
           "WIS": 8,
           "CHA": 3,
-          "HitPoints_Max": "1d4"
+          "HitPoints_Max": "1d4",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 30 ft.; Passive Perception 9",
         "languages": "None",
@@ -18039,7 +18335,8 @@
           "INT": 3,
           "WIS": 11,
           "CHA": 6,
-          "HitPoints_Max": "11d12+55"
+          "HitPoints_Max": "11d12+55",
+          "proficiency_bonus": 3
         },
         "senses": "Passive Perception 10",
         "languages": "None",
@@ -18080,7 +18377,8 @@
           "INT": 3,
           "WIS": 12,
           "CHA": 7,
-          "HitPoints_Max": "1d8+1"
+          "HitPoints_Max": "1d8+1",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 15",
         "languages": "None",
@@ -18120,7 +18418,8 @@
           "INT": 2,
           "WIS": 10,
           "CHA": 5,
-          "HitPoints_Max": "2d8+2"
+          "HitPoints_Max": "2d8+2",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 10",
         "languages": "None",
@@ -18160,7 +18459,8 @@
           "CON": 11,
           "WIS": 10,
           "CHA": 4,
-          "HitPoints_Max": "1d6"
+          "HitPoints_Max": "1d6",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 30 ft.; Passive Perception 12",
         "languages": "None",
@@ -18207,7 +18507,8 @@
           "CON": 8,
           "WIS": 12,
           "CHA": 7,
-          "HitPoints_Max": "1d4-1"
+          "HitPoints_Max": "1d4-1",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 120 ft.; Passive Perception 15",
         "languages": "None",
@@ -18249,7 +18550,8 @@
           "CON": 10,
           "WIS": 14,
           "CHA": 7,
-          "HitPoints_Max": "3d8"
+          "HitPoints_Max": "3d8",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 14",
         "languages": "None",
@@ -18296,7 +18598,8 @@
           "INT": 1,
           "WIS": 7,
           "CHA": 2,
-          "HitPoints_Max": "1d4-1"
+          "HitPoints_Max": "1d4-1",
+          "proficiency_bonus": 2
         },
         "id": "piranha",
         "traits": [
@@ -18332,7 +18635,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 5,
-          "HitPoints_Max": "8d10+24"
+          "HitPoints_Max": "8d10+24",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 13",
         "languages": "None",
@@ -18376,7 +18680,8 @@
           "INT": 2,
           "WIS": 13,
           "CHA": 7,
-          "HitPoints_Max": "5d10+15"
+          "HitPoints_Max": "5d10+15",
+          "proficiency_bonus": 2
         },
         "resistances": "Cold",
         "senses": "Darkvision 60 ft.; Passive Perception 15",
@@ -18422,7 +18727,8 @@
           "INT": 2,
           "WIS": 11,
           "CHA": 7,
-          "HitPoints_Max": "2d8+2"
+          "HitPoints_Max": "2d8+2",
+          "proficiency_bonus": 2
         },
         "id": "pony",
         "actions": [
@@ -18456,7 +18762,8 @@
           "INT": 2,
           "WIS": 9,
           "CHA": 5,
-          "HitPoints_Max": "3d8"
+          "HitPoints_Max": "3d8",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 11",
         "languages": "None",
@@ -18499,7 +18806,8 @@
           "CON": 9,
           "WIS": 10,
           "CHA": 4,
-          "HitPoints_Max": "1d4-1"
+          "HitPoints_Max": "1d4-1",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 30 ft.; Passive Perception 12",
         "languages": "None",
@@ -18541,7 +18849,8 @@
           "CON": 10,
           "WIS": 13,
           "CHA": 6,
-          "HitPoints_Max": "1d4"
+          "HitPoints_Max": "1d4",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 13",
         "languages": "None",
@@ -18586,7 +18895,8 @@
           "INT": 1,
           "WIS": 10,
           "CHA": 4,
-          "HitPoints_Max": "4d8+4"
+          "HitPoints_Max": "4d8+4",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 2
@@ -18625,7 +18935,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 6,
-          "HitPoints_Max": "6d10+12"
+          "HitPoints_Max": "6d10+12",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 11",
         "languages": "None",
@@ -18665,7 +18976,8 @@
           "INT": 2,
           "WIS": 11,
           "CHA": 7,
-          "HitPoints_Max": "2d10+2"
+          "HitPoints_Max": "2d10+2",
+          "proficiency_bonus": 2
         },
         "id": "riding_horse",
         "actions": [
@@ -18699,7 +19011,8 @@
           "INT": 3,
           "WIS": 12,
           "CHA": 8,
-          "HitPoints_Max": "7d10+14"
+          "HitPoints_Max": "7d10+14",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 15",
         "languages": "None",
@@ -18747,7 +19060,8 @@
           "CON": 8,
           "WIS": 8,
           "CHA": 2,
-          "HitPoints_Max": "1d4-1"
+          "HitPoints_Max": "1d4-1",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 10 ft.; Passive Perception 9",
         "languages": "None",
@@ -18784,7 +19098,8 @@
           "INT": 1,
           "WIS": 10,
           "CHA": 2,
-          "HitPoints_Max": "1d4-1"
+          "HitPoints_Max": "1d4-1",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 12",
         "languages": "None",
@@ -18819,7 +19134,8 @@
           "INT": 1,
           "WIS": 10,
           "CHA": 2,
-          "HitPoints_Max": "1d4-1"
+          "HitPoints_Max": "1d4-1",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 30 ft.; Passive Perception 10",
         "languages": "None",
@@ -18863,7 +19179,8 @@
           "CON": 10,
           "WIS": 12,
           "CHA": 4,
-          "HitPoints_Max": "2d10"
+          "HitPoints_Max": "2d10",
+          "proficiency_bonus": 2
         },
         "resistances": "Bludgeoning, Piercing, Slashing",
         "immunities": "Charmed, Frightened, Grappled, Paralyzed, Petrified, Prone, Restrained, Stunned",
@@ -18905,7 +19222,8 @@
           "CON": 14,
           "WIS": 7,
           "CHA": 1,
-          "HitPoints_Max": "3d8+6"
+          "HitPoints_Max": "3d8+6",
+          "proficiency_bonus": 2
         },
         "resistances": "Bludgeoning, Piercing, Slashing",
         "immunities": "Charmed, Frightened, Grappled, Paralyzed, Petrified, Prone, Restrained, Stunned",
@@ -18948,7 +19266,8 @@
           "INT": 1,
           "WIS": 7,
           "CHA": 2,
-          "HitPoints_Max": "8d8-8"
+          "HitPoints_Max": "8d8-8",
+          "proficiency_bonus": 2
         },
         "resistances": "Bludgeoning, Piercing, Slashing",
         "immunities": "Charmed, Frightened, Grappled, Paralyzed, Petrified, Prone, Restrained, Stunned",
@@ -18991,7 +19310,8 @@
           "CON": 9,
           "WIS": 10,
           "CHA": 3,
-          "HitPoints_Max": "4d8-4"
+          "HitPoints_Max": "4d8-4",
+          "proficiency_bonus": 2
         },
         "resistances": "Bludgeoning, Piercing, Slashing",
         "immunities": "Charmed, Frightened, Grappled, Paralyzed, Petrified, Prone, Restrained, Stunned",
@@ -19033,7 +19353,8 @@
           "CON": 12,
           "WIS": 12,
           "CHA": 6,
-          "HitPoints_Max": "2d8+2"
+          "HitPoints_Max": "2d8+2",
+          "proficiency_bonus": 2
         },
         "resistances": "Bludgeoning, Piercing, Slashing",
         "immunities": "Charmed, Frightened, Grappled, Paralyzed, Petrified, Prone, Restrained, Stunned",
@@ -19079,7 +19400,8 @@
           "CON": 11,
           "WIS": 10,
           "CHA": 3,
-          "HitPoints_Max": "8d8"
+          "HitPoints_Max": "8d8",
+          "proficiency_bonus": 2
         },
         "resistances": "Bludgeoning, Piercing, Slashing",
         "immunities": "Charmed, Frightened, Grappled, Paralyzed, Petrified, Prone, Restrained, Stunned",
@@ -19121,7 +19443,8 @@
           "INT": 3,
           "WIS": 12,
           "CHA": 8,
-          "HitPoints_Max": "4d10+8"
+          "HitPoints_Max": "4d10+8",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 13",
         "languages": "None",
@@ -19163,7 +19486,8 @@
           "INT": 2,
           "WIS": 11,
           "CHA": 5,
-          "HitPoints_Max": "12d12+36"
+          "HitPoints_Max": "12d12+36",
+          "proficiency_bonus": 3
         },
         "senses": "Passive Perception 10",
         "languages": "None",
@@ -19201,7 +19525,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 9,
-          "HitPoints_Max": "13d12+52"
+          "HitPoints_Max": "13d12+52",
+          "proficiency_bonus": 3
         },
         "senses": "Passive Perception 14",
         "languages": "None",
@@ -19250,7 +19575,8 @@
           "CON": 11,
           "WIS": 10,
           "CHA": 3,
-          "HitPoints_Max": "2d4"
+          "HitPoints_Max": "2d4",
+          "proficiency_bonus": 2
         },
         "senses": "Blindsight 10 ft.; Passive Perception 10",
         "languages": "None",
@@ -19287,7 +19613,8 @@
           "CON": 13,
           "WIS": 12,
           "CHA": 4,
-          "HitPoints_Max": "1d8+1"
+          "HitPoints_Max": "1d8+1",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 13",
         "languages": "None",
@@ -19330,7 +19657,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 7,
-          "HitPoints_Max": "3d10+3"
+          "HitPoints_Max": "3d10+3",
+          "proficiency_bonus": 2
         },
         "senses": "Passive Perception 11",
         "languages": "None",
@@ -19367,7 +19695,8 @@
           "INT": 2,
           "WIS": 12,
           "CHA": 3,
-          "HitPoints_Max": "1d4-1"
+          "HitPoints_Max": "1d4-1",
+          "proficiency_bonus": 2
         },
         "senses": "Darkvision 60 ft.; Passive Perception 13",
         "languages": "None",
@@ -19411,7 +19740,8 @@
           "INT": 3,
           "WIS": 12,
           "CHA": 6,
-          "HitPoints_Max": "2d8+2"
+          "HitPoints_Max": "2d8+2",
+          "proficiency_bonus": 2
         },
         "skills": {
           "perception": 5,
