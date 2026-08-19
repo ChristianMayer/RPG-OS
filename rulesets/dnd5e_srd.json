@@ -4362,6 +4362,13 @@
             "damage": "2d6+6",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "acid_arrow",
+          "detect_magic",
+          "fear",
+          "speak_with_dead",
+          "vitriolic_sphere"
         ]
       },
       {
@@ -4413,6 +4420,14 @@
             "damage": "2d8+8",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "acid_arrow",
+          "detect_magic",
+          "fear",
+          "create_undead",
+          "speak_with_dead",
+          "vitriolic_sphere"
         ]
       },
       {
@@ -4642,6 +4657,14 @@
             "damage": "2d8+7",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "invisibility",
+          "mage_hand",
+          "shatter",
+          "scrying",
+          "sending"
         ]
       },
       {
@@ -4692,6 +4715,14 @@
             "damage": "2d8+9",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "invisibility",
+          "mage_hand",
+          "shatter",
+          "scrying",
+          "sending"
         ]
       },
       {
@@ -4891,6 +4922,15 @@
             "damage": "2d10+6",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "minor_illusion",
+          "scorching_ray",
+          "shapechange",
+          "speak_with_animals",
+          "detect_thoughts",
+          "control_weather"
         ]
       },
       {
@@ -4943,6 +4983,15 @@
             "damage": "2d10+8",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "minor_illusion",
+          "scorching_ray",
+          "shapechange",
+          "speak_with_animals",
+          "control_weather",
+          "detect_thoughts"
         ]
       },
       {
@@ -5093,6 +5142,15 @@
             "damage": "2d8+7",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "guiding_bolt",
+          "shapechange",
+          "speak_with_animals",
+          "thaumaturgy",
+          "detect_thoughts",
+          "water_breathing"
         ]
       },
       {
@@ -5146,6 +5204,17 @@
             "damage": "2d8+9",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "guiding_bolt",
+          "shapechange",
+          "speak_with_animals",
+          "thaumaturgy",
+          "detect_thoughts",
+          "control_water",
+          "scrying",
+          "water_breathing"
         ]
       },
       {
@@ -5679,6 +5748,14 @@
             "damage": "3d6+8",
             "damage_type": "Thunder"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "fog_cloud",
+          "light",
+          "control_weather",
+          "gaseous_form",
+          "telekinesis"
         ]
       },
       {
@@ -5900,6 +5977,14 @@
             "damage": "2d10+6",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "mind_spike",
+          "minor_illusion",
+          "shapechange",
+          "greater_restoration",
+          "major_image"
         ]
       },
       {
@@ -5952,6 +6037,15 @@
             "damage": "2d10+8",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "mind_spike",
+          "minor_illusion",
+          "shapechange",
+          "greater_restoration",
+          "major_image",
+          "project_image"
         ]
       },
       {
@@ -6002,6 +6096,17 @@
             "damage": "1d12+5",
             "damage_type": "Piercing"
           }
+        ],
+        "spells": [
+          "detect_evil_and_good",
+          "detect_magic",
+          "detect_thoughts",
+          "shapechange",
+          "create_food_and_water",
+          "dream",
+          "greater_restoration",
+          "scrying",
+          "sleep"
         ]
       },
       {
@@ -6137,6 +6242,12 @@
             "to_hit": 4,
             "description": ""
           }
+        ],
+        "spells": [
+          "light",
+          "thaumaturgy",
+          "command",
+          "hold_person"
         ]
       },
       {
@@ -6280,6 +6391,12 @@
             "damage": "1d6+4",
             "damage_type": "Bludgeoning"
           }
+        ],
+        "spells": [
+          "detect_evil_and_good",
+          "shapechange",
+          "commune",
+          "raise_dead"
         ]
       },
       {
@@ -6339,6 +6456,18 @@
             "damage": "3d8",
             "damage_type": "Thunder"
           }
+        ],
+        "spells": [
+          "detect_evil_and_good",
+          "detect_magic",
+          "create_food_and_water",
+          "tongues",
+          "wind_walk",
+          "creation",
+          "gaseous_form",
+          "invisibility",
+          "major_image",
+          "plane_shift"
         ]
       },
       {
@@ -6597,6 +6726,15 @@
             "damage": "3d6",
             "damage_type": "Radiant"
           }
+        ],
+        "spells": [
+          "druidcraft",
+          "speak_with_animals",
+          "entangle",
+          "thunderwave",
+          "animal_messenger",
+          "longstrider",
+          "moonbeam"
         ]
       },
       {
@@ -6658,6 +6796,13 @@
             "damage": "1d6+4",
             "damage_type": "Piercing"
           }
+        ],
+        "spells": [
+          "animal_friendship",
+          "charm_monster",
+          "druidcraft",
+          "entangle",
+          "pass_without_trace"
         ]
       },
       {
@@ -6765,6 +6910,16 @@
             "damage": "7d6",
             "damage_type": "Fire"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "elementalism",
+          "gaseous_form",
+          "invisibility",
+          "major_image",
+          "plane_shift",
+          "tongues",
+          "wall_of_fire"
         ]
       },
       {
@@ -7525,6 +7680,14 @@
             "damage": "2d10+5",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "darkness",
+          "detect_magic",
+          "dispel_magic",
+          "confusion",
+          "fly",
+          "power_word_stun"
         ]
       },
       {
@@ -7923,6 +8086,13 @@
             "damage": "2d8+8",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "guiding_bolt",
+          "shapechange",
+          "flame_strike",
+          "zone_of_truth"
         ]
       },
       {
@@ -7978,6 +8148,14 @@
             "damage": "2d8+10",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "guiding_bolt",
+          "shapechange",
+          "flame_strike",
+          "word_of_recall",
+          "zone_of_truth"
         ]
       },
       {
@@ -8216,6 +8394,11 @@
             "damage": "2d8+6",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "mind_spike",
+          "geas"
         ]
       },
       {
@@ -8268,6 +8451,12 @@
             "damage": "2d8+8",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "mind_spike",
+          "geas",
+          "modify_memory"
         ]
       },
       {
@@ -8320,6 +8509,13 @@
             "damage": "1d8+4",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "dancing_lights",
+          "disguise_self",
+          "invisibility",
+          "minor_illusion",
+          "ray_of_sickness"
         ]
       },
       {
@@ -8507,6 +8703,14 @@
             "damage": "2d12+4",
             "damage_type": "Piercing"
           }
+        ],
+        "spells": [
+          "thaumaturgy",
+          "clairvoyance",
+          "cure_wounds",
+          "flame_strike",
+          "geas",
+          "true_seeing"
         ]
       },
       {
@@ -9289,6 +9493,12 @@
             "damage": "3d6+5",
             "damage_type": "Psychic"
           }
+        ],
+        "spells": [
+          "disguise_self",
+          "etherealness",
+          "dream",
+          "hypnotic_pattern"
         ]
       },
       {
@@ -9592,6 +9802,13 @@
             "damage": "1d8+3",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "disguise_self",
+          "minor_illusion",
+          "geas",
+          "major_image",
+          "scrying"
         ]
       },
       {
@@ -9699,6 +9916,23 @@
             "damage": "3d6+5",
             "damage_type": "Cold"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "detect_thoughts",
+          "dispel_magic",
+          "fireball",
+          "invisibility",
+          "lightning_bolt",
+          "mage_hand",
+          "prestidigitation",
+          "animate_dead",
+          "dimension_door",
+          "plane_shift",
+          "chain_lightning",
+          "finger_of_death",
+          "power_word_kill",
+          "scrying"
         ]
       },
       {
@@ -9753,6 +9987,17 @@
             "damage": "3d8+3",
             "damage_type": "Force"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "light",
+          "mage_armor",
+          "mage_hand",
+          "prestidigitation",
+          "fireball",
+          "invisibility",
+          "cone_of_cold",
+          "fly"
         ]
       },
       {
@@ -9812,6 +10057,22 @@
             "damage": "4d10+5",
             "damage_type": "Force"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "detect_thoughts",
+          "disguise_self",
+          "invisibility",
+          "light",
+          "mage_armor",
+          "mage_hand",
+          "prestidigitation",
+          "fly",
+          "lightning_bolt",
+          "cone_of_cold",
+          "mind_blank",
+          "scrying",
+          "teleport"
         ]
       },
       {
@@ -10521,6 +10782,13 @@
             "damage": "6d6+4",
             "damage_type": "Necrotic"
           }
+        ],
+        "spells": [
+          "dispel_magic",
+          "thaumaturgy",
+          "animate_dead",
+          "harm",
+          "insect_plague"
         ]
       },
       {
@@ -10635,6 +10903,13 @@
             "damage": "2d8+4",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "etherealness",
+          "magic_missile",
+          "phantasmal_killer",
+          "plane_shift"
         ]
       },
       {
@@ -10878,6 +11153,12 @@
             "damage": "2d6+2",
             "damage_type": "Psychic"
           }
+        ],
+        "spells": [
+          "charm_person",
+          "darkness",
+          "gaseous_form",
+          "sleep"
         ]
       },
       {
@@ -11281,6 +11562,13 @@
             "damage": "2d6+7",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_evil_and_good",
+          "commune",
+          "control_weather",
+          "dispel_evil_and_good",
+          "raise_dead"
         ]
       },
       {
@@ -11336,6 +11624,10 @@
             "damage": "2d6",
             "damage_type": "Radiant"
           }
+        ],
+        "spells": [
+          "light",
+          "thaumaturgy"
         ]
       },
       {
@@ -11395,6 +11687,11 @@
             "damage": "2d10",
             "damage_type": "Radiant"
           }
+        ],
+        "spells": [
+          "light",
+          "thaumaturgy",
+          "spirit_guardians"
         ]
       },
       {
@@ -11599,6 +11896,17 @@
             "damage": "2d6+5",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "detect_thoughts",
+          "disguise_self",
+          "mage_hand",
+          "minor_illusion",
+          "fly",
+          "invisibility",
+          "major_image",
+          "plane_shift"
         ]
       },
       {
@@ -11737,6 +12045,12 @@
             "damage": "1d10+8",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "command",
+          "detect_magic",
+          "scorching_ray",
+          "fireball"
         ]
       },
       {
@@ -11787,6 +12101,13 @@
             "damage": "2d8+10",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "command",
+          "detect_magic",
+          "scorching_ray",
+          "fireball",
+          "scrying"
         ]
       },
       {
@@ -12515,6 +12836,14 @@
             "damage": "2d8+8",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "hold_monster",
+          "ice_knife",
+          "shapechange",
+          "ice_storm",
+          "zone_of_truth"
         ]
       },
       {
@@ -12567,6 +12896,16 @@
             "damage": "2d8+10",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "hold_monster",
+          "ice_knife",
+          "shapechange",
+          "control_weather",
+          "ice_storm",
+          "teleport",
+          "zone_of_truth"
         ]
       },
       {
@@ -12757,6 +13096,13 @@
             "damage": "4d6+8",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_evil_and_good",
+          "commune",
+          "control_weather",
+          "dispel_evil_and_good",
+          "resurrection"
         ]
       },
       {
@@ -12904,6 +13250,19 @@
             "damage": "3d6+4",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "identify",
+          "mage_hand",
+          "minor_illusion",
+          "prestidigitation",
+          "dispel_magic",
+          "legend_lore",
+          "locate_object",
+          "plane_shift",
+          "remove_curse",
+          "tongues"
         ]
       },
       {
@@ -12960,6 +13319,15 @@
             "damage": "4d6+6",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_evil_and_good",
+          "thaumaturgy",
+          "detect_magic",
+          "dispel_magic",
+          "greater_restoration",
+          "heroes_feast",
+          "zone_of_truth"
         ]
       },
       {
@@ -13014,6 +13382,16 @@
             "damage": "6d6",
             "damage_type": "Necrotic"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "mage_hand",
+          "minor_illusion",
+          "water_breathing",
+          "detect_thoughts",
+          "dimension_door",
+          "hold_person",
+          "lightning_bolt"
         ]
       },
       {
@@ -13334,6 +13712,11 @@
             "damage": "2d12+9",
             "damage_type": "Lightning"
           }
+        ],
+        "spells": [
+          "detect_magic",
+          "light",
+          "control_weather"
         ]
       },
       {
@@ -13759,6 +14142,15 @@
             "damage": "1d10+4",
             "damage_type": "Radiant"
           }
+        ],
+        "spells": [
+          "detect_evil_and_good",
+          "druidcraft",
+          "calm_emotions",
+          "dispel_evil_and_good",
+          "entangle",
+          "pass_without_trace",
+          "word_of_recall"
         ]
       },
       {
@@ -16770,6 +17162,11 @@
             "damage": "1d10+2",
             "damage_type": "Slashing"
           }
+        ],
+        "spells": [
+          "detect_evil_and_good",
+          "detect_magic",
+          "clairvoyance"
         ]
       },
       {

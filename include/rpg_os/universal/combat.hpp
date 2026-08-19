@@ -90,14 +90,17 @@ struct FightActionLog {
   int targetIndex{0};              ///< 0 or 1 — which combatant was acted upon
   std::string kind;                ///< "attack" or "cast"
   std::string spellId;             ///< the spell id (kind == "cast", else "")
+  std::string spellName;           ///< the human-readable spell name (kind == "cast", else "")
   std::vector<int32_t> checkDice;  ///< the attack/parry or casting-check dice (raw)
   bool isHit{false};               ///< the attack landed / the cast resolved
-  std::vector<int32_t> damageDice; ///< raw damage dice (weapon attacks only)
+  std::vector<int32_t> damageDice; ///< raw damage dice (weapon attacks and spell damage)
   int32_t damage{0};               ///< hit points removed from the target (>= 0)
   int32_t hpBefore{0};             ///< the target's hit points before the action
   int32_t targetHp{0};             ///< the target's remaining hit points after the action
   int32_t resourceCost{0};         ///< resource points spent (spell cost), 0 for a weapon
   std::string resourceId;          ///< the pool the cost came from ("", "AE", ...)
+  int32_t resourceBefore{0};       ///< the caster's spell-resource pool before the cast
+  int32_t resourceAfter{0};        ///< the caster's spell-resource pool after the cast
 };
 
 /// One round of a fight as recorded in a @ref FightLog — the initiative rolls
@@ -116,10 +119,13 @@ struct FightRoundLog {
 /// winner. Passed to @ref runFight's @c FightLog overload; the plain
 /// (non-logging) overload records nothing, so Monte-Carlo loops stay fast.
 struct FightLog {
-  std::array<std::string, 2> names{}; ///< combatant names
-  std::array<int32_t, 2> maxLp{0, 0}; ///< starting hit points of both combatants
-  std::vector<FightRoundLog> rounds;  ///< per-round detail
-  int winnerIndex{-1};                ///< 0, 1, or -1 (draw)
+  std::array<std::string, 2> names{};               ///< combatant names
+  std::array<std::vector<std::string>, 2> spells{}; ///< each combatant's known spells (names)
+  std::string resourceId;                           ///< the spell-resource pool id ("", "AE", ...)
+  std::array<int32_t, 2> resourcePool{0, 0};        ///< each combatant's initial spell resource
+  std::array<int32_t, 2> maxLp{0, 0};               ///< starting hit points of both combatants
+  std::vector<FightRoundLog> rounds;                ///< per-round detail
+  int winnerIndex{-1};                              ///< 0, 1, or -1 (draw)
 };
 
 /// Finds the id of the ruleset's opposed combat check type ("tde_attack"
@@ -217,6 +223,17 @@ namespace detail {
     // attack value and an unarmed strike.
     out.attackValue = probe->getStat("Attack");
     out.damageExpression = "1d6";
+  }
+  // A bestiary entry may be a spellcaster too: the optional `spells` array
+  // lists the spell ids it can cast in a fight (e.g. a dragon's innate
+  // spellcasting). The fight loop then prefers casting just as it does for
+  // archetypes.
+  if (entry.contains("spells") && entry.at("spells").is_array()) {
+    for (const Json &spellId : entry.at("spells")) {
+      if (spellId.is_string()) {
+        out.spellIds.push_back(spellId.get<std::string>());
+      }
+    }
   }
   return true;
 }
@@ -499,20 +516,31 @@ bool actOnce(RulesetEngine &engine, DynamicEntity &actor, const CombatantSpec &s
     const std::string spellId = pickSpell(engine, actor, spec.spellIds);
     if (!spellId.empty()) {
       const int32_t hpBefore = defender.resource(hpResourceId);
+      // The spell resource is a pool that depletes during the fight (e.g. The
+      // Dark Eye's Astral Energy) — record it before the cast so the transcript
+      // can show it running down, and so the reader can see when the caster
+      // finally runs dry and falls back to its weapon.
+      const std::string &resourceId = engine.ruleset().spellResource;
+      const int32_t resourceBefore = resourceId.empty() ? 0 : actor.resource(resourceId);
       const auto cast = engine.castSpell(spellId, actor, &defender, CheckParams{}, rng);
       if (roundLog != nullptr) {
+        const Json *spell = engine.findSpell(spellId);
         FightActionLog action;
         action.actorIndex = actorIndex;
         action.targetIndex = targetIndex;
         action.kind = "cast";
         action.spellId = spellId;
+        action.spellName = spell != nullptr ? spell->value("name", spellId) : spellId;
         action.hpBefore = hpBefore;
         action.checkDice = cast.check.rawDiceRolls;
         action.isHit = cast.cast;
+        action.damageDice = cast.damageDice;
         action.damage = cast.appliedDamage;
         action.targetHp = defender.resource(hpResourceId);
         action.resourceCost = cast.cost;
         action.resourceId = cast.resourceId;
+        action.resourceBefore = resourceBefore;
+        action.resourceAfter = cast.resourceId.empty() ? 0 : actor.resource(cast.resourceId);
         roundLog->actions.push_back(std::move(action));
       }
       if (cast.cast) {
@@ -601,6 +629,18 @@ template <RandomNumberGenerator Rng>
   FightOutcome outcome;
   if (log != nullptr) {
     log->names = {a.name, b.name};
+    // Each combatant's known spells, as human-readable names — so a fight
+    // transcript can show who is a spellcaster and what it can cast.
+    const auto spellNames = [&engine](const std::vector<std::string> &ids) {
+      std::vector<std::string> names;
+      names.reserve(ids.size());
+      for (const std::string &id : ids) {
+        const Json *spell = engine.findSpell(id);
+        names.push_back(spell != nullptr ? spell->value("name", id) : id);
+      }
+      return names;
+    };
+    log->spells = {spellNames(a.spellIds), spellNames(b.spellIds)};
   }
   auto ea = createFighter(engine, a, rng);
   auto eb = createFighter(engine, b, rng);
@@ -611,6 +651,13 @@ template <RandomNumberGenerator Rng>
   outcome.maxLp[1] = eb->resource(hpResourceId);
   if (log != nullptr) {
     log->maxLp = outcome.maxLp;
+    // Each combatant's starting spell resource, so the transcript can show how
+    // much magic the casters began with and watch it run down during the fight.
+    const std::string &resourceId = engine.ruleset().spellResource;
+    log->resourceId = resourceId;
+    if (!resourceId.empty()) {
+      log->resourcePool = {ea->resource(resourceId), eb->resource(resourceId)};
+    }
   }
   const DiceExpression damageA(a.damageExpression);
   const DiceExpression damageB(b.damageExpression);
