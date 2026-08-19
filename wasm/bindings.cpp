@@ -438,7 +438,8 @@ RPG_OS_WASM_EXPORT void *rpg_os_spec_from_id(void *engine, const char *id, const
   if (eng == nullptr || id == nullptr) {
     return nullptr;
   }
-  const std::string weaponStr = weapon == nullptr ? "1d6+4" : std::string(weapon);
+  const std::string weaponStr =
+      weapon == nullptr ? std::string(rpg_os::kDefaultWeaponDamage) : std::string(weapon);
   return makeSpec([&](rpg_os::CombatantSpec &spec) {
     return rpg_os::makeCombatantSpec(*eng, id, spec, weaponStr);
   });
@@ -452,7 +453,8 @@ RPG_OS_WASM_EXPORT void *rpg_os_spec_from_entity(void *engine, void *entity, con
   if (eng == nullptr || ent == nullptr) {
     return nullptr;
   }
-  const std::string weaponStr = weapon == nullptr ? "1d6+4" : std::string(weapon);
+  const std::string weaponStr =
+      weapon == nullptr ? std::string(rpg_os::kDefaultWeaponDamage) : std::string(weapon);
   return makeSpec([&](rpg_os::CombatantSpec &spec) {
     return rpg_os::makeCombatantSpecFromEntity(*eng, *ent, spec, weaponStr);
   });

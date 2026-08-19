@@ -1277,9 +1277,9 @@ public:
     EventData start;
     start.payload = {{"actor_id", sheet.id()}};
     fireEvent(EventType::OnTurnStart, start, sheet, nullptr, Json{});
-    (void)processOngoing(sheet, "start_of_turn", rng);
-    (void)tickEffects(sheet);
-    (void)processOngoing(sheet, "end_of_turn", rng);
+    processOngoing(sheet, "start_of_turn", rng);
+    tickEffects(sheet);
+    processOngoing(sheet, "end_of_turn", rng);
     EventData end;
     end.payload = {{"actor_id", sheet.id()}};
     fireEvent(EventType::OnTurnEnd, end, sheet, nullptr, Json{});
@@ -1318,7 +1318,7 @@ public:
       ++fired;
     }
     if (fired > 0) {
-      (void)sheet.effects().tickPhase(phase);
+      sheet.effects().tickPhase(phase);
     }
     return fired;
   }
@@ -1329,6 +1329,12 @@ public:
 
   /// Adds `spellId` to the sheet's spellbook as known and prepared. Returns
   /// false when the spell is unknown.
+  ///
+  /// @note Unlike @ref castSpell (which throws for an unknown spell, because a
+  /// spell that is cast must exist to resolve), this is a query-style "add to
+  /// the book if it exists" helper — an unknown spell is an expected answer a
+  /// caller may want to display, so it is reported via the boolean rather than
+  /// an exception.
   bool prepareSpell(DynamicEntity &sheet, std::string_view spellId) const {
     if (findSpell(spellId) == nullptr) {
       return false;
@@ -1878,7 +1884,7 @@ public:
 
   /// A short rest: tick effect durations and notify. Resources are unchanged.
   void shortRest(DynamicEntity &sheet) {
-    (void)tickEffects(sheet);
+    tickEffects(sheet);
     EventData data;
     data.payload = {{"actor_id", sheet.id()}, {"kind", "short"}};
     fireEvent(EventType::OnRest, data, sheet, nullptr, Json{});
@@ -1892,7 +1898,7 @@ public:
       (void)sheet.modifyResource(def.id, max - sheet.resource(def.id));
     }
     recoverSpellSlots(sheet);
-    (void)tickEffects(sheet);
+    tickEffects(sheet);
     EventData data;
     data.payload = {{"actor_id", sheet.id()}, {"kind", "long"}};
     fireEvent(EventType::OnRest, data, sheet, nullptr, Json{});

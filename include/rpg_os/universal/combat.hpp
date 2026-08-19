@@ -223,6 +223,11 @@ namespace detail {
 
 } // namespace detail
 
+/// The default weapon damage for combatants that carry no weapon of their own
+/// (a generic longsword, 1d6+4). The WASM bindings and the JS demo wrappers
+/// mirror this default; keep them in sync.
+constexpr std::string_view kDefaultWeaponDamage = "1d6+4";
+
 /// Builds a `CombatantSpec` for `id` (archetype first, then bestiary entry).
 /// `weaponDamage` is used for archetypes (default: a longsword) and for
 /// bestiary entries that have no natural attack defined. Returns false when
@@ -235,7 +240,7 @@ namespace detail {
 /// while still reflecting the entry's real numbers.
 [[nodiscard]] inline bool makeCombatantSpec(RulesetEngine &engine, std::string_view id,
                                             CombatantSpec &out,
-                                            std::string_view weaponDamage = "1d6+4") {
+                                            std::string_view weaponDamage = kDefaultWeaponDamage) {
   const Ruleset &ruleset = engine.ruleset();
   if (!ruleset.data.is_object()) {
     return false;
@@ -274,10 +279,9 @@ namespace detail {
 /// from, so the spec must carry the sheet itself; the combat values
 /// (`Attack`, `Parry`, `Armor_Rating`, `AC`, `Initiative`) are captured too,
 /// so callers can inspect the spec without a live entity.
-[[nodiscard]] inline bool makeCombatantSpecFromEntity(RulesetEngine &engine,
-                                                      const DynamicEntity &entity,
-                                                      CombatantSpec &out,
-                                                      std::string_view weaponDamage = "1d6+4") {
+[[nodiscard]] inline bool
+makeCombatantSpecFromEntity(RulesetEngine &engine, const DynamicEntity &entity, CombatantSpec &out,
+                            std::string_view weaponDamage = kDefaultWeaponDamage) {
   out.id = entity.id();
   out.name = entity.id();
   // Resolve a human-readable name when the sheet happens to be a known

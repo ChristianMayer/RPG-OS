@@ -466,10 +466,8 @@ public:
   }
 
   /// Active afflictions (poisons / diseases / curses) applied to the sheet.
-  /// Shared value type (see @c rpg_os::AppliedAffliction) so the generated
-  /// characters can round-trip the same save-state shape.
-  using AppliedAffliction = rpg_os::AppliedAffliction;
-
+  /// The shared @c rpg_os::AppliedAffliction value type round-trips the same
+  /// save-state shape as the generated characters.
   [[nodiscard]] std::vector<AppliedAffliction> &afflictions() noexcept {
     return m_afflictions;
   }
