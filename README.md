@@ -139,6 +139,20 @@ for every branch and release. It is split into two clearly separated paths:
 | <https://mundus-mirabilis.github.io/RPG-OS/main/>      | **Latest release** |
 | <https://mundus-mirabilis.github.io/RPG-OS/main/demo/> | **ELO Arena** (live demo) |
 
+## Versions
+
+RPG OS is developed openly: **releases** are tagged `vX.Y.Z`, and the latest
+release is always on the **`main`** branch. **Development** happens on
+**`develop`** — the current state of the project, one step ahead of the latest
+release. The docs and the ELO Arena are built for every release and for every
+push to `main` and `develop`, so each version has its own live documentation
+and ELO ranking:
+
+| Version | Documentation | ELO Arena |
+| --- | --- | --- |
+| Latest release (`main`) | [docs](https://mundus-mirabilis.github.io/RPG-OS/main/) | [ELO Arena](https://mundus-mirabilis.github.io/RPG-OS/main/demo/) |
+| Current development (`develop`) | [docs](https://mundus-mirabilis.github.io/RPG-OS/develop/) | [ELO Arena](https://mundus-mirabilis.github.io/RPG-OS/develop/demo/) |
+
 ## Building (for C++ users)
 
 RPG OS is header-only: add `include/` and `generated/` to your include path

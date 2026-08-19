@@ -28,6 +28,32 @@ headers and how to create your own ruleset — see the
 npm install @mundus-mirabilis/rpg-os
 ```
 
+## Versions
+
+The package follows the project's versioning: **releases** are tagged
+`vX.Y.Z`, the latest release lives on the `main` branch, and **development**
+happens on `develop`. Each line is published to npm under its own dist-tag:
+
+| npm dist-tag | Version | What it is |
+| --- | --- | --- |
+| `latest` | `X.Y.Z` | the latest release (`main`, tags `vX.Y.Z`) |
+| `main` | `0.0.0-main.<sha>` | the latest `main` build |
+| `develop` | `0.0.0-develop.<sha>` | the current development build |
+
+```sh
+npm install @mundus-mirabilis/rpg-os          # latest release
+npm install @mundus-mirabilis/rpg-os@main     # latest main build
+npm install @mundus-mirabilis/rpg-os@develop  # current development build
+```
+
+The docs and the ELO Arena are built for every version, so the latest release
+and the current development state each have their own live links:
+
+| Version | Documentation | ELO Arena |
+| --- | --- | --- |
+| Latest release (`main`) | [docs](https://mundus-mirabilis.github.io/RPG-OS/main/) | [ELO Arena](https://mundus-mirabilis.github.io/RPG-OS/main/demo/) |
+| Current development (`develop`) | [docs](https://mundus-mirabilis.github.io/RPG-OS/develop/) | [ELO Arena](https://mundus-mirabilis.github.io/RPG-OS/develop/demo/) |
+
 ## Quick start — Node.js
 
 ```js
