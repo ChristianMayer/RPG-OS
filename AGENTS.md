@@ -194,11 +194,24 @@ mode:
   `equipment_slots`, `event_triggers`, `data`. **Optional bookkeeping
   sections** (each is opt-in — a ruleset without one simply does not use that
   feature): `currencies` (denominations with `per_base` values in the
-  `base_unit`; enables `Money`/`itemPrice`/`buy`), `encumbrance` (a `capacity`
-  stat formula + ratio `levels` with an optional condition per level),
-  `spellcasting` (`style` `pool`/`slots`; vancian per-day `slots` per spell
-  level). The bookkeeping layer (inventory, equipment, conditions with
-  durations, advancement, rests, curses) is universal and data-driven;
+  `base_unit`; enables `Money`/`itemPrice`/`buy`), `encumbrance` (up to three
+  independent capacity axes as stat formulas — `capacity` weight, `size_capacity`
+  volume/slots, `item_capacity` count — plus ratio `levels` with an optional
+  condition per level; the engine reports what a sheet carries via
+  `carriedLoad`, its limits via `capacity`, the per-axis status via
+  `inventoryStatus`, and whether an item fits via `canCarry`; an item record
+  may declare a numeric `size` and, for containers, a `capacity`
+  `{"weight","size","items"}` that `addItemToContainer` enforces with
+  `OverCapacity`), `spellcasting` (`style` `pool`/`slots`; vancian per-day
+  `slots` per spell level), and `movement` (named movement modes with a base
+  speed formula, named terrains that multiply per-mode speed / forbid a mode
+  or require a capability / change exhaustion / set `regeneration`
+  `normal`/`none`/`half`, an optional exhaustion `pool` drained by `move`, and
+  `load` ratio→factor steps that slow a loaded carrier — see `movementStatus`,
+  `movementSpeed`, `canRegenerate`, `move`; a ruleset without `movement` is
+  unconstrained). The bookkeeping layer (inventory, equipment, conditions with
+  durations, advancement, rests, curses, movement) is universal and
+  data-driven;
   `data.conditions` may carry `stat_modifiers` (per-stack stat changes) and
   `check_modifiers` (per-check flat bonuses, advantage/disadvantage,
   auto-failure, and/or bonus dice, matched by scope — a check type id, a
@@ -214,7 +227,13 @@ mode:
   helpers, which refuse the action before any resource is spent) and
   `capabilities` (what it *can* do — movement/senses like `swim`, `climb`,
   `breath_water`, `darkvision`, `see_invisible`; queried via
-  `DynamicEntity::hasCapability`/`capabilities`). Casting requires the
+  `DynamicEntity::hasCapability`/`capabilities`). The surrounding can affect
+  items too: a sheet has a current `terrain` (`DynamicEntity::setTerrain`),
+  and an item record may carry a `terrain` object keyed by terrain id with
+  `unusable`/`ruined` (reported per item via `itemTerrainStatus`) and `grants`
+  — capabilities the *wearer* gains automatically in that terrain (an amulet
+  that grants `breath_water` in water), which is what makes a terrain's
+  movement-mode `requires` requirement satisfiable. Casting requires the
   standard action, so `no_action` also blocks `cast` (an explicit `no_cast`
   is reported as the reason when present). The shipped D&D conditions carry
   these restrictions (incapacitated blocks action/bonus/reaction; paralyzed,

@@ -42,6 +42,7 @@
 #include <rpg_os/core/spellbook.hpp>
 #include <rpg_os/core/variance.hpp>
 #include <rpg_os/universal/expression.hpp>
+#include <rpg_os/universal/movement.hpp>
 #include <rpg_os/universal/ruleset_loader.hpp>
 #include <string>
 #include <string_view>
@@ -363,15 +364,60 @@ public:
         restrictions(), [token](const std::string &restriction) { return restriction == token; });
   }
 
-  /// The capability tokens the entity has (see @ref collectTokens).
+  /// The capability tokens the entity has: from active conditions and traits
+  /// (see @ref collectTokens) plus — when a current terrain is set — the
+  /// `grants` of every *equipped* (worn) item whose record's `terrain`
+  /// section has an entry for that terrain. So "this amulet lets you breathe
+  /// underwater" is applied automatically the moment the character is in
+  /// water, and a terrain that requires a capability for a movement mode
+  /// (e.g. walking in deep water needs "breath_water") becomes possible when
+  /// the right item is worn. A passive grant needs the item to be worn, not
+  /// merely carried; terrain *harm* (unusable / ruined) still applies to any
+  /// carried instance.
   [[nodiscard]] std::vector<std::string> capabilities() const {
-    return collectTokens("capabilities");
+    std::vector<std::string> out = collectTokens("capabilities");
+    if (m_terrain.empty()) {
+      return out;
+    }
+    const auto addToken = [&out](const std::string &token) {
+      if (std::find(out.begin(), out.end(), token) == out.end()) {
+        out.push_back(token);
+      }
+    };
+    for (const auto &[slot, itemId] : m_equipment.slots()) {
+      const TerrainItemEffect effect = itemTerrainEffect(itemId);
+      for (const std::string &grant : effect.grants) {
+        addToken(grant);
+      }
+    }
+    return out;
   }
 
   /// Whether the entity has the given capability (e.g. "swim").
   [[nodiscard]] bool hasCapability(std::string_view token) const {
     return std::ranges::any_of(
         capabilities(), [token](const std::string &capability) { return capability == token; });
+  }
+
+  /// The entity's current terrain / surrounding id ("" = none set; the engine
+  /// falls back to the ruleset's default terrain). Changing it automatically
+  /// changes which item terrain effects apply and which movement modes are
+  /// possible.
+  [[nodiscard]] const std::string &terrain() const noexcept {
+    return m_terrain;
+  }
+  /// Sets the entity's current terrain / surrounding ("" clears it back to
+  /// the ruleset default).
+  void setTerrain(std::string_view terrainId) {
+    m_terrain = std::string(terrainId);
+  }
+
+  /// The terrain-dependent behaviour of `itemId` in the entity's current
+  /// terrain (see @ref TerrainItemEffect): whether the item is unusable /
+  /// ruined here and what capabilities it grants. All-off when the entity has
+  /// no current terrain or the item declares no entry for it.
+  [[nodiscard]] TerrainItemEffect itemTerrainStatus(std::string_view itemId) const {
+    return itemTerrainEffect(itemId);
   }
 
   /// The effective value of `statId`: the raw value plus every modifier the
@@ -508,6 +554,7 @@ public:
     out["id"] = m_id;
     out["entity_id"] = m_entityId.value;
     out["stats"] = m_stats;
+    out["terrain"] = m_terrain;
     Json resources = Json::object();
     for (const auto &[id, pool] : m_resources) {
       resources[id] = pool.current;
@@ -571,6 +618,7 @@ public:
     restoreEffects(in);
     restoreAfflictions(in);
     restoreResistances(in);
+    restoreTerrain(in);
   }
 
   /// (Re)creates the resource pools from the ruleset definitions, computing
@@ -720,6 +768,12 @@ private:
       for (const Json &type : in.at("resistances")) {
         m_resistances.insert(type.get<std::string>());
       }
+    }
+  }
+  /// Restores the current terrain / surrounding.
+  void restoreTerrain(const Json &in) {
+    if (in.contains("terrain") && in.at("terrain").is_string()) {
+      m_terrain = in.at("terrain").get<std::string>();
     }
   }
 
@@ -874,6 +928,34 @@ private:
     return rpg_os::findDataRecord(*m_ruleset, section, id);
   }
 
+  /// The terrain behaviour of `itemId` in the entity's current terrain (from
+  /// the item record's `terrain` object). All-off when no terrain is set or
+  /// the item declares no entry for the current terrain.
+  [[nodiscard]] TerrainItemEffect itemTerrainEffect(std::string_view itemId) const {
+    TerrainItemEffect effect;
+    if (m_terrain.empty()) {
+      return effect;
+    }
+    const Json *item = findDataRecord("items", itemId);
+    if (item == nullptr || !item->contains("terrain") || !item->at("terrain").is_object()) {
+      return effect;
+    }
+    const Json &terrainSection = item->at("terrain");
+    const auto it = terrainSection.find(m_terrain);
+    if (it == terrainSection.end() || !it->is_object()) {
+      return effect;
+    }
+    const Json &entry = *it;
+    effect.unusable = entry.value("unusable", false);
+    effect.ruined = entry.value("ruined", false);
+    if (entry.contains("grants") && entry.at("grants").is_array()) {
+      for (const Json &token : entry.at("grants")) {
+        effect.grants.push_back(token.get<std::string>());
+      }
+    }
+    return effect;
+  }
+
   /// Evaluates a derived-stat formula for this entity (no target / env).
   /// An empty environment/parameters bag keeps the evaluation total even
   /// though this path only ever resolves bare stat ids.
@@ -915,6 +997,7 @@ private:
   EffectTimeline m_effects;
   std::vector<AppliedAffliction> m_afflictions;
   std::unordered_set<std::string> m_resistances;
+  std::string m_terrain; ///< current terrain / surrounding ("" = ruleset default)
 };
 
 inline bool EntityContext::resolve(std::string_view path, double &out) const {

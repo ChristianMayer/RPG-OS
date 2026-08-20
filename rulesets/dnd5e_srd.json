@@ -648,6 +648,55 @@
     }
   ],
   "event_triggers": [],
+  "movement": {
+    "default_terrain": "land",
+    "modes": {
+      "walk": {"name": "Walk", "speed": "30", "exhaustion": 0},
+      "swim": {"name": "Swim", "speed": "30", "exhaustion": 2},
+      "fly": {"name": "Fly", "speed": "30", "exhaustion": 2},
+      "climb": {"name": "Climb", "speed": "15", "factor": 0.5, "exhaustion": 2},
+      "burrow": {"name": "Burrow", "speed": "15", "exhaustion": 2}
+    },
+    "terrains": {
+      "land": {
+        "name": "Land",
+        "modes": {
+          "walk": {"factor": 1.0},
+          "swim": {"factor": 1.0, "possible": false},
+          "fly": {"factor": 1.0},
+          "climb": {"factor": 1.0},
+          "burrow": {"factor": 1.0}
+        }
+      },
+      "water": {
+        "name": "Water",
+        "modes": {
+          "walk": {"factor": 0.5, "requires": "breath_water"},
+          "swim": {"factor": 1.0},
+          "fly": {"factor": 1.0},
+          "climb": {"factor": 1.0, "possible": false},
+          "burrow": {"factor": 1.0, "possible": false}
+        }
+      },
+      "rough": {
+        "name": "Difficult Terrain",
+        "modes": {
+          "walk": {"factor": 0.5},
+          "swim": {"factor": 1.0},
+          "fly": {"factor": 1.0},
+          "climb": {"factor": 1.0},
+          "burrow": {"factor": 1.0}
+        }
+      }
+    },
+    "load": {
+      "levels": [
+        {"max_ratio": 0.5, "factor": 1.0},
+        {"max_ratio": 1.0, "factor": 0.66},
+        {"max_ratio": 10.0, "factor": 0.33}
+      ]
+    }
+  },
   "data": {
 
 
