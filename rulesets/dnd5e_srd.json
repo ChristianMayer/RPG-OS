@@ -800,461 +800,813 @@
       {
         "id": "club",
         "name": "Club",
-        "damage": "1d4 Bludgeoning",
-        "properties": "Light",
+        "damage": "1d4",
+        "properties": [
+          "Light"
+        ],
         "mastery": "Slow",
         "weight": "2 lb.",
-        "cost": "1 SP"
+        "cost": "1 SP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand"
       },
       {
         "id": "dagger",
         "name": "Dagger",
-        "damage": "1d4 Piercing",
-        "properties": "Finesse, Light, Thrown (Range 20/60)",
+        "damage": "1d4",
+        "properties": [
+          "Finesse",
+          "Light",
+          "Thrown"
+        ],
         "mastery": "Nick",
         "weight": "1 lb.",
-        "cost": "2 GP"
+        "cost": "2 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 20,
+          "long": 60
+        }
       },
       {
         "id": "greatclub",
         "name": "Greatclub",
-        "damage": "1d8 Bludgeoning",
-        "properties": "Two-Handed",
+        "damage": "1d8",
+        "properties": [
+          "Two-Handed"
+        ],
         "mastery": "Push",
         "weight": "10 lb.",
-        "cost": "2 SP"
+        "cost": "2 SP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand"
       },
       {
         "id": "handaxe",
         "name": "Handaxe",
-        "damage": "1d6 Slashing",
-        "properties": "Light, Thrown (Range 20/60)",
+        "damage": "1d6",
+        "properties": [
+          "Light",
+          "Thrown"
+        ],
         "mastery": "Vex",
         "weight": "2 lb.",
-        "cost": "5 GP"
+        "cost": "5 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 20,
+          "long": 60
+        }
       },
       {
         "id": "javelin",
         "name": "Javelin",
-        "damage": "1d6 Piercing",
-        "properties": "Thrown (Range 30/120)",
+        "damage": "1d6",
+        "properties": [
+          "Thrown"
+        ],
         "mastery": "Slow",
         "weight": "2 lb.",
-        "cost": "5 SP"
+        "cost": "5 SP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 30,
+          "long": 120
+        }
       },
       {
         "id": "light_hammer",
         "name": "Light Hammer",
-        "damage": "1d4 Bludgeoning",
-        "properties": "Light, Thrown (Range 20/60)",
+        "damage": "1d4",
+        "properties": [
+          "Light",
+          "Thrown"
+        ],
         "mastery": "Nick",
         "weight": "2 lb.",
-        "cost": "2 GP"
+        "cost": "2 GP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 20,
+          "long": 60
+        }
       },
       {
         "id": "mace",
         "name": "Mace",
-        "damage": "1d6 Bludgeoning",
-        "properties": "—",
+        "damage": "1d6",
+        "properties": [],
         "mastery": "Sap",
         "weight": "4 lb.",
-        "cost": "5 GP"
+        "cost": "5 GP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand"
       },
       {
         "id": "quarterstaff",
         "name": "Quarterstaff",
-        "damage": "1d6 Bludgeoning",
-        "properties": "Versatile (1d8)",
+        "damage": "1d6",
+        "properties": [
+          "Versatile"
+        ],
         "mastery": "Topple",
         "weight": "4 lb.",
-        "cost": "2 SP"
+        "cost": "2 SP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand",
+        "versatile_damage": "1d8"
       },
       {
         "id": "sickle",
         "name": "Sickle",
-        "damage": "1d4 Slashing",
-        "properties": "Light",
+        "damage": "1d4",
+        "properties": [
+          "Light"
+        ],
         "mastery": "Nick",
         "weight": "2 lb.",
-        "cost": "1 GP"
+        "cost": "1 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "spear",
         "name": "Spear",
-        "damage": "1d6 Piercing",
-        "properties": "Thrown (Range 20/60), Versatile (1d8)",
+        "damage": "1d6",
+        "properties": [
+          "Thrown",
+          "Versatile"
+        ],
         "mastery": "Sap",
         "weight": "3 lb.",
-        "cost": "1 GP"
+        "cost": "1 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 20,
+          "long": 60
+        },
+        "versatile_damage": "1d8"
       },
       {
         "id": "dart",
         "name": "Dart",
-        "damage": "1d4 Piercing",
-        "properties": "Finesse, Thrown (Range 20/60)",
+        "damage": "1d4",
+        "properties": [
+          "Finesse",
+          "Thrown"
+        ],
         "mastery": "Vex",
         "weight": "1/4 lb.",
-        "cost": "5 CP"
+        "cost": "5 CP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 20,
+          "long": 60
+        }
       },
       {
         "id": "light_crossbow",
         "name": "Light Crossbow",
-        "damage": "1d8 Piercing",
-        "properties": "Ammunition (Range 80/320; Bolt), Loading,",
-        "mastery": "Two-Handed",
-        "weight": "Slow",
-        "cost": "5 lb."
+        "damage": "1d8",
+        "properties": [
+          "Ammunition",
+          "Loading",
+          "Two-Handed"
+        ],
+        "mastery": "Slow",
+        "weight": "5 lb.",
+        "cost": "25 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 80,
+          "long": 320
+        },
+        "ammunition": "bolt"
       },
       {
         "id": "shortbow",
         "name": "Shortbow",
-        "damage": "1d6 Piercing",
-        "properties": "Ammunition (Range 80/320; Arrow), Two-Handed",
+        "damage": "1d6",
+        "properties": [
+          "Ammunition",
+          "Two-Handed"
+        ],
         "mastery": "Vex",
         "weight": "2 lb.",
-        "cost": "25 GP"
+        "cost": "25 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 80,
+          "long": 320
+        },
+        "ammunition": "arrow"
       },
       {
         "id": "sling",
         "name": "Sling",
-        "damage": "1d4 Bludgeoning",
-        "properties": "Ammunition (Range 30/120; Bullet)",
+        "damage": "1d4",
+        "properties": [
+          "Ammunition"
+        ],
         "mastery": "Slow",
         "weight": "—",
-        "cost": "1 SP"
+        "cost": "1 SP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 30,
+          "long": 120
+        },
+        "ammunition": "bullet"
       },
       {
         "id": "battleaxe",
         "name": "Battleaxe",
-        "damage": "1d8 Slashing",
-        "properties": "Versatile (1d10)",
+        "damage": "1d8",
+        "properties": [
+          "Versatile"
+        ],
         "mastery": "Topple",
         "weight": "4 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand",
+        "versatile_damage": "1d10"
       },
       {
         "id": "flail",
         "name": "Flail",
-        "damage": "1d8 Bludgeoning",
-        "properties": "—",
+        "damage": "1d8",
+        "properties": [],
         "mastery": "Sap",
         "weight": "2 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand"
       },
       {
         "id": "glaive",
         "name": "Glaive",
-        "damage": "1d10 Slashing",
-        "properties": "Heavy, Reach, Two-Handed",
+        "damage": "1d10",
+        "properties": [
+          "Heavy",
+          "Reach",
+          "Two-Handed"
+        ],
         "mastery": "Graze",
         "weight": "6 lb.",
-        "cost": "20 GP"
+        "cost": "20 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "greataxe",
         "name": "Greataxe",
-        "damage": "1d12 Slashing",
-        "properties": "Heavy, Two-Handed",
+        "damage": "1d12",
+        "properties": [
+          "Heavy",
+          "Two-Handed"
+        ],
         "mastery": "Cleave",
         "weight": "7 lb.",
-        "cost": "30 GP"
+        "cost": "30 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "greatsword",
         "name": "Greatsword",
-        "damage": "2d6 Slashing",
-        "properties": "Heavy, Two-Handed",
+        "damage": "2d6",
+        "properties": [
+          "Heavy",
+          "Two-Handed"
+        ],
         "mastery": "Graze",
         "weight": "6 lb.",
-        "cost": "50 GP"
+        "cost": "50 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "halberd",
         "name": "Halberd",
-        "damage": "1d10 Slashing",
-        "properties": "Heavy, Reach, Two-Handed",
+        "damage": "1d10",
+        "properties": [
+          "Heavy",
+          "Reach",
+          "Two-Handed"
+        ],
         "mastery": "Cleave",
         "weight": "6 lb.",
-        "cost": "20 GP"
+        "cost": "20 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "lance",
         "name": "Lance",
-        "damage": "1d10 Piercing",
-        "properties": "Heavy, Reach, Two-Handed (unless mounted)",
+        "damage": "1d10",
+        "properties": [
+          "Heavy",
+          "Reach",
+          "Two-Handed"
+        ],
         "mastery": "Topple",
         "weight": "6 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand"
       },
       {
         "id": "longsword",
         "name": "Longsword",
-        "damage": "1d8 Slashing",
-        "properties": "Versatile (1d10)",
+        "damage": "1d8",
+        "properties": [
+          "Versatile"
+        ],
         "mastery": "Sap",
         "weight": "3 lb.",
-        "cost": "15 GP"
+        "cost": "15 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand",
+        "versatile_damage": "1d10"
       },
       {
         "id": "maul",
         "name": "Maul",
-        "damage": "2d6 Bludgeoning",
-        "properties": "Heavy, Two-Handed",
+        "damage": "2d6",
+        "properties": [
+          "Heavy",
+          "Two-Handed"
+        ],
         "mastery": "Topple",
         "weight": "10 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand"
       },
       {
         "id": "morningstar",
         "name": "Morningstar",
-        "damage": "1d8 Piercing",
-        "properties": "—",
+        "damage": "1d8",
+        "properties": [],
         "mastery": "Sap",
         "weight": "4 lb.",
-        "cost": "15 GP"
+        "cost": "15 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand"
       },
       {
         "id": "pike",
         "name": "Pike",
-        "damage": "1d10 Piercing",
-        "properties": "Heavy, Reach, Two-Handed",
+        "damage": "1d10",
+        "properties": [
+          "Heavy",
+          "Reach",
+          "Two-Handed"
+        ],
         "mastery": "Push",
         "weight": "18 lb.",
-        "cost": "5 GP"
+        "cost": "5 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand"
       },
       {
         "id": "rapier",
         "name": "Rapier",
-        "damage": "1d8 Piercing",
-        "properties": "Finesse",
+        "damage": "1d8",
+        "properties": [
+          "Finesse"
+        ],
         "mastery": "Vex",
         "weight": "2 lb.",
-        "cost": "25 GP"
+        "cost": "25 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand"
       },
       {
         "id": "scimitar",
         "name": "Scimitar",
-        "damage": "1d6 Slashing",
-        "properties": "Finesse, Light",
+        "damage": "1d6",
+        "properties": [
+          "Finesse",
+          "Light"
+        ],
         "mastery": "Nick",
         "weight": "3 lb.",
-        "cost": "25 GP"
+        "cost": "25 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "shortsword",
         "name": "Shortsword",
-        "damage": "1d6 Piercing",
-        "properties": "Finesse, Light",
+        "damage": "1d6",
+        "properties": [
+          "Finesse",
+          "Light"
+        ],
         "mastery": "Vex",
         "weight": "2 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand"
       },
       {
         "id": "trident",
         "name": "Trident",
-        "damage": "1d8 Piercing",
-        "properties": "Thrown (Range 20/60), Versatile (1d10)",
+        "damage": "1d8",
+        "properties": [
+          "Thrown",
+          "Versatile"
+        ],
         "mastery": "Topple",
         "weight": "4 lb.",
-        "cost": "5 GP"
+        "cost": "5 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 20,
+          "long": 60
+        },
+        "versatile_damage": "1d10"
       },
       {
         "id": "warhammer",
         "name": "Warhammer",
-        "damage": "1d8 Bludgeoning",
-        "properties": "Versatile (1d10)",
+        "damage": "1d8",
+        "properties": [
+          "Versatile"
+        ],
         "mastery": "Push",
         "weight": "5 lb.",
-        "cost": "15 GP"
+        "cost": "15 GP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand",
+        "versatile_damage": "1d10"
       },
       {
         "id": "war_pick",
         "name": "War Pick",
-        "damage": "1d8 Piercing",
-        "properties": "Versatile (1d10)",
+        "damage": "1d8",
+        "properties": [
+          "Versatile"
+        ],
         "mastery": "Sap",
         "weight": "2 lb.",
-        "cost": "5 GP"
+        "cost": "5 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "versatile_damage": "1d10"
       },
       {
         "id": "whip",
         "name": "Whip",
-        "damage": "1d4 Slashing",
-        "properties": "Finesse, Reach",
+        "damage": "1d4",
+        "properties": [
+          "Finesse",
+          "Reach"
+        ],
         "mastery": "Slow",
         "weight": "3 lb.",
-        "cost": "2 GP"
+        "cost": "2 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "hand_crossbow",
         "name": "Hand Crossbow",
-        "damage": "1d6 Piercing",
-        "properties": "Ammunition (Range 30/120; Bolt), Light, Loading",
+        "damage": "1d6",
+        "properties": [
+          "Ammunition",
+          "Light",
+          "Loading"
+        ],
         "mastery": "Vex",
         "weight": "3 lb.",
-        "cost": "75 GP"
+        "cost": "75 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 30,
+          "long": 120
+        },
+        "ammunition": "bolt"
       },
       {
         "id": "heavy_crossbow",
         "name": "Heavy Crossbow",
-        "damage": "1d10 Piercing",
-        "properties": "Ammunition (Range 100/400; Bolt), Heavy, Loading,",
-        "mastery": "Two-Handed",
-        "weight": "Push",
-        "cost": "18 lb."
+        "damage": "1d10",
+        "properties": [
+          "Ammunition",
+          "Heavy",
+          "Loading",
+          "Two-Handed"
+        ],
+        "mastery": "Push",
+        "weight": "18 lb.",
+        "cost": "50 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 100,
+          "long": 400
+        },
+        "ammunition": "bolt"
       },
       {
         "id": "longbow",
         "name": "Longbow",
-        "damage": "1d8 Piercing",
-        "properties": "Ammunition (Range 150/600; Arrow), Heavy,",
-        "mastery": "Two-Handed",
-        "weight": "Slow",
-        "cost": "2 lb."
+        "damage": "1d8",
+        "properties": [
+          "Ammunition",
+          "Heavy",
+          "Two-Handed"
+        ],
+        "mastery": "Slow",
+        "weight": "2 lb.",
+        "cost": "50 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 150,
+          "long": 600
+        },
+        "ammunition": "arrow"
       },
       {
         "id": "musket",
         "name": "Musket",
-        "damage": "1d12 Piercing",
-        "properties": "Ammunition (Range 40/120; Bullet), Loading,",
-        "mastery": "Two-Handed",
-        "weight": "Slow",
-        "cost": "10 lb."
+        "damage": "1d12",
+        "properties": [
+          "Ammunition",
+          "Loading",
+          "Two-Handed"
+        ],
+        "mastery": "Slow",
+        "weight": "10 lb.",
+        "cost": "500 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 40,
+          "long": 120
+        },
+        "ammunition": "bullet"
       },
       {
         "id": "pistol",
         "name": "Pistol",
-        "damage": "1d10 Piercing",
-        "properties": "Ammunition (Range 30/90; Bullet), Loading",
+        "damage": "1d10",
+        "properties": [
+          "Ammunition",
+          "Loading"
+        ],
         "mastery": "Vex",
         "weight": "3 lb.",
-        "cost": "250 GP"
+        "cost": "250 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 30,
+          "long": 90
+        },
+        "ammunition": "bullet"
       },
       {
         "id": "blowgun",
         "name": "Blowgun",
-        "damage": "1 Piercing",
-        "properties": "Ammunition (Range 25/100; Needle), Loading",
+        "damage": "1",
+        "properties": [
+          "Ammunition",
+          "Loading"
+        ],
         "mastery": "Vex",
         "weight": "1 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 25,
+          "long": 100
+        },
+        "ammunition": "needle"
       },
       {
         "id": "padded_armor",
         "name": "Padded Armor",
-        "armor_class": "11 + Dex modifier",
-        "strength": "—",
-        "stealth": "Disadvantage",
         "weight": "8 lb.",
-        "cost": "5 GP"
+        "cost": "5 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "add",
+            "value": 1
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "leather_armor",
         "name": "Leather Armor",
-        "armor_class": "11 + Dex modifier",
-        "strength": "—",
-        "stealth": "—",
         "weight": "10 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "add",
+            "value": 1
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": false,
+        "slot": "body_armor"
       },
       {
         "id": "studded_leather_armor",
         "name": "Studded Leather Armor",
-        "armor_class": "12 + Dex modifier",
-        "strength": "—",
-        "stealth": "—",
         "weight": "13 lb.",
-        "cost": "45 GP"
+        "cost": "45 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "add",
+            "value": 2
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": false,
+        "slot": "body_armor"
       },
       {
         "id": "hide_armor",
         "name": "Hide Armor",
-        "armor_class": "12 + Dex modifier (max 2)",
-        "strength": "—",
-        "stealth": "—",
         "weight": "12 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": "10 + min(DEX_mod, 2) + 2"
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": false,
+        "slot": "body_armor"
       },
       {
         "id": "chain_shirt",
         "name": "Chain Shirt",
-        "armor_class": "13 + Dex modifier (max 2)",
-        "strength": "—",
-        "stealth": "—",
         "weight": "20 lb.",
-        "cost": "50 GP"
+        "cost": "50 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": "10 + min(DEX_mod, 2) + 3"
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": false,
+        "slot": "body_armor"
       },
       {
         "id": "scale_mail",
         "name": "Scale Mail",
-        "armor_class": "14 + Dex modifier (max 2)",
-        "strength": "—",
-        "stealth": "Disadvantage",
         "weight": "45 lb.",
-        "cost": "50 GP"
+        "cost": "50 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": "10 + min(DEX_mod, 2) + 4"
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "breastplate",
         "name": "Breastplate",
-        "armor_class": "14 + Dex modifier (max 2)",
-        "strength": "—",
-        "stealth": "—",
         "weight": "20 lb.",
-        "cost": "400 GP"
+        "cost": "400 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": "10 + min(DEX_mod, 2) + 4"
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": false,
+        "slot": "body_armor"
       },
       {
         "id": "half_plate_armor",
         "name": "Half Plate Armor",
-        "armor_class": "15 + Dex modifier (max 2)",
-        "strength": "—",
-        "stealth": "Disadvantage",
         "weight": "40 lb.",
-        "cost": "750 GP"
+        "cost": "750 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": "10 + min(DEX_mod, 2) + 5"
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "ring_mail",
         "name": "Ring Mail",
-        "armor_class": "14",
-        "strength": "—",
-        "stealth": "Disadvantage",
         "weight": "40 lb.",
-        "cost": "30 GP"
+        "cost": "30 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": 14
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "chain_mail",
         "name": "Chain Mail",
-        "armor_class": "16",
-        "strength": "Str 13",
-        "stealth": "Disadvantage",
         "weight": "55 lb.",
-        "cost": "75 GP"
+        "cost": "75 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": 16
+          }
+        ],
+        "strength_req": 13,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "splint_armor",
         "name": "Splint Armor",
-        "armor_class": "17",
-        "strength": "Str 15",
-        "stealth": "Disadvantage",
         "weight": "60 lb.",
-        "cost": "200 GP"
+        "cost": "200 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": 17
+          }
+        ],
+        "strength_req": 15,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "plate_armor",
         "name": "Plate Armor",
-        "armor_class": "18",
-        "strength": "Str 15",
-        "stealth": "Disadvantage",
         "weight": "65 lb.",
-        "cost": "1,500 GP"
+        "cost": "1,500 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": 18
+          }
+        ],
+        "strength_req": 15,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "shield",
         "name": "Shield",
-        "armor_class": "+2",
-        "strength": "—",
-        "stealth": "—",
         "weight": "6 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "add",
+            "value": 2
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": false,
+        "slot": "shield"
       },
       {
         "id": "ink_pen",
@@ -1272,7 +1624,10 @@
         "id": "jug",
         "name": "Jug",
         "weight": "4 lb.",
-        "cost": "2 CP"
+        "cost": "2 CP",
+        "capacity": {
+          "size": 0.134
+        }
       },
       {
         "id": "alchemist_s_fire",
@@ -1326,7 +1681,11 @@
         "id": "backpack",
         "name": "Backpack",
         "weight": "5 lb.",
-        "cost": "2 GP"
+        "cost": "2 GP",
+        "capacity": {
+          "weight": 30,
+          "size": 1
+        }
       },
       {
         "id": "lock",
@@ -1350,7 +1709,10 @@
         "id": "barrel",
         "name": "Barrel",
         "weight": "70 lb.",
-        "cost": "2 GP"
+        "cost": "2 GP",
+        "capacity": {
+          "size": 4
+        }
       },
       {
         "id": "manacles",
@@ -1362,7 +1724,11 @@
         "id": "basket",
         "name": "Basket",
         "weight": "2 lb.",
-        "cost": "4 SP"
+        "cost": "4 SP",
+        "capacity": {
+          "weight": 40,
+          "size": 2
+        }
       },
       {
         "id": "map",
@@ -1446,7 +1812,10 @@
         "id": "bucket",
         "name": "Bucket",
         "weight": "2 lb.",
-        "cost": "5 CP"
+        "cost": "5 CP",
+        "capacity": {
+          "size": 0.5
+        }
       },
       {
         "id": "poison_basic",
@@ -1500,7 +1869,11 @@
         "id": "pouch",
         "name": "Pouch",
         "weight": "1 lb.",
-        "cost": "5 SP"
+        "cost": "5 SP",
+        "capacity": {
+          "weight": 6,
+          "size": 0.2
+        }
       },
       {
         "id": "case_map_or_scroll",
@@ -1524,13 +1897,19 @@
         "id": "quiver",
         "name": "Quiver",
         "weight": "1 lb.",
-        "cost": "1 GP"
+        "cost": "1 GP",
+        "capacity": {
+          "items": 20
+        }
       },
       {
         "id": "chest",
         "name": "Chest",
         "weight": "25 lb.",
-        "cost": "5 GP"
+        "cost": "5 GP",
+        "capacity": {
+          "size": 12
+        }
       },
       {
         "id": "ram_portable",
@@ -1674,7 +2053,10 @@
         "id": "flask",
         "name": "Flask",
         "weight": "1 lb.",
-        "cost": "2 CP"
+        "cost": "2 CP",
+        "capacity": {
+          "size": 0.021
+        }
       },
       {
         "id": "string",
@@ -1728,7 +2110,10 @@
         "id": "vial",
         "name": "Vial",
         "weight": "—",
-        "cost": "1 GP"
+        "cost": "1 GP",
+        "capacity": {
+          "size": 0.005
+        }
       },
       {
         "id": "hunting_trap",
@@ -1740,7 +2125,10 @@
         "id": "waterskin",
         "name": "Waterskin",
         "weight": "5 lb. (full)",
-        "cost": "2 SP"
+        "cost": "2 SP",
+        "capacity": {
+          "size": 0.083
+        }
       },
       {
         "id": "ink",
@@ -2294,7 +2682,11 @@
       },
       {
         "id": "bag_of_holding",
-        "name": "Bag of Holding"
+        "name": "Bag of Holding",
+        "capacity": {
+          "weight": 500,
+          "size": 64
+        }
       },
       {
         "id": "bag_of_tricks",
@@ -24140,344 +24532,605 @@
       {
         "id": "club",
         "name": "Club",
-        "damage": "1d4 Bludgeoning",
-        "properties": "Light",
+        "damage": "1d4",
+        "properties": [
+          "Light"
+        ],
         "mastery": "Slow",
         "weight": "2 lb.",
-        "cost": "1 SP"
+        "cost": "1 SP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand"
       },
       {
         "id": "dagger",
         "name": "Dagger",
-        "damage": "1d4 Piercing",
-        "properties": "Finesse, Light, Thrown (Range 20/60)",
+        "damage": "1d4",
+        "properties": [
+          "Finesse",
+          "Light",
+          "Thrown"
+        ],
         "mastery": "Nick",
         "weight": "1 lb.",
-        "cost": "2 GP"
+        "cost": "2 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 20,
+          "long": 60
+        }
       },
       {
         "id": "greatclub",
         "name": "Greatclub",
-        "damage": "1d8 Bludgeoning",
-        "properties": "Two-Handed",
+        "damage": "1d8",
+        "properties": [
+          "Two-Handed"
+        ],
         "mastery": "Push",
         "weight": "10 lb.",
-        "cost": "2 SP"
+        "cost": "2 SP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand"
       },
       {
         "id": "handaxe",
         "name": "Handaxe",
-        "damage": "1d6 Slashing",
-        "properties": "Light, Thrown (Range 20/60)",
+        "damage": "1d6",
+        "properties": [
+          "Light",
+          "Thrown"
+        ],
         "mastery": "Vex",
         "weight": "2 lb.",
-        "cost": "5 GP"
+        "cost": "5 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 20,
+          "long": 60
+        }
       },
       {
         "id": "javelin",
         "name": "Javelin",
-        "damage": "1d6 Piercing",
-        "properties": "Thrown (Range 30/120)",
+        "damage": "1d6",
+        "properties": [
+          "Thrown"
+        ],
         "mastery": "Slow",
         "weight": "2 lb.",
-        "cost": "5 SP"
+        "cost": "5 SP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 30,
+          "long": 120
+        }
       },
       {
         "id": "light_hammer",
         "name": "Light Hammer",
-        "damage": "1d4 Bludgeoning",
-        "properties": "Light, Thrown (Range 20/60)",
+        "damage": "1d4",
+        "properties": [
+          "Light",
+          "Thrown"
+        ],
         "mastery": "Nick",
         "weight": "2 lb.",
-        "cost": "2 GP"
+        "cost": "2 GP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 20,
+          "long": 60
+        }
       },
       {
         "id": "mace",
         "name": "Mace",
-        "damage": "1d6 Bludgeoning",
-        "properties": "—",
+        "damage": "1d6",
+        "properties": [],
         "mastery": "Sap",
         "weight": "4 lb.",
-        "cost": "5 GP"
+        "cost": "5 GP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand"
       },
       {
         "id": "quarterstaff",
         "name": "Quarterstaff",
-        "damage": "1d6 Bludgeoning",
-        "properties": "Versatile (1d8)",
+        "damage": "1d6",
+        "properties": [
+          "Versatile"
+        ],
         "mastery": "Topple",
         "weight": "4 lb.",
-        "cost": "2 SP"
+        "cost": "2 SP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand",
+        "versatile_damage": "1d8"
       },
       {
         "id": "sickle",
         "name": "Sickle",
-        "damage": "1d4 Slashing",
-        "properties": "Light",
+        "damage": "1d4",
+        "properties": [
+          "Light"
+        ],
         "mastery": "Nick",
         "weight": "2 lb.",
-        "cost": "1 GP"
+        "cost": "1 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "spear",
         "name": "Spear",
-        "damage": "1d6 Piercing",
-        "properties": "Thrown (Range 20/60), Versatile (1d8)",
+        "damage": "1d6",
+        "properties": [
+          "Thrown",
+          "Versatile"
+        ],
         "mastery": "Sap",
         "weight": "3 lb.",
-        "cost": "1 GP"
+        "cost": "1 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 20,
+          "long": 60
+        },
+        "versatile_damage": "1d8"
       },
       {
         "id": "dart",
         "name": "Dart",
-        "damage": "1d4 Piercing",
-        "properties": "Finesse, Thrown (Range 20/60)",
+        "damage": "1d4",
+        "properties": [
+          "Finesse",
+          "Thrown"
+        ],
         "mastery": "Vex",
         "weight": "1/4 lb.",
-        "cost": "5 CP"
+        "cost": "5 CP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 20,
+          "long": 60
+        }
       },
       {
         "id": "light_crossbow",
         "name": "Light Crossbow",
-        "damage": "1d8 Piercing",
-        "properties": "Ammunition (Range 80/320; Bolt), Loading, Two-Handed",
+        "damage": "1d8",
+        "properties": [
+          "Ammunition",
+          "Loading",
+          "Two-Handed"
+        ],
         "mastery": "Slow",
         "weight": "5 lb.",
-        "cost": "25 GP"
+        "cost": "25 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 80,
+          "long": 320
+        },
+        "ammunition": "bolt"
       },
       {
         "id": "shortbow",
         "name": "Shortbow",
-        "damage": "1d6 Piercing",
-        "properties": "Ammunition (Range 80/320; Arrow), Two-Handed",
+        "damage": "1d6",
+        "properties": [
+          "Ammunition",
+          "Two-Handed"
+        ],
         "mastery": "Vex",
         "weight": "2 lb.",
-        "cost": "25 GP"
+        "cost": "25 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 80,
+          "long": 320
+        },
+        "ammunition": "arrow"
       },
       {
         "id": "sling",
         "name": "Sling",
-        "damage": "1d4 Bludgeoning",
-        "properties": "Ammunition (Range 30/120; Bullet)",
+        "damage": "1d4",
+        "properties": [
+          "Ammunition"
+        ],
         "mastery": "Slow",
         "weight": "—",
-        "cost": "1 SP"
+        "cost": "1 SP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 30,
+          "long": 120
+        },
+        "ammunition": "bullet"
       },
       {
         "id": "battleaxe",
         "name": "Battleaxe",
-        "damage": "1d8 Slashing",
-        "properties": "Versatile (1d10)",
+        "damage": "1d8",
+        "properties": [
+          "Versatile"
+        ],
         "mastery": "Topple",
         "weight": "4 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand",
+        "versatile_damage": "1d10"
       },
       {
         "id": "flail",
         "name": "Flail",
-        "damage": "1d8 Bludgeoning",
-        "properties": "—",
+        "damage": "1d8",
+        "properties": [],
         "mastery": "Sap",
         "weight": "2 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand"
       },
       {
         "id": "glaive",
         "name": "Glaive",
-        "damage": "1d10 Slashing",
-        "properties": "Heavy, Reach, Two-Handed",
+        "damage": "1d10",
+        "properties": [
+          "Heavy",
+          "Reach",
+          "Two-Handed"
+        ],
         "mastery": "Graze",
         "weight": "6 lb.",
-        "cost": "20 GP"
+        "cost": "20 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "greataxe",
         "name": "Greataxe",
-        "damage": "1d12 Slashing",
-        "properties": "Heavy, Two-Handed",
+        "damage": "1d12",
+        "properties": [
+          "Heavy",
+          "Two-Handed"
+        ],
         "mastery": "Cleave",
         "weight": "7 lb.",
-        "cost": "30 GP"
+        "cost": "30 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "greatsword",
         "name": "Greatsword",
-        "damage": "2d6 Slashing",
-        "properties": "Heavy, Two-Handed",
+        "damage": "2d6",
+        "properties": [
+          "Heavy",
+          "Two-Handed"
+        ],
         "mastery": "Graze",
         "weight": "6 lb.",
-        "cost": "50 GP"
+        "cost": "50 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "halberd",
         "name": "Halberd",
-        "damage": "1d10 Slashing",
-        "properties": "Heavy, Reach, Two-Handed",
+        "damage": "1d10",
+        "properties": [
+          "Heavy",
+          "Reach",
+          "Two-Handed"
+        ],
         "mastery": "Cleave",
         "weight": "6 lb.",
-        "cost": "20 GP"
+        "cost": "20 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "lance",
         "name": "Lance",
-        "damage": "1d10 Piercing",
-        "properties": "Heavy, Reach, Two-Handed (unless mounted)",
+        "damage": "1d10",
+        "properties": [
+          "Heavy",
+          "Reach",
+          "Two-Handed"
+        ],
         "mastery": "Topple",
         "weight": "6 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand"
       },
       {
         "id": "longsword",
         "name": "Longsword",
-        "damage": "1d8 Slashing",
-        "properties": "Versatile (1d10)",
+        "damage": "1d8",
+        "properties": [
+          "Versatile"
+        ],
         "mastery": "Sap",
         "weight": "3 lb.",
-        "cost": "15 GP"
+        "cost": "15 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand",
+        "versatile_damage": "1d10"
       },
       {
         "id": "maul",
         "name": "Maul",
-        "damage": "2d6 Bludgeoning",
-        "properties": "Heavy, Two-Handed",
+        "damage": "2d6",
+        "properties": [
+          "Heavy",
+          "Two-Handed"
+        ],
         "mastery": "Topple",
         "weight": "10 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand"
       },
       {
         "id": "morningstar",
         "name": "Morningstar",
-        "damage": "1d8 Piercing",
-        "properties": "—",
+        "damage": "1d8",
+        "properties": [],
         "mastery": "Sap",
         "weight": "4 lb.",
-        "cost": "15 GP"
+        "cost": "15 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand"
       },
       {
         "id": "pike",
         "name": "Pike",
-        "damage": "1d10 Piercing",
-        "properties": "Heavy, Reach, Two-Handed",
+        "damage": "1d10",
+        "properties": [
+          "Heavy",
+          "Reach",
+          "Two-Handed"
+        ],
         "mastery": "Push",
         "weight": "18 lb.",
-        "cost": "5 GP"
+        "cost": "5 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand"
       },
       {
         "id": "rapier",
         "name": "Rapier",
-        "damage": "1d8 Piercing",
-        "properties": "Finesse",
+        "damage": "1d8",
+        "properties": [
+          "Finesse"
+        ],
         "mastery": "Vex",
         "weight": "2 lb.",
-        "cost": "25 GP"
+        "cost": "25 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand"
       },
       {
         "id": "scimitar",
         "name": "Scimitar",
-        "damage": "1d6 Slashing",
-        "properties": "Finesse, Light",
+        "damage": "1d6",
+        "properties": [
+          "Finesse",
+          "Light"
+        ],
         "mastery": "Nick",
         "weight": "3 lb.",
-        "cost": "25 GP"
+        "cost": "25 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "shortsword",
         "name": "Shortsword",
-        "damage": "1d6 Piercing",
-        "properties": "Finesse, Light",
+        "damage": "1d6",
+        "properties": [
+          "Finesse",
+          "Light"
+        ],
         "mastery": "Vex",
         "weight": "2 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand"
       },
       {
         "id": "trident",
         "name": "Trident",
-        "damage": "1d8 Piercing",
-        "properties": "Thrown (Range 20/60), Versatile (1d10)",
+        "damage": "1d8",
+        "properties": [
+          "Thrown",
+          "Versatile"
+        ],
         "mastery": "Topple",
         "weight": "4 lb.",
-        "cost": "5 GP"
+        "cost": "5 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 20,
+          "long": 60
+        },
+        "versatile_damage": "1d10"
       },
       {
         "id": "warhammer",
         "name": "Warhammer",
-        "damage": "1d8 Bludgeoning",
-        "properties": "Versatile (1d10)",
+        "damage": "1d8",
+        "properties": [
+          "Versatile"
+        ],
         "mastery": "Push",
         "weight": "5 lb.",
-        "cost": "15 GP"
+        "cost": "15 GP",
+        "damage_type": "Bludgeoning",
+        "slot": "weapon_hand",
+        "versatile_damage": "1d10"
       },
       {
         "id": "war_pick",
         "name": "War Pick",
-        "damage": "1d8 Piercing",
-        "properties": "Versatile (1d10)",
+        "damage": "1d8",
+        "properties": [
+          "Versatile"
+        ],
         "mastery": "Sap",
         "weight": "2 lb.",
-        "cost": "5 GP"
+        "cost": "5 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "versatile_damage": "1d10"
       },
       {
         "id": "whip",
         "name": "Whip",
-        "damage": "1d4 Slashing",
-        "properties": "Finesse, Reach",
+        "damage": "1d4",
+        "properties": [
+          "Finesse",
+          "Reach"
+        ],
         "mastery": "Slow",
         "weight": "3 lb.",
-        "cost": "2 GP"
+        "cost": "2 GP",
+        "damage_type": "Slashing",
+        "slot": "weapon_hand"
       },
       {
         "id": "blowgun",
         "name": "Blowgun",
-        "damage": "1 Piercing",
-        "properties": "Ammunition (Range 25/100; Needle), Loading",
+        "damage": "1",
+        "properties": [
+          "Ammunition",
+          "Loading"
+        ],
         "mastery": "Vex",
         "weight": "1 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 25,
+          "long": 100
+        },
+        "ammunition": "needle"
       },
       {
         "id": "hand_crossbow",
         "name": "Hand Crossbow",
-        "damage": "1d6 Piercing",
-        "properties": "Ammunition (Range 30/120; Bolt), Light, Loading",
+        "damage": "1d6",
+        "properties": [
+          "Ammunition",
+          "Light",
+          "Loading"
+        ],
         "mastery": "Vex",
         "weight": "3 lb.",
-        "cost": "75 GP"
+        "cost": "75 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 30,
+          "long": 120
+        },
+        "ammunition": "bolt"
       },
       {
         "id": "heavy_crossbow",
         "name": "Heavy Crossbow",
-        "damage": "1d10 Piercing",
-        "properties": "Ammunition (Range 100/400; Bolt), Heavy, Loading, Two-Handed",
+        "damage": "1d10",
+        "properties": [
+          "Ammunition",
+          "Heavy",
+          "Loading",
+          "Two-Handed"
+        ],
         "mastery": "Push",
         "weight": "18 lb.",
-        "cost": "50 GP"
+        "cost": "50 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 100,
+          "long": 400
+        },
+        "ammunition": "bolt"
       },
       {
         "id": "longbow",
         "name": "Longbow",
-        "damage": "1d8 Piercing",
-        "properties": "Ammunition (Range 150/600; Arrow), Heavy, Two-Handed",
+        "damage": "1d8",
+        "properties": [
+          "Ammunition",
+          "Heavy",
+          "Two-Handed"
+        ],
         "mastery": "Slow",
         "weight": "2 lb.",
-        "cost": "50 GP"
+        "cost": "50 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 150,
+          "long": 600
+        },
+        "ammunition": "arrow"
       },
       {
         "id": "musket",
         "name": "Musket",
-        "damage": "1d12 Piercing",
-        "properties": "Ammunition (Range 40/120; Bullet), Loading, Two-Handed",
+        "damage": "1d12",
+        "properties": [
+          "Ammunition",
+          "Loading",
+          "Two-Handed"
+        ],
         "mastery": "Slow",
         "weight": "10 lb.",
-        "cost": "500 GP"
+        "cost": "500 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 40,
+          "long": 120
+        },
+        "ammunition": "bullet"
       },
       {
         "id": "pistol",
         "name": "Pistol",
-        "damage": "1d10 Piercing",
-        "properties": "Ammunition (Range 30/90; Bullet), Loading",
+        "damage": "1d10",
+        "properties": [
+          "Ammunition",
+          "Loading"
+        ],
         "mastery": "Vex",
         "weight": "3 lb.",
-        "cost": "250 GP"
+        "cost": "250 GP",
+        "damage_type": "Piercing",
+        "slot": "weapon_hand",
+        "range": {
+          "normal": 30,
+          "long": 90
+        },
+        "ammunition": "bullet"
       },
       {
         "id": "berserker_axe",
@@ -24928,119 +25581,210 @@
       {
         "id": "padded_armor",
         "name": "Padded Armor",
-        "armor_class": "11 + Dex modifier",
-        "strength": "—",
-        "stealth": "Disadvantage",
         "weight": "8 lb.",
-        "cost": "5 GP"
+        "cost": "5 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "add",
+            "value": 1
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "leather_armor",
         "name": "Leather Armor",
-        "armor_class": "11 + Dex modifier",
-        "strength": "—",
-        "stealth": "—",
         "weight": "10 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "add",
+            "value": 1
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": false,
+        "slot": "body_armor"
       },
       {
         "id": "studded_leather_armor",
         "name": "Studded Leather Armor",
-        "armor_class": "12 + Dex modifier",
-        "strength": "—",
-        "stealth": "—",
         "weight": "13 lb.",
-        "cost": "45 GP"
+        "cost": "45 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "add",
+            "value": 2
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": false,
+        "slot": "body_armor"
       },
       {
         "id": "hide_armor",
         "name": "Hide Armor",
-        "armor_class": "12 + Dex modifier (max 2)",
-        "strength": "—",
-        "stealth": "—",
         "weight": "12 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": "10 + min(DEX_mod, 2) + 2"
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": false,
+        "slot": "body_armor"
       },
       {
         "id": "chain_shirt",
         "name": "Chain Shirt",
-        "armor_class": "13 + Dex modifier (max 2)",
-        "strength": "—",
-        "stealth": "—",
         "weight": "20 lb.",
-        "cost": "50 GP"
+        "cost": "50 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": "10 + min(DEX_mod, 2) + 3"
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": false,
+        "slot": "body_armor"
       },
       {
         "id": "scale_mail",
         "name": "Scale Mail",
-        "armor_class": "14 + Dex modifier (max 2)",
-        "strength": "—",
-        "stealth": "Disadvantage",
         "weight": "45 lb.",
-        "cost": "50 GP"
+        "cost": "50 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": "10 + min(DEX_mod, 2) + 4"
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "breastplate",
         "name": "Breastplate",
-        "armor_class": "14 + Dex modifier (max 2)",
-        "strength": "—",
-        "stealth": "—",
         "weight": "20 lb.",
-        "cost": "400 GP"
+        "cost": "400 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": "10 + min(DEX_mod, 2) + 4"
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": false,
+        "slot": "body_armor"
       },
       {
         "id": "half_plate_armor",
         "name": "Half Plate Armor",
-        "armor_class": "15 + Dex modifier (max 2)",
-        "strength": "—",
-        "stealth": "Disadvantage",
         "weight": "40 lb.",
-        "cost": "750 GP"
+        "cost": "750 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": "10 + min(DEX_mod, 2) + 5"
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "ring_mail",
         "name": "Ring Mail",
-        "armor_class": "14",
-        "strength": "—",
-        "stealth": "Disadvantage",
         "weight": "40 lb.",
-        "cost": "30 GP"
+        "cost": "30 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": 14
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "chain_mail",
         "name": "Chain Mail",
-        "armor_class": "16",
-        "strength": "Str 13",
-        "stealth": "Disadvantage",
         "weight": "55 lb.",
-        "cost": "75 GP"
+        "cost": "75 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": 16
+          }
+        ],
+        "strength_req": 13,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "splint_armor",
         "name": "Splint Armor",
-        "armor_class": "17",
-        "strength": "Str 15",
-        "stealth": "Disadvantage",
         "weight": "60 lb.",
-        "cost": "200 GP"
+        "cost": "200 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": 17
+          }
+        ],
+        "strength_req": 15,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "plate_armor",
         "name": "Plate Armor",
-        "armor_class": "18",
-        "strength": "Str 15",
-        "stealth": "Disadvantage",
         "weight": "65 lb.",
-        "cost": "1,500 GP"
+        "cost": "1,500 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "override",
+            "value": 18
+          }
+        ],
+        "strength_req": 15,
+        "stealth_disadvantage": true,
+        "slot": "body_armor"
       },
       {
         "id": "shield",
         "name": "Shield",
-        "armor_class": "+2",
-        "strength": "—",
-        "stealth": "—",
         "weight": "6 lb.",
-        "cost": "10 GP"
+        "cost": "10 GP",
+        "modifiers": [
+          {
+            "target_stat": "AC",
+            "type": "add",
+            "value": 2
+          }
+        ],
+        "strength_req": 0,
+        "stealth_disadvantage": false,
+        "slot": "shield"
       },
       {
         "id": "adamantine_armor",

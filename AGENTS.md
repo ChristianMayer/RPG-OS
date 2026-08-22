@@ -132,7 +132,11 @@ convert it to `STATIC`. Only tests and examples compile executables.
   `makeCombatantSpecFromEntity(engine, entity, weapon, out)` derives combat
   values from ANY `DynamicEntity` — a character with no ruleset entry (e.g.
   one entered into a form) is fully supported. `DynamicEntity::refreshResources`
-  is public so hand-built sheets get their resource pools.
+  is public so hand-built sheets get their resource pools. **The weapon a
+  character actually has equipped is the one it fights with**: the spec
+  builders resolve the equipped item's `damage` expression (an explicit
+  caller-provided weapon string overrides; the default longsword is only a
+  fallback for weapon-less characters).
 
 ## Shared template core
 
@@ -276,8 +280,10 @@ mode:
   is extracted into these structured fields is removed from the entry's
   `description`, which the engine never reads. The D&D ruleset's `data`
   section carries only the machine-readable sections the engine consumes
-  (`creatures`, `spells`, `items`, `conditions`, `traits`, `poisons`,
-  `weapons`, `armor`); raw SRD reference text (rulebook chapters, class
+  (`creatures`, `spells`, `items`, `conditions`, `traits`, `poisons`); the
+  `weapons` / `armor` arrays are optional classification sub-views of
+  `data.items` (the engine reads gear from `items`), so keep them in sync;
+  raw SRD reference text (rulebook chapters, class
   features, magic items, glossary, species, backgrounds, feats) is *not*
   embedded — it lives in the source `.local_ressources/DnD/` extraction and
   is modeled as structured rules when the engine gains a mechanism for it.
@@ -302,6 +308,27 @@ mode:
   Range/stat values are resolved per `rpg_os::Variance` (weakest / weak /
   average / strong / strongest / random) via `rpg_os::readVariantValue`
   (`include/rpg_os/core/variance.hpp`).
+- **Item records** (`data.items` — weapons, armor, containers, magic items)
+  are the engine's gear source. A **weapon** declares `damage` as a *bare
+  dice expression* (`"1d8"` — **never** `"1d8 Bludgeoning"`; the damage
+  type lives in its own `damage_type` field), a `slot` (`weapon_hand`), a
+  `properties` array of keywords (Finesse / Light / Reach / Two-Handed /
+  Thrown / Ammunition / ...), an optional `range` (`{"normal","long"}`
+  feet), `versatile_damage`, `ammunition`, and a `mastery` keyword. An
+  **armor** item declares a `slot` (`body_armor` / `shield`), a `modifiers`
+  array carrying its AC effect, a numeric `strength_req`, and
+  `stealth_disadvantage`. Equipped-item `modifiers` apply to the wearer's
+  effective stats (`DynamicEntity::getEffectiveStat`) and a modifier's
+  `value`/`factor`/clamp bounds may be a **formula string evaluated against
+  the wearer** — e.g. D&D medium armour caps its Dexterity contribution with
+  `"10 + min(DEX_mod, 2) + 4"`. `weight` (`"2 lb."`) and `cost` (`"2 SP"`)
+  are kept verbatim from the source; the engine parses them at runtime
+  (`parseWeightValue` / `parsePriceString`). Containers declare a `capacity`
+  object `{"weight","size","items"}` that `addItemToContainer` enforces.
+  **Combat uses the weapon a combatant actually has equipped**: the spec
+  builders resolve the equipped item's `damage`, and `validate_ruleset.py`
+  flags a `damage` string that embeds its damage type — the exact regression
+  that would silently make a weapon's real damage unused in fights.
 - Adding a system = adding a JSON file; do not change engine code for it.
 
 ## Code conventions
