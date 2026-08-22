@@ -854,20 +854,23 @@ function buildSpellPicker(fields) {
 }
 
 /** Pre-fills the form (attributes, skills, spells) from an archetype; a
- *  "Custom character" selection (empty id) leaves the form as it is. */
+ *  "Custom character" selection (empty id) leaves the form as it is.
+ *  D&D archetypes are class shells without attributes/skills/spells_known, so
+ *  the optional fields are guarded (selecting one just leaves the form as-is). */
 function applyArchetype(id) {
   const arch = archetypes.find((a) => a.id === id);
   if (!arch) return;
   const set = (prefix, values) => {
-    for (const [key, value] of Object.entries(values)) {
+    for (const [key, value] of Object.entries(values ?? {})) {
       const input = document.querySelector(`#form-fields input[name="${prefix}:${key}"]`);
       if (input) input.value = value;
     }
   };
   set('attr', arch.attributes);
   set('skill', arch.skills);
+  const known = arch.spells_known ?? [];
   for (const cb of document.querySelectorAll('#form-fields input[name^="spell:"]')) {
-    cb.checked = arch.spells_known.includes(cb.name.slice(cb.name.indexOf(':') + 1));
+    cb.checked = known.includes(cb.name.slice(cb.name.indexOf(':') + 1));
   }
   const spellSummaryEl = document.querySelector('.spells summary');
   if (spellSummaryEl) spellSummaryEl.textContent = `Spells (${knownSpellIds().length} selected)`;
